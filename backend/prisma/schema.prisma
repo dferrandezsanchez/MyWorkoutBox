@@ -1,0 +1,102 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  performances PerformanceRecord[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Client {
+  id                String    @id @default(uuid())
+  firstName         String
+  lastName          String
+  birthDate         DateTime
+  height            Float?
+  weight            Float?
+  bodyFatPercentage Float?
+  photoUrl          String?
+  notes             String?
+  status            String    @default("ACTIVE")
+  anonymizedAt      DateTime?
+  photoConsentAt    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  performances PerformanceRecord[]
+
+  @@map("clients")
+}
+
+model Exercise {
+  id          String          @id @default(uuid())
+  name        String
+  category    String
+  defaultUnit String
+  description String?
+  status      String          @default("ACTIVE")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  performances PerformanceRecord[]
+
+  @@map("exercises")
+}
+
+model PerformanceRecord {
+  id          String          @id @default(uuid())
+  clientId    String
+  exerciseId  String
+  trainerId   String
+  value       String
+  unit        String
+  weight      Float?
+  repetitions Int?
+  duration    Float?
+  distance    Float?
+  date        DateTime
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  client   Client   @relation(fields: [clientId], references: [id])
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+  trainer  User     @relation(fields: [trainerId], references: [id])
+
+  @@index([clientId, exerciseId, date(sort: Desc)])
+  @@map("performance_records")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  metadata   String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}

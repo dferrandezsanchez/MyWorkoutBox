@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+
+.env
+.env.*
+!.env.example
+!.env.test.example
+
+backend/uploads/
+backend/prisma/dev.db
+backend/prisma/dev.db-*
+
+.DS_Store
+*.log
+.vscode/
