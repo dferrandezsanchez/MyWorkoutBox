@@ -4,6 +4,7 @@ import { useClient } from '../hooks/useClients';
 import { useExercise } from '../hooks/useExercises';
 import { usePerformanceHistory } from '../hooks/usePerformances';
 import PerformanceForm from '../components/PerformanceForm';
+import ProgressChart from '../components/ProgressChart';
 import { AppShell, Button, EmptyState } from '../components/ui';
 import { formatPerformance } from '../utils/exerciseTemplates';
 
@@ -79,40 +80,44 @@ export default function ExerciseHistoryPage() {
           </div>
         </header>
 
-        <section>
         {!history || history.length === 0 ? (
           <EmptyState title="Sin marcas registradas" description="Crea la primera marca para este ejercicio." />
         ) : (
-          <ul className="space-y-3" aria-label="Histórico de marcas">
-            {history.map((record) => (
-              <li
-                key={record.id}
-                className="rounded-md border border-border bg-white p-4 shadow-sm"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xl font-semibold text-[#282828]">
-                      {formatPerformance(record)}
-                    </p>
-                    <p className="mt-1 text-xs text-text-secondary">
-                      Registrado por {record.trainerName}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-sm text-text-secondary">
-                    {formatDate(record.date)}
-                  </span>
-                </div>
+          <>
+            <ProgressChart history={history} />
+            <section>
+              <h2 className="mb-3 text-lg font-semibold text-[#282828]">Registros</h2>
+              <ul className="space-y-3" aria-label="Histórico de marcas">
+                {history.map((record) => (
+                  <li
+                    key={record.id}
+                    className="rounded-md border border-border bg-white p-4 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xl font-semibold text-[#282828]">
+                          {formatPerformance(record)}
+                        </p>
+                        <p className="mt-1 text-xs text-text-secondary">
+                          Registrado por {record.trainerName}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-sm text-text-secondary">
+                        {formatDate(record.date)}
+                      </span>
+                    </div>
 
-                {record.notes && (
-                  <p className="mt-3 whitespace-pre-line rounded-md bg-[#FAFAFA] p-3 text-sm text-[#5A5A5A]">
-                    {record.notes}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
+                    {record.notes && (
+                      <p className="mt-3 whitespace-pre-line rounded-md bg-[#FAFAFA] p-3 text-sm text-[#5A5A5A]">
+                        {record.notes}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </>
         )}
-        </section>
       </div>
 
       {showForm && (
