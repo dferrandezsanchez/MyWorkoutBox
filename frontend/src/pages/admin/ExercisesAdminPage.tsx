@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useExercises, useCreateExercise, useUpdateExercise, useSetExerciseStatus } from '../../hooks/useExercises';
 import ExerciseForm from '../../components/ExerciseForm';
 import type { CreateExerciseData, Exercise } from '../../types/api';
+import { AppShell, Button, EmptyState, MetricChip, PageHeader, StatusBadge } from '../../components/ui';
+import { getExerciseTemplate } from '../../utils/exerciseTemplates';
 
 export default function ExercisesAdminPage() {
   const navigate = useNavigate();
@@ -14,62 +16,88 @@ export default function ExercisesAdminPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
 
-  if (isLoading) return <p className="text-text-secondary">Cargando ejercicios...</p>;
-  if (isError) return <p className="text-red-500">Error al cargar ejercicios</p>;
+  if (isLoading) {
+    return (
+      <AppShell>
+        <p className="text-text-secondary">Cargando ejercicios...</p>
+      </AppShell>
+    );
+  }
+  if (isError) {
+    return (
+      <AppShell>
+        <p className="text-red-500">Error al cargar ejercicios</p>
+      </AppShell>
+    );
+  }
+
+  const activeCount = exercises?.filter((exercise) => exercise.status === 'ACTIVE').length ?? 0;
+  const inactiveCount = exercises?.filter((exercise) => exercise.status === 'INACTIVE').length ?? 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-surface px-4 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
-          <h1 className="text-lg font-bold text-text-primary">Administración — Ejercicios</h1>
-          <div className="flex flex-wrap justify-end gap-2">
-            <button
-              onClick={() => navigate('/')}
-              className="min-h-[44px] px-4 py-2 border border-border rounded-md text-text-primary hover:bg-background"
-            >
-              Dashboard
-            </button>
-            <button
-              onClick={() => navigate('/admin/clients')}
-              className="min-h-[44px] px-4 py-2 border border-border rounded-md text-text-primary hover:bg-background"
-            >
+    <AppShell>
+      <PageHeader
+        eyebrow="Administración"
+        title="Ejercicios"
+        description="Mantén el catálogo que se muestra en los perfiles de cliente."
+        actions={
+          <>
+            <Button onClick={() => navigate('/admin/clients')}>
               Clientes
-            </button>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="min-h-[44px] px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-md"
-            >
+            </Button>
+            <Button variant="primary" onClick={() => setShowCreate(true)}>
               Nuevo ejercicio
-            </button>
-          </div>
-        </div>
-      </header>
+            </Button>
+          </>
+        }
+      />
 
-      <main className="max-w-6xl mx-auto px-4 py-6">
-        <div className="space-y-3">
-          {exercises?.map((ex) => (
-            <div key={ex.id} className="bg-surface border border-border rounded-lg p-4 flex items-center justify-between gap-4">
-              <div>
-                <p className="text-text-primary font-semibold">{ex.name}</p>
-                <p className="text-text-secondary text-sm">
+      <section className="mb-5 grid grid-cols-3 gap-3">
+        <MetricChip label="Total" value={exercises?.length ?? 0} />
+        <MetricChip label="Activos" value={activeCount} />
+        <MetricChip label="Inactivos" value={inactiveCount} />
+      </section>
+
+      <section className="overflow-hidden rounded-md border border-border bg-white shadow-sm">
+        {!exercises || exercises.length === 0 ? (
+          <div className="p-4">
+            <EmptyState title="No hay ejercicios" />
+          </div>
+        ) : (
+          exercises.map((ex) => (
+            <div key={ex.id} className="flex flex-col gap-3 border-b border-border p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="font-semibold text-[#3F3F3F]">{ex.name}</p>
+                <p className="mt-1 text-sm text-text-secondary">
                   {ex.category} · {ex.defaultUnit} · {ex.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                 </p>
+                <p className="mt-1 text-xs text-text-secondary">
+                  Registro rápido: {getExerciseTemplate(ex.name, ex.defaultUnit).label}
+                  {getExerciseTemplate(ex.name, ex.defaultUnit).variantLabel
+                    ? ` + ${getExerciseTemplate(ex.name, ex.defaultUnit).variantLabel}`
+                    : ''}
+                  {getExerciseTemplate(ex.name, ex.defaultUnit).showRepetitions ? ' + repeticiones' : ''}
+                </p>
               </div>
-              <div className="flex gap-2">
-                <button className="min-h-[44px] px-3 py-1 bg-white border border-border rounded-md text-sm" onClick={() => setEditingExercise(ex)}>Editar</button>
-                <button className="min-h-[44px] px-3 py-1 bg-white border border-border rounded-md text-sm" onClick={() => statusMutation.mutate({ id: ex.id, status: ex.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}>{ex.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}</button>
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusBadge status={ex.status} />
+                <Button onClick={() => setEditingExercise(ex)}>Editar</Button>
+                <Button onClick={() => statusMutation.mutate({ id: ex.id, status: ex.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}>
+                  {ex.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
+                </Button>
               </div>
             </div>
-          ))}
-        </div>
+          ))
+        )}
+      </section>
 
         {showCreate && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-label="Crear ejercicio" onClick={(e) => e.target === e.currentTarget && setShowCreate(false)}>
-            <div className="bg-surface border border-border rounded-lg p-6 w-full max-w-md">
+            <div className="w-full max-w-md rounded-md border border-border bg-white p-6 shadow-xl">
               <h2 className="text-lg font-semibold text-text-primary mb-4">Crear ejercicio</h2>
               <ExerciseForm onSubmit={async (data) => { await createMutation.mutateAsync(data as CreateExerciseData); setShowCreate(false); }} submitLabel="Crear" />
               <div className="flex justify-end gap-2 mt-4">
-                <button onClick={() => setShowCreate(false)} className="px-4 py-2">Cerrar</button>
+                <Button onClick={() => setShowCreate(false)}>Cerrar</Button>
               </div>
             </div>
           </div>
@@ -77,7 +105,7 @@ export default function ExercisesAdminPage() {
 
         {editingExercise && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-label="Editar ejercicio" onClick={(e) => e.target === e.currentTarget && setEditingExercise(null)}>
-            <div className="bg-surface border border-border rounded-lg p-6 w-full max-w-md">
+            <div className="w-full max-w-md rounded-md border border-border bg-white p-6 shadow-xl">
               <h2 className="text-lg font-semibold text-text-primary mb-4">Editar ejercicio</h2>
               <ExerciseForm
                 initial={editingExercise}
@@ -89,12 +117,11 @@ export default function ExercisesAdminPage() {
                 showStatus
               />
               <div className="flex justify-end gap-2 mt-4">
-                <button onClick={() => setEditingExercise(null)} className="px-4 py-2">Cerrar</button>
+                <Button onClick={() => setEditingExercise(null)}>Cerrar</Button>
               </div>
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </AppShell>
   );
 }

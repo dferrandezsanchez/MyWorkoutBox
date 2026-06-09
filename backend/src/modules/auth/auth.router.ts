@@ -34,4 +34,24 @@ router.get('/me', authenticate, async (req: any, res: Response, next: NextFuncti
   }
 });
 
+// PUT /auth/me — update current user's contact info
+router.put('/me', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const user = await authService.updateMe(req.user!.userId, req.body);
+    res.status(200).json(user);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /auth/me/password — update current user's password
+router.put('/me/password', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    await authService.changePassword(req.user!.userId, req.body);
+    res.status(200).json({ message: 'Contraseña actualizada correctamente' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

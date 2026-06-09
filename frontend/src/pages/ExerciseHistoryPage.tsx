@@ -4,6 +4,8 @@ import { useClient } from '../hooks/useClients';
 import { useExercise } from '../hooks/useExercises';
 import { usePerformanceHistory } from '../hooks/usePerformances';
 import PerformanceForm from '../components/PerformanceForm';
+import { AppShell, Button, EmptyState } from '../components/ui';
+import { formatPerformance } from '../utils/exerciseTemplates';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -32,7 +34,7 @@ export default function ExerciseHistoryPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#FAFAFA]">
         <p className="text-text-secondary">Cargando...</p>
       </div>
     );
@@ -40,7 +42,7 @@ export default function ExerciseHistoryPage() {
 
   if (isError || !client || !exercise) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-[#FAFAFA]">
         <p className="text-red-500">Error al cargar el histórico</p>
       </div>
     );
@@ -48,81 +50,80 @@ export default function ExerciseHistoryPage() {
 
   const clientFullName = `${client.firstName} ${client.lastName}`;
   const exerciseName = exercise.name;
+  const current = history?.[0];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-surface px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={() => navigate(-1)}
-              aria-label="Volver"
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-md hover:bg-border transition-colors text-text-primary flex-shrink-0"
-            >
-              ←
-            </button>
-            <h1 className="text-base font-bold text-text-primary truncate">
-              {exerciseName} — {clientFullName}
-            </h1>
+    <AppShell title="Histórico">
+      <div className="mx-auto max-w-3xl">
+        <header className="mb-4 rounded-md border border-border bg-white p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <Button onClick={() => navigate(-1)} className="min-h-10 px-3">Volver</Button>
+            <Button variant="primary" onClick={() => setShowForm(true)} className="min-h-10">
+              Nueva marca
+            </Button>
           </div>
 
-          <button
-            onClick={() => setShowForm(true)}
-            className="min-h-[44px] px-4 py-2 bg-primary hover:bg-primary-hover text-white font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0"
-          >
-            Nueva marca
-          </button>
-        </div>
-      </header>
+          <p className="text-sm text-text-secondary">{clientFullName}</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#282828]">
+            {exerciseName}
+          </h1>
 
-      <main role="main" className="max-w-3xl mx-auto px-4 py-6">
+          <div className="mt-4 rounded-md bg-[#FFF7F2] p-4">
+            <p className="text-sm font-medium text-primary">Marca actual</p>
+            <p className="mt-1 text-3xl font-semibold text-[#282828]">
+              {formatPerformance(current)}
+            </p>
+            <p className="mt-1 text-sm text-text-secondary">
+              {current ? formatDate(current.date) : 'Sin marcas registradas'}
+            </p>
+          </div>
+        </header>
+
+        <section>
         {!history || history.length === 0 ? (
-          <p className="text-text-secondary text-center py-12">
-            Sin marcas registradas para este ejercicio
-          </p>
+          <EmptyState title="Sin marcas registradas" description="Crea la primera marca para este ejercicio." />
         ) : (
           <ul className="space-y-3" aria-label="Histórico de marcas">
             {history.map((record) => (
               <li
                 key={record.id}
-                className="bg-surface border border-border rounded-lg p-4"
+                className="rounded-md border border-border bg-white p-4 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-3">
-                  {/* Date */}
-                  <span className="text-text-secondary text-sm flex-shrink-0">
+                  <div>
+                    <p className="text-xl font-semibold text-[#282828]">
+                      {formatPerformance(record)}
+                    </p>
+                    <p className="mt-1 text-xs text-text-secondary">
+                      Registrado por {record.trainerName}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-sm text-text-secondary">
                     {formatDate(record.date)}
-                  </span>
-
-                  {/* Value + unit */}
-                  <span className="bg-primary-soft text-primary text-sm font-semibold px-2 py-0.5 rounded-full">
-                    {record.value} {record.unit}
                   </span>
                 </div>
 
-                {/* Trainer */}
-                <p className="text-text-secondary text-xs mt-2">
-                  Registrado por: {record.trainerName}
-                </p>
-
-                {/* Notes */}
                 {record.notes && (
-                  <p className="text-text-primary text-sm mt-1 italic">{record.notes}</p>
+                  <p className="mt-3 whitespace-pre-line rounded-md bg-[#FAFAFA] p-3 text-sm text-[#5A5A5A]">
+                    {record.notes}
+                  </p>
                 )}
               </li>
             ))}
           </ul>
         )}
-      </main>
+        </section>
+      </div>
 
-      {/* Performance form modal */}
       {showForm && (
         <PerformanceForm
           clientId={clientId!}
           exerciseId={exerciseId!}
+          exerciseName={exercise.name}
+          defaultUnit={exercise.defaultUnit}
           onClose={() => setShowForm(false)}
         />
       )}
-    </div>
+    </AppShell>
   );
 }

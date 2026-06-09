@@ -5,6 +5,7 @@ import ClientPhotoUploader from '../../components/ClientPhotoUploader';
 import ClientCard from '../../components/ClientCard';
 import ClientForm from '../../components/ClientForm';
 import type { CreateClientData } from '../../types/api';
+import { AppShell, Button, EmptyState, MetricChip, PageHeader, StatusBadge } from '../../components/ui';
 
 export default function ClientsAdminPage() {
   const navigate = useNavigate();
@@ -19,56 +20,69 @@ export default function ClientsAdminPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [uploadFor, setUploadFor] = useState<string | null>(null);
 
-  if (isLoading) return <p className="text-text-secondary">Cargando clientes...</p>;
-  if (isError) return <p className="text-red-500">Error al cargar clientes</p>;
+  if (isLoading) {
+    return (
+      <AppShell>
+        <p className="text-text-secondary">Cargando clientes...</p>
+      </AppShell>
+    );
+  }
+  if (isError) {
+    return (
+      <AppShell>
+        <p className="text-red-500">Error al cargar clientes</p>
+      </AppShell>
+    );
+  }
+
+  const activeCount = clients?.filter((client) => client.status === 'ACTIVE').length ?? 0;
+  const inactiveCount = clients?.filter((client) => client.status === 'INACTIVE').length ?? 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-surface px-4 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
-          <h1 className="text-lg font-bold text-text-primary">Administración — Clientes</h1>
-          <div className="flex flex-wrap justify-end gap-2">
-            <button
-              onClick={() => navigate('/')}
-              className="min-h-[44px] px-4 py-2 border border-border rounded-md text-text-primary hover:bg-background"
-            >
-              Dashboard
-            </button>
-            <button
-              onClick={() => navigate('/admin/exercises')}
-              className="min-h-[44px] px-4 py-2 border border-border rounded-md text-text-primary hover:bg-background"
-            >
-              Ejercicios
-            </button>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="min-h-[44px] px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-md"
-            >
+    <AppShell>
+      <PageHeader
+        eyebrow="Administración"
+        title="Clientes"
+        description="Gestiona altas, estado, fotos y acciones RGPD."
+        actions={
+          <>
+            <Button onClick={() => navigate('/admin/exercises')}>Ejercicios</Button>
+            <Button variant="primary" onClick={() => setShowCreate(true)}>
               Nuevo cliente
-            </button>
-          </div>
-        </div>
-      </header>
+            </Button>
+          </>
+        }
+      />
 
-      <main className="max-w-6xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {clients?.map((c) => (
-            <div key={c.id} className="bg-surface border border-border rounded-lg p-3">
-              <ClientCard client={c} />
-              <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2">
-                <button
-                  onClick={() => navigate(`/admin/clients/${c.id}`)}
-                  className="min-h-[44px] px-2 py-1 bg-white border border-border rounded-md text-sm"
-                >
+      <section className="mb-5 grid grid-cols-3 gap-3">
+        <MetricChip label="Total" value={clients?.length ?? 0} />
+        <MetricChip label="Activos" value={activeCount} />
+        <MetricChip label="Inactivos" value={inactiveCount} />
+      </section>
+
+      <section className="overflow-hidden rounded-md border border-border bg-white shadow-sm">
+        {!clients || clients.length === 0 ? (
+          <div className="p-4">
+            <EmptyState title="No hay clientes" />
+          </div>
+        ) : (
+          clients.map((c) => (
+            <div key={c.id} className="border-b border-border p-3 last:border-b-0">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0 flex-1">
+                  <ClientCard client={c} />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge status={c.status} />
+                  <Button onClick={() => navigate(`/admin/clients/${c.id}`)}>
                   Editar
-                </button>
-                <button
+                  </Button>
+                  <Button
                   onClick={() => statusMutation.mutate({ id: c.id, status: c.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}
-                  className="min-h-[44px] px-2 py-1 bg-white border border-border rounded-md text-sm"
                 >
                   {c.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
-                </button>
-                <button
+                  </Button>
+                  <Button
                   onClick={async () => {
                     const exported = await exportMutation.mutateAsync(c.id);
                     const blob = new Blob([JSON.stringify(exported, null, 2)], {
@@ -81,35 +95,35 @@ export default function ClientsAdminPage() {
                     link.click();
                     URL.revokeObjectURL(url);
                   }}
-                  className="min-h-[44px] px-2 py-1 bg-white border border-border rounded-md text-sm"
                 >
                   Exportar
-                </button>
-                <button
+                  </Button>
+                  <Button
+                  variant="danger"
                   onClick={() => {
                     if (confirm('¿Anonimizar este cliente? Esta acción no se puede deshacer.')) {
                       anonymizeMutation.mutate(c.id);
                     }
                   }}
-                  className="min-h-[44px] px-2 py-1 bg-white border border-border rounded-md text-sm"
                 >
                   Anonimizar
-                </button>
-                <button
+                  </Button>
+                  <Button
                   onClick={() => setUploadFor(c.id)}
-                  className="min-h-[44px] px-2 py-1 bg-white border border-border rounded-md text-sm"
                 >
                   Foto
-                </button>
+                  </Button>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
+          ))
+        )}
+      </section>
 
         {/* Create modal */}
         {showCreate && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-label="Crear cliente" onClick={(e) => e.target === e.currentTarget && setShowCreate(false)}>
-            <div className="bg-surface border border-border rounded-lg p-6 w-full max-w-md">
+            <div className="w-full max-w-md rounded-md border border-border bg-white p-6 shadow-xl">
               <h2 className="text-lg font-semibold text-text-primary mb-4">Crear cliente</h2>
               <ClientForm
                 onSubmit={async (data) => {
@@ -119,7 +133,7 @@ export default function ClientsAdminPage() {
                 submitLabel="Crear"
               />
               <div className="flex justify-end gap-2 mt-4">
-                <button onClick={() => setShowCreate(false)} className="px-4 py-2">Cerrar</button>
+                <Button onClick={() => setShowCreate(false)}>Cerrar</Button>
               </div>
             </div>
           </div>
@@ -127,7 +141,6 @@ export default function ClientsAdminPage() {
         {uploadFor && (
           <ClientPhotoUploader clientId={uploadFor} onClose={() => setUploadFor(null)} />
         )}
-      </main>
-    </div>
+    </AppShell>
   );
 }

@@ -31,19 +31,20 @@ export default function ExerciseRow({
           handleClick();
         }
       }}
-      className="flex justify-between items-center py-3 border-b border-border min-h-[44px] cursor-pointer hover:bg-surface transition-colors px-1"
+      className="group flex min-h-[58px] cursor-pointer items-center justify-between gap-3 border-b border-border bg-white px-3 py-3 transition-colors last:border-b-0 hover:bg-[#FFF7F2]"
       aria-label={`Ver histórico de ${exerciseName}`}
     >
-      <span className="text-text-primary font-medium">{exerciseName}</span>
+      <span className="font-medium text-[#3F3F3F] group-hover:text-primary">{exerciseName}</span>
 
-      <div className="flex items-center">
+      <div className="flex items-center gap-2">
         {currentMark ? (
-          <span className="bg-primary-soft text-primary text-sm font-semibold px-2 py-0.5 rounded-full">
+          <span className="rounded-full bg-[#FFF1E8] px-2.5 py-1 text-sm font-semibold text-primary">
             {currentMark.value} {currentMark.unit}
           </span>
         ) : (
           <span className="text-text-muted text-sm">Sin marca registrada</span>
         )}
+        <span className="text-text-muted group-hover:text-primary">›</span>
       </div>
     </div>
   );

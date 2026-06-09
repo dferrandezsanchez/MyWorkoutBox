@@ -20,7 +20,7 @@ describe('PerformanceForm', () => {
   it('enables submit when the required value has content', async () => {
     render(<PerformanceForm clientId="client-1" exerciseId="exercise-1" onClose={vi.fn()} />);
 
-    await userEvent.type(screen.getByLabelText(/Valor/), '100');
+    await userEvent.type(screen.getByLabelText(/Repeticiones/), '100');
 
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeEnabled();
   });

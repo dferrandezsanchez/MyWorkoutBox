@@ -14,3 +14,15 @@ export async function getMe(): Promise<AuthUser> {
   const response = await apiClient.get<AuthUser>('/auth/me');
   return response.data;
 }
+
+export async function updateMe(data: { name: string; email: string }): Promise<AuthUser> {
+  const response = await apiClient.put<AuthUser>('/auth/me', data);
+  return response.data;
+}
+
+export async function changePassword(data: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<void> {
+  await apiClient.put('/auth/me/password', data);
+}

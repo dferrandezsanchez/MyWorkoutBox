@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../api/auth';
 import { setToken } from '../store/auth';
+import { Button, TextInput } from '../components/ui';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function LoginPage() {
     try {
       const response = await login(email, password);
       setToken(response.token);
-      navigate('/');
+      navigate(response.user.role === 'ADMIN' ? '/admin' : '/trainer');
     } catch {
       setError('Email o contraseña incorrectos');
     } finally {
@@ -26,31 +27,31 @@ export default function LoginPage() {
     }
   };
 
-  const inputClass =
-    'w-full border border-border rounded-md px-3 py-2 min-h-[44px] text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent';
-  const labelClass = 'block text-sm font-medium text-text-secondary mb-1';
+  const labelClass = 'mb-1 block text-sm font-medium text-[#4A4A4A]';
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        {/* App title */}
-        <h1 className="text-2xl font-bold text-text-primary text-center mb-8">
-          Control de Marcas
-        </h1>
+    <div className="flex min-h-screen items-center justify-center bg-[#FAFAFA] px-4">
+      <div className="w-full max-w-md">
+        <div className="mb-8 text-center">
+          <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-md bg-primary text-lg font-bold text-white shadow-sm">
+            TM
+          </span>
+          <h1 className="text-2xl font-semibold text-[#3F3F3F]">Control de Marcas</h1>
+          <p className="mt-2 text-sm text-text-secondary">
+            Gestión interna de clientes, ejercicios y progresión.
+          </p>
+        </div>
 
-        {/* Card */}
-        <div className="bg-surface border border-border rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-text-primary mb-6">
-            Iniciar sesión
-          </h2>
+        <div className="rounded-md border border-border bg-white p-6 shadow-sm">
+          <h2 className="mb-1 text-lg font-semibold text-[#3F3F3F]">Iniciar sesión</h2>
+          <p className="mb-6 text-sm text-text-secondary">Accede con tu cuenta de entrenador.</p>
 
           <form onSubmit={handleSubmit} noValidate>
-            {/* Email */}
             <div className="mb-4">
               <label htmlFor="email" className={labelClass}>
                 Email
               </label>
-              <input
+              <TextInput
                 id="email"
                 type="email"
                 value={email}
@@ -58,17 +59,16 @@ export default function LoginPage() {
                 placeholder="ejemplo@correo.com"
                 required
                 autoComplete="email"
-                className={inputClass}
+                className="w-full"
                 aria-required="true"
               />
             </div>
 
-            {/* Password */}
             <div className="mb-6">
               <label htmlFor="password" className={labelClass}>
                 Contraseña
               </label>
-              <input
+              <TextInput
                 id="password"
                 type="password"
                 value={password}
@@ -76,29 +76,28 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 required
                 autoComplete="current-password"
-                className={inputClass}
+                className="w-full"
                 aria-required="true"
               />
             </div>
 
-            {/* Error message */}
             {error && (
               <p
                 role="alert"
-                className="text-red-500 text-sm mb-4 text-center"
+                className="mb-4 rounded-md bg-red-50 px-3 py-2 text-center text-sm text-red-600"
               >
                 {error}
               </p>
             )}
 
-            {/* Submit */}
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              className="w-full min-h-[44px] bg-primary hover:bg-primary-hover text-white font-medium rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              variant="primary"
+              className="w-full"
             >
               {isLoading ? 'Iniciando sesión...' : 'Entrar'}
-            </button>
+            </Button>
           </form>
         </div>
       </div>

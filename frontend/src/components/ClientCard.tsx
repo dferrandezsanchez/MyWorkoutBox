@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import type { Client } from '../types/api';
 import Avatar from './Avatar';
+import { StatusBadge } from './ui';
 
 interface ClientCardProps {
   client: Client;
@@ -24,7 +25,7 @@ export default function ClientCard({ client }: ClientCardProps) {
           handleClick();
         }
       }}
-      className="bg-surface border border-border rounded-lg p-4 cursor-pointer min-w-full min-h-[44px] flex items-center gap-3 hover:border-primary transition-colors"
+      className="group flex min-h-[64px] w-full cursor-pointer items-center gap-3 border-b border-border bg-white px-3 py-3 text-left transition-colors last:border-b-0 hover:bg-[#FFF7F2]"
       aria-label={`Ver perfil de ${client.firstName} ${client.lastName}`}
     >
       <Avatar
@@ -34,20 +35,15 @@ export default function ClientCard({ client }: ClientCardProps) {
         size="md"
       />
 
-      <div className="flex-1 min-w-0">
-        <p className="text-text-primary font-medium truncate">
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-[#3F3F3F] group-hover:text-primary">
           {client.firstName} {client.lastName}
         </p>
-        <span
-          className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full mt-1 ${
-            client.status === 'ACTIVE'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-gray-100 text-gray-500'
-          }`}
-        >
-          {client.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
-        </span>
+        <p className="mt-0.5 text-xs text-text-secondary">Perfil y marcas</p>
       </div>
+
+      <StatusBadge status={client.status} />
+      <span className="text-text-muted transition-colors group-hover:text-primary">›</span>
     </div>
   );
 }
