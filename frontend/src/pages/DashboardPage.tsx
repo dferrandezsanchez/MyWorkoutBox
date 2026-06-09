@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Dumbbell, Smartphone, UserCog, Users } from 'lucide-react';
 import { AppShell, Button, EmptyState, PageHeader, StatusBadge } from '../components/ui';
 import { useClients } from '../hooks/useClients';
 import { useExercises } from '../hooks/useExercises';
@@ -55,52 +56,56 @@ export default function DashboardPage() {
           ['Entrenadores activos', isLoadingTrainers ? '...' : activeTrainers.length],
           ['Ejercicios activos', isLoadingExercises ? '...' : activeExercises.length],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-md border border-border bg-white p-4 shadow-sm">
+          <div key={label} className="rounded-md border border-border bg-elevated p-4 shadow-sm">
             <p className="text-sm text-text-secondary">{label}</p>
-            <p className="mt-2 text-3xl font-semibold text-[#282828]">{value}</p>
+            <p className="mt-2 text-3xl font-semibold text-text-primary">{value}</p>
           </div>
         ))}
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
-        <section className="rounded-md border border-border bg-white p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-[#282828]">Gestión</h2>
+        <section className="rounded-md border border-border bg-elevated p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-text-primary">Gestión</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <button
               onClick={() => navigate('/admin/clients')}
-              className="min-h-[112px] rounded-md border border-border bg-[#FAFAFA] p-4 text-left transition-colors hover:bg-[#FFF7F2] focus-ring"
+              className="min-h-[112px] rounded-md border border-border bg-surface p-4 text-left transition-colors hover:bg-primary/5 focus-ring"
             >
-              <span className="block text-lg font-semibold text-[#282828]">Clientes</span>
+              <Users size={20} className="mb-3 text-primary" />
+              <span className="block text-lg font-semibold text-text-primary">Clientes</span>
               <span className="mt-2 block text-sm text-text-secondary">Altas, edición, fotos y RGPD.</span>
             </button>
             <button
               onClick={() => navigate('/admin/trainers')}
-              className="min-h-[112px] rounded-md border border-border bg-[#FAFAFA] p-4 text-left transition-colors hover:bg-[#FFF7F2] focus-ring"
+              className="min-h-[112px] rounded-md border border-border bg-surface p-4 text-left transition-colors hover:bg-primary/5 focus-ring"
             >
-              <span className="block text-lg font-semibold text-[#282828]">Entrenadores</span>
+              <UserCog size={20} className="mb-3 text-primary" />
+              <span className="block text-lg font-semibold text-text-primary">Entrenadores</span>
               <span className="mt-2 block text-sm text-text-secondary">Altas, accesos, estado y contraseña.</span>
             </button>
             <button
               onClick={() => navigate('/admin/exercises')}
-              className="min-h-[112px] rounded-md border border-border bg-[#FAFAFA] p-4 text-left transition-colors hover:bg-[#FFF7F2] focus-ring"
+              className="min-h-[112px] rounded-md border border-border bg-surface p-4 text-left transition-colors hover:bg-primary/5 focus-ring"
             >
-              <span className="block text-lg font-semibold text-[#282828]">Ejercicios</span>
+              <Dumbbell size={20} className="mb-3 text-primary" />
+              <span className="block text-lg font-semibold text-text-primary">Ejercicios</span>
               <span className="mt-2 block text-sm text-text-secondary">Catálogo de ejercicios de referencia.</span>
             </button>
             <button
               onClick={() => navigate('/trainer')}
-              className="min-h-[112px] rounded-md border border-border bg-[#FAFAFA] p-4 text-left transition-colors hover:bg-[#FFF7F2] focus-ring"
+              className="min-h-[112px] rounded-md border border-border bg-surface p-4 text-left transition-colors hover:bg-primary/5 focus-ring"
             >
-              <span className="block text-lg font-semibold text-[#282828]">Vista trainer</span>
+              <Smartphone size={20} className="mb-3 text-primary" />
+              <span className="block text-lg font-semibold text-text-primary">Vista trainer</span>
               <span className="mt-2 block text-sm text-text-secondary">Comprobar flujo móvil de marcas.</span>
             </button>
           </div>
         </section>
 
-        <section className="rounded-md border border-border bg-white p-4 shadow-sm">
+        <section className="rounded-md border border-border bg-elevated p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-[#282828]">Datos a revisar</h2>
+              <h2 className="text-lg font-semibold text-text-primary">Datos a revisar</h2>
               <p className="text-sm text-text-secondary">Clientes importados con información incompleta.</p>
             </div>
             <StatusBadge status={dataIssues.length ? 'INACTIVE' : 'ACTIVE'} />
@@ -116,10 +121,10 @@ export default function DashboardPage() {
                 <button
                   key={client.id}
                   onClick={() => navigate(`/clients/${client.id}`)}
-                  className="flex min-h-[58px] w-full items-center justify-between rounded-md border border-border bg-[#FAFAFA] px-3 text-left transition-colors hover:bg-[#FFF7F2] focus-ring"
+                  className="flex min-h-[58px] w-full items-center justify-between rounded-md border border-border bg-surface px-3 text-left transition-colors hover:bg-primary/5 focus-ring"
                 >
                   <span>
-                    <span className="block text-sm font-semibold text-[#343434]">
+                    <span className="block text-sm font-semibold text-text-primary">
                       {client.firstName} {client.lastName}
                     </span>
                     <span className="text-xs text-text-secondary">

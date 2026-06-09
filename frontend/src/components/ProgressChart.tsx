@@ -65,8 +65,8 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
 
   if (points.length < 2) {
     return (
-      <section className="mb-4 rounded-md border border-dashed border-border bg-white p-4 text-center">
-        <p className="font-medium text-[#343434]">Evolución</p>
+      <section className="mb-4 rounded-md border border-dashed border-border bg-elevated p-4 text-center">
+        <p className="font-medium text-text-primary">Evolución</p>
         <p className="mt-1 text-sm text-text-secondary">
           Aún no hay suficientes marcas numéricas para dibujar una tendencia.
         </p>
@@ -106,10 +106,10 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
   const yTicks = [yMax, (yMax + yMin) / 2, yMin];
 
   return (
-    <section className="mb-4 rounded-md border border-border bg-white p-4 shadow-sm">
+    <section className="mb-4 rounded-md border border-border bg-elevated p-4 shadow-sm">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-[#282828]">Evolución</h2>
+          <h2 className="text-lg font-semibold text-text-primary">Evolución</h2>
           <p className="text-sm text-text-secondary">
             {points.length} marcas · {first.label} - {last.label}
           </p>
@@ -117,10 +117,10 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
         <span
           className={`rounded-full px-3 py-1 text-sm font-semibold ${
             delta > 0
-              ? 'bg-emerald-50 text-emerald-700'
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
               : delta < 0
-                ? 'bg-red-50 text-red-600'
-                : 'bg-gray-100 text-gray-600'
+                ? 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
           }`}
         >
           {delta > 0 ? '+' : ''}
@@ -132,12 +132,12 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
         viewBox={`0 0 ${width} ${height}`}
         role="img"
         aria-label="Gráfica de evolución de marcas"
-        className="h-auto w-full overflow-visible"
+        className="h-auto w-full overflow-visible text-primary"
       >
         <defs>
           <linearGradient id="progress-fill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#ED702D" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="#ED702D" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
@@ -149,7 +149,7 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
                 x={paddingLeft - 10}
                 y={y + 3}
                 textAnchor="end"
-                className="fill-[#8A8A8A] text-[9px]"
+                className="fill-text-muted text-[9px]"
               >
                 {formatValue(tick)}
               </text>
@@ -158,7 +158,7 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
                 x2={width - paddingRight}
                 y1={y}
                 y2={y}
-                stroke="#ECECEC"
+                className="stroke-border"
                 strokeWidth="1"
               />
             </g>
@@ -169,7 +169,7 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
         <path
           d={linePath}
           fill="none"
-          stroke="#ED702D"
+          stroke="currentColor"
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="2.5"
@@ -181,14 +181,14 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
           const showLabel = index === 0 || index === points.length - 1 || point.value === maxValue;
           return (
             <g key={point.id}>
-              <circle cx={x} cy={y} r="3.4" fill="#ED702D" stroke="#FFFFFF" strokeWidth="2" />
+              <circle cx={x} cy={y} r="3.4" fill="currentColor" className="stroke-elevated" strokeWidth="2" />
               {showLabel && (
                 <>
                   <text
                     x={x}
                     y={Math.max(12, y - 9)}
                     textAnchor="middle"
-                    className="fill-[#343434] text-[10px] font-semibold"
+                    className="fill-text-primary text-[10px] font-semibold"
                   >
                     {formatValue(point.value)}
                   </text>
@@ -198,26 +198,26 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
           );
         })}
 
-        <text x={paddingLeft} y={height - 9} textAnchor="start" className="fill-[#8A8A8A] text-[9px]">
+        <text x={paddingLeft} y={height - 9} textAnchor="start" className="fill-text-muted text-[9px]">
           {first.label}
         </text>
-        <text x={width - paddingRight} y={height - 9} textAnchor="end" className="fill-[#8A8A8A] text-[9px]">
+        <text x={width - paddingRight} y={height - 9} textAnchor="end" className="fill-text-muted text-[9px]">
           {last.label}
         </text>
       </svg>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 rounded-md bg-[#FAFAFA] p-3 text-center text-xs text-text-secondary">
+      <div className="mt-3 grid grid-cols-3 gap-2 rounded-md bg-surface p-3 text-center text-xs text-text-secondary">
         <div className="border-r border-border last:border-r-0">
           <p>Inicio</p>
-          <p className="mt-1 font-semibold text-[#343434]">{formatValue(first.value)}</p>
+          <p className="mt-1 font-semibold text-text-primary">{formatValue(first.value)}</p>
         </div>
         <div className="border-r border-border last:border-r-0">
           <p>Mejor</p>
-          <p className="mt-1 font-semibold text-[#343434]">{formatValue(maxValue)}</p>
+          <p className="mt-1 font-semibold text-text-primary">{formatValue(maxValue)}</p>
         </div>
         <div>
           <p>Última</p>
-          <p className="mt-1 font-semibold text-[#343434]">{formatValue(last.value)}</p>
+          <p className="mt-1 font-semibold text-text-primary">{formatValue(last.value)}</p>
         </div>
       </div>
     </section>

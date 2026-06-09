@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ChevronLeft, History, Plus } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import PerformanceForm from '../components/PerformanceForm';
 import { AppShell, Button, EmptyState, StatusBadge } from '../components/ui';
@@ -36,7 +37,7 @@ export default function ClientProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FAFAFA]">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-text-secondary">Cargando cliente...</p>
       </div>
     );
@@ -44,7 +45,7 @@ export default function ClientProfilePage() {
 
   if (isError || !client) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FAFAFA]">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-red-500">Error al cargar el cliente</p>
       </div>
     );
@@ -53,9 +54,10 @@ export default function ClientProfilePage() {
   return (
     <AppShell title="Ficha cliente">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-4 rounded-md border border-border bg-white p-4 shadow-sm">
+        <header className="mb-4 rounded-md border border-border bg-elevated p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <Button onClick={() => navigate(-1)} className="min-h-10 px-3">
+            <Button onClick={() => navigate(-1)} className="inline-flex min-h-10 items-center gap-2 px-3">
+              <ChevronLeft size={16} />
               Volver
             </Button>
             <StatusBadge status={client.status} />
@@ -69,7 +71,7 @@ export default function ClientProfilePage() {
               size="lg"
             />
             <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold tracking-tight text-[#282828]">
+              <h1 className="truncate text-2xl font-semibold tracking-tight text-text-primary">
                 {client.firstName} {client.lastName}
               </h1>
               <p className="mt-1 text-sm text-text-secondary">
@@ -81,7 +83,7 @@ export default function ClientProfilePage() {
           </div>
 
           {client.notes && (
-            <p className="mt-4 rounded-md bg-[#FAFAFA] p-3 text-sm leading-6 text-[#5F6267]">
+            <p className="mt-4 rounded-md bg-surface p-3 text-sm leading-6 text-text-secondary">
               {client.notes}
             </p>
           )}
@@ -90,7 +92,7 @@ export default function ClientProfilePage() {
         <section className="mb-3">
           <div className="mb-3 flex items-end justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold text-[#282828]">Ejercicios</h2>
+              <h2 className="text-xl font-semibold text-text-primary">Ejercicios</h2>
               <p className="text-sm text-text-secondary">Marca actual y registro rápido.</p>
             </div>
           </div>
@@ -143,10 +145,10 @@ function ExerciseMarkCard({
   const best = getBestRecord(history ?? []);
 
   return (
-    <article className="rounded-md border border-border bg-white p-4 shadow-sm">
+    <article className="rounded-md border border-border bg-elevated p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold text-[#282828]">
+          <h3 className="truncate text-base font-semibold text-text-primary">
             {item.exerciseName}
           </h3>
           <p className="mt-1 text-sm text-text-secondary">
@@ -156,19 +158,22 @@ function ExerciseMarkCard({
             Mejor: {formatPerformance(best)}
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-[#FFF1E8] px-3 py-1 text-sm font-semibold text-primary">
+        <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
           {item.record ? formatPerformance(item.record) : '-'}
         </span>
       </div>
 
       <div className="mt-4 grid grid-cols-[1fr_1fr] gap-2">
-        <Button variant="primary" onClick={onUpdate}>
+        <Button variant="primary" onClick={onUpdate} className="inline-flex items-center justify-center gap-2">
+          <Plus size={16} />
           Actualizar
         </Button>
         <Button
           variant="secondary"
           onClick={() => navigate(`/clients/${clientId}/exercises/${item.exerciseId}`)}
+          className="inline-flex items-center justify-center gap-2"
         >
+          <History size={16} />
           Histórico
         </Button>
       </div>

@@ -22,7 +22,7 @@ export default function ClientPhotoUploader({ clientId, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-label="Subir foto de cliente" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-surface border border-border rounded-lg p-6 w-full max-w-md">
+      <div className="bg-elevated border border-border rounded-lg p-6 w-full max-w-md">
         <h2 className="text-lg font-semibold text-text-primary mb-4">Subir foto</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -32,13 +32,13 @@ export default function ClientPhotoUploader({ clientId, onClose }: Props) {
               type="file"
               accept="image/*"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="w-full"
+              className="w-full text-sm text-text-secondary file:mr-3 file:min-h-[36px] file:rounded-md file:border-0 file:bg-primary file:px-3 file:text-sm file:font-semibold file:text-white"
             />
           </div>
 
           <div className="flex items-start gap-2">
             <input id="consent" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-            <label htmlFor="consent" className="text-sm">Confirmo que tengo el consentimiento del cliente para subir su foto</label>
+            <label htmlFor="consent" className="text-sm text-text-secondary">Confirmo que tengo el consentimiento del cliente para subir su foto</label>
           </div>
 
           <div className="flex justify-between">

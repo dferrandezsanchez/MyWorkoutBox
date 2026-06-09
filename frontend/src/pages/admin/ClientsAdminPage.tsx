@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { useClients, useCreateClient, useSetClientStatus, useUploadClientPhoto, useExportClient, useAnonymizeClient, useDeleteClientPhoto } from '../../hooks/useClients';
 import ClientPhotoUploader from '../../components/ClientPhotoUploader';
 import ClientCard from '../../components/ClientCard';
@@ -47,7 +48,8 @@ export default function ClientsAdminPage() {
         actions={
           <>
             <Button onClick={() => navigate('/admin/exercises')}>Ejercicios</Button>
-            <Button variant="primary" onClick={() => setShowCreate(true)}>
+            <Button variant="primary" onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2">
+              <Plus size={16} />
               Nuevo cliente
             </Button>
           </>
@@ -60,7 +62,7 @@ export default function ClientsAdminPage() {
         <MetricChip label="Inactivos" value={inactiveCount} />
       </section>
 
-      <section className="overflow-hidden rounded-md border border-border bg-white shadow-sm">
+      <section className="overflow-hidden rounded-md border border-border bg-elevated shadow-sm">
         {!clients || clients.length === 0 ? (
           <div className="p-4">
             <EmptyState title="No hay clientes" />
@@ -123,7 +125,7 @@ export default function ClientsAdminPage() {
         {/* Create modal */}
         {showCreate && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-label="Crear cliente" onClick={(e) => e.target === e.currentTarget && setShowCreate(false)}>
-            <div className="w-full max-w-md rounded-md border border-border bg-white p-6 shadow-xl">
+            <div className="w-full max-w-md rounded-md border border-border bg-elevated p-6 shadow-xl">
               <h2 className="text-lg font-semibold text-text-primary mb-4">Crear cliente</h2>
               <ClientForm
                 onSubmit={async (data) => {

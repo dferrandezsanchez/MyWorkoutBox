@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { KeyRound, Pencil, Plus } from 'lucide-react';
 import {
   useCreateTrainer,
   useResetTrainerPassword,
@@ -151,7 +152,10 @@ export default function TrainersAdminPage() {
         actions={
           <>
             <Button onClick={() => navigate('/admin')}>Dashboard</Button>
-            <Button variant="primary" onClick={openCreate}>Nuevo entrenador</Button>
+            <Button variant="primary" onClick={openCreate} className="inline-flex items-center gap-2">
+              <Plus size={16} />
+              Nuevo entrenador
+            </Button>
           </>
         }
       />
@@ -162,7 +166,7 @@ export default function TrainersAdminPage() {
         <MetricChip label="Inactivos" value={inactiveCount} />
       </section>
 
-      <section className="overflow-hidden rounded-md border border-border bg-white shadow-sm">
+      <section className="overflow-hidden rounded-md border border-border bg-elevated shadow-sm">
         {!trainers || trainers.length === 0 ? (
           <div className="p-4">
             <EmptyState title="No hay entrenadores" description="Crea el primer acceso para el equipo técnico." />
@@ -174,11 +178,11 @@ export default function TrainersAdminPage() {
               className="flex flex-col gap-3 border-b border-border p-4 last:border-b-0 lg:flex-row lg:items-center lg:justify-between"
             >
               <div className="flex min-w-0 items-start gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#3F3F3F] text-sm font-bold text-white">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-text-primary text-sm font-bold text-background">
                   {trainer.name.slice(0, 2).toUpperCase()}
                 </span>
                 <div className="min-w-0">
-                  <p className="font-semibold text-[#3F3F3F]">{trainer.name}</p>
+                  <p className="font-semibold text-text-primary">{trainer.name}</p>
                   <p className="mt-1 break-all text-sm text-text-secondary">{trainer.email}</p>
                   <p className="mt-1 text-xs text-text-secondary">
                     Alta {new Date(trainer.createdAt).toLocaleDateString('es-ES')}
@@ -188,8 +192,12 @@ export default function TrainersAdminPage() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge status={trainer.active ? 'ACTIVE' : 'INACTIVE'} />
-                <Button onClick={() => openEdit(trainer)}>Editar</Button>
-                <Button onClick={() => { setPasswordTrainer(trainer); setPassword(''); setError(null); }}>
+                <Button onClick={() => openEdit(trainer)} className="inline-flex items-center gap-2">
+                  <Pencil size={15} />
+                  Editar
+                </Button>
+                <Button onClick={() => { setPasswordTrainer(trainer); setPassword(''); setError(null); }} className="inline-flex items-center gap-2">
+                  <KeyRound size={15} />
                   Contraseña
                 </Button>
                 <Button
@@ -214,19 +222,19 @@ export default function TrainersAdminPage() {
         >
           <form
             onSubmit={showCreate ? handleCreate : handleUpdate}
-            className="w-full max-w-md rounded-md border border-border bg-white p-5 shadow-xl"
+            className="w-full max-w-md rounded-md border border-border bg-elevated p-5 shadow-xl"
           >
-            <h2 className="text-lg font-semibold text-[#282828]">
+            <h2 className="text-lg font-semibold text-text-primary">
               {showCreate ? 'Crear entrenador' : 'Editar entrenador'}
             </h2>
 
             {error && (
-              <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</p>
+              <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-300">{error}</p>
             )}
 
             <div className="mt-4 space-y-3">
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-[#4A4A4A]">Nombre</span>
+                <span className="mb-1 block text-sm font-medium text-text-primary">Nombre</span>
                 <TextInput
                   value={form.name}
                   onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
@@ -235,7 +243,7 @@ export default function TrainersAdminPage() {
               </label>
 
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-[#4A4A4A]">Email</span>
+                <span className="mb-1 block text-sm font-medium text-text-primary">Email</span>
                 <TextInput
                   type="email"
                   value={form.email}
@@ -246,7 +254,7 @@ export default function TrainersAdminPage() {
 
               {showCreate && (
                 <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-[#4A4A4A]">
+                  <span className="mb-1 block text-sm font-medium text-text-primary">
                     Contraseña temporal
                   </span>
                   <TextInput
@@ -266,7 +274,7 @@ export default function TrainersAdminPage() {
                   onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))}
                   className="h-4 w-4 accent-primary"
                 />
-                <span className="text-sm font-medium text-[#4A4A4A]">Acceso activo</span>
+                <span className="text-sm font-medium text-text-primary">Acceso activo</span>
               </label>
             </div>
 
@@ -294,17 +302,17 @@ export default function TrainersAdminPage() {
         >
           <form
             onSubmit={handlePasswordReset}
-            className="w-full max-w-md rounded-md border border-border bg-white p-5 shadow-xl"
+            className="w-full max-w-md rounded-md border border-border bg-elevated p-5 shadow-xl"
           >
-            <h2 className="text-lg font-semibold text-[#282828]">Cambiar contraseña</h2>
+            <h2 className="text-lg font-semibold text-text-primary">Cambiar contraseña</h2>
             <p className="mt-1 text-sm text-text-secondary">{passwordTrainer.name}</p>
 
             {error && (
-              <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</p>
+              <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-300">{error}</p>
             )}
 
             <label className="mt-4 block">
-              <span className="mb-1 block text-sm font-medium text-[#4A4A4A]">
+              <span className="mb-1 block text-sm font-medium text-text-primary">
                 Nueva contraseña
               </span>
               <TextInput

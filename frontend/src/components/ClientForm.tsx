@@ -51,7 +51,7 @@ export default function ClientForm({
   };
 
   const inputClass =
-    'w-full border border-border rounded-md px-3 py-2 min-h-[44px] text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent';
+    'w-full border border-border bg-elevated rounded-md px-3 py-2 min-h-[44px] text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent';
   const labelClass = 'block text-sm font-medium text-text-secondary mb-1';
 
   return (
@@ -98,7 +98,7 @@ export default function ClientForm({
 
       <div>
         <label className={labelClass} htmlFor="notes">Notas</label>
-        <textarea id="notes" className="w-full border border-border rounded-md px-3 py-2 text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <textarea id="notes" className="w-full border border-border bg-elevated rounded-md px-3 py-2 text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </div>
 
       <div className="flex justify-end gap-2">

@@ -25,7 +25,7 @@ export default function ClientCard({ client }: ClientCardProps) {
           handleClick();
         }
       }}
-      className="group flex min-h-[64px] w-full cursor-pointer items-center gap-3 border-b border-border bg-white px-3 py-3 text-left transition-colors last:border-b-0 hover:bg-[#FFF7F2]"
+      className="group flex min-h-[64px] w-full cursor-pointer items-center gap-3 border-b border-border bg-elevated px-3 py-3 text-left transition-colors last:border-b-0 hover:bg-primary/5"
       aria-label={`Ver perfil de ${client.firstName} ${client.lastName}`}
     >
       <Avatar
@@ -36,7 +36,7 @@ export default function ClientCard({ client }: ClientCardProps) {
       />
 
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-[#3F3F3F] group-hover:text-primary">
+        <p className="truncate font-medium text-text-primary group-hover:text-primary">
           {client.firstName} {client.lastName}
         </p>
         <p className="mt-0.5 text-xs text-text-secondary">Perfil y marcas</p>

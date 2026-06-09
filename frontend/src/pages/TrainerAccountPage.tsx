@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AppShell, Button, TextInput } from '../components/ui';
+import { AppShell, Button, TextInput, ThemeToggle } from '../components/ui';
 import { useAuthUser, useChangePassword, useUpdateAuthUser } from '../hooks/useAuthUser';
 import { removeToken } from '../store/auth';
 
@@ -35,13 +35,13 @@ export default function TrainerAccountPage() {
       <div className="mx-auto max-w-xl">
         <header className="mb-5">
           <p className="text-sm font-semibold uppercase tracking-wide text-primary">Entrenador</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[#282828]">Cuenta</h1>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text-primary">Cuenta</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Mantén tus datos de contacto actualizados.
           </p>
         </header>
 
-        <section className="rounded-md border border-border bg-white p-4 shadow-sm">
+        <section className="rounded-md border border-border bg-elevated p-4 shadow-sm">
           {isLoading && <p className="text-text-secondary">Cargando cuenta...</p>}
           {isError && <p className="text-red-500">Error al cargar la cuenta</p>}
           {user && (
@@ -55,7 +55,7 @@ export default function TrainerAccountPage() {
               }}
             >
               <div>
-                <label htmlFor="account-name" className="mb-1 block text-sm font-medium text-[#4A4A4A]">
+                <label htmlFor="account-name" className="mb-1 block text-sm font-medium text-text-primary">
                   Nombre
                 </label>
                 <TextInput
@@ -68,7 +68,7 @@ export default function TrainerAccountPage() {
               </div>
 
               <div>
-                <label htmlFor="account-email" className="mb-1 block text-sm font-medium text-[#4A4A4A]">
+                <label htmlFor="account-email" className="mb-1 block text-sm font-medium text-text-primary">
                   Email
                 </label>
                 <TextInput
@@ -81,7 +81,7 @@ export default function TrainerAccountPage() {
                 />
               </div>
 
-              <div className="rounded-md bg-[#FAFAFA] p-3 text-sm text-text-secondary">
+              <div className="rounded-md bg-surface p-3 text-sm text-text-secondary">
                 Rol: {user.role === 'ADMIN' ? 'Administrador' : 'Entrenador'}
               </div>
 
@@ -106,8 +106,18 @@ export default function TrainerAccountPage() {
           )}
         </section>
 
-        <section className="mt-5 rounded-md border border-border bg-white p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-[#282828]">Cambiar contraseña</h2>
+        <section className="mt-5 rounded-md border border-border bg-elevated p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-text-primary">Apariencia</h2>
+          <p className="mt-1 text-sm text-text-secondary">
+            Usa el tema del dispositivo o fija una preferencia para esta cuenta.
+          </p>
+          <div className="mt-4">
+            <ThemeToggle />
+          </div>
+        </section>
+
+        <section className="mt-5 rounded-md border border-border bg-elevated p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-text-primary">Cambiar contraseña</h2>
           <p className="mt-1 text-sm text-text-secondary">
             Usa al menos 8 caracteres para la nueva contraseña.
           </p>
@@ -141,7 +151,7 @@ export default function TrainerAccountPage() {
             }}
           >
             <div>
-              <label htmlFor="current-password" className="mb-1 block text-sm font-medium text-[#4A4A4A]">
+              <label htmlFor="current-password" className="mb-1 block text-sm font-medium text-text-primary">
                 Contraseña actual
               </label>
               <TextInput
@@ -156,7 +166,7 @@ export default function TrainerAccountPage() {
             </div>
 
             <div>
-              <label htmlFor="new-password" className="mb-1 block text-sm font-medium text-[#4A4A4A]">
+              <label htmlFor="new-password" className="mb-1 block text-sm font-medium text-text-primary">
                 Nueva contraseña
               </label>
               <TextInput
@@ -171,7 +181,7 @@ export default function TrainerAccountPage() {
             </div>
 
             <div>
-              <label htmlFor="confirm-password" className="mb-1 block text-sm font-medium text-[#4A4A4A]">
+              <label htmlFor="confirm-password" className="mb-1 block text-sm font-medium text-text-primary">
                 Confirmar contraseña
               </label>
               <TextInput

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronLeft, Plus } from 'lucide-react';
 import { useClient } from '../hooks/useClients';
 import { useExercise } from '../hooks/useExercises';
 import { usePerformanceHistory } from '../hooks/usePerformances';
@@ -35,7 +36,7 @@ export default function ExerciseHistoryPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FAFAFA]">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-text-secondary">Cargando...</p>
       </div>
     );
@@ -43,7 +44,7 @@ export default function ExerciseHistoryPage() {
 
   if (isError || !client || !exercise) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FAFAFA]">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-red-500">Error al cargar el histórico</p>
       </div>
     );
@@ -56,22 +57,26 @@ export default function ExerciseHistoryPage() {
   return (
     <AppShell title="Histórico">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-4 rounded-md border border-border bg-white p-4 shadow-sm">
+        <header className="mb-4 rounded-md border border-border bg-elevated p-4 shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <Button onClick={() => navigate(-1)} className="min-h-10 px-3">Volver</Button>
-            <Button variant="primary" onClick={() => setShowForm(true)} className="min-h-10">
+            <Button onClick={() => navigate(-1)} className="inline-flex min-h-10 items-center gap-2 px-3">
+              <ChevronLeft size={16} />
+              Volver
+            </Button>
+            <Button variant="primary" onClick={() => setShowForm(true)} className="inline-flex min-h-10 items-center gap-2">
+              <Plus size={16} />
               Nueva marca
             </Button>
           </div>
 
           <p className="text-sm text-text-secondary">{clientFullName}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#282828]">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-text-primary">
             {exerciseName}
           </h1>
 
-          <div className="mt-4 rounded-md bg-[#FFF7F2] p-4">
+          <div className="mt-4 rounded-md bg-primary/10 p-4">
             <p className="text-sm font-medium text-primary">Marca actual</p>
-            <p className="mt-1 text-3xl font-semibold text-[#282828]">
+            <p className="mt-1 text-3xl font-semibold text-text-primary">
               {formatPerformance(current)}
             </p>
             <p className="mt-1 text-sm text-text-secondary">
@@ -86,16 +91,16 @@ export default function ExerciseHistoryPage() {
           <>
             <ProgressChart history={history} />
             <section>
-              <h2 className="mb-3 text-lg font-semibold text-[#282828]">Registros</h2>
+              <h2 className="mb-3 text-lg font-semibold text-text-primary">Registros</h2>
               <ul className="space-y-3" aria-label="Histórico de marcas">
                 {history.map((record) => (
                   <li
                     key={record.id}
-                    className="rounded-md border border-border bg-white p-4 shadow-sm"
+                    className="rounded-md border border-border bg-elevated p-4 shadow-sm"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-xl font-semibold text-[#282828]">
+                        <p className="text-xl font-semibold text-text-primary">
                           {formatPerformance(record)}
                         </p>
                         <p className="mt-1 text-xs text-text-secondary">
@@ -108,7 +113,7 @@ export default function ExerciseHistoryPage() {
                     </div>
 
                     {record.notes && (
-                      <p className="mt-3 whitespace-pre-line rounded-md bg-[#FAFAFA] p-3 text-sm text-[#5A5A5A]">
+                      <p className="mt-3 whitespace-pre-line rounded-md bg-surface p-3 text-sm text-text-secondary">
                         {record.notes}
                       </p>
                     )}

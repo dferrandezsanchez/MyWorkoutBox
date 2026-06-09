@@ -108,8 +108,8 @@ export default function PerformanceForm({
   };
 
   const inputClass =
-    'w-full border border-border rounded-md px-3 py-2 min-h-[44px] text-[#4A4A4A] placeholder:text-text-muted focus-ring';
-  const labelClass = 'block text-sm font-medium text-[#4A4A4A] mb-1';
+    'w-full border border-border bg-elevated rounded-md px-3 py-2 min-h-[44px] text-text-primary placeholder:text-text-muted focus-ring';
+  const labelClass = 'block text-sm font-medium text-text-primary mb-1';
   const errorClass = 'text-red-500 text-xs mt-1';
 
   return (
@@ -124,9 +124,9 @@ export default function PerformanceForm({
       aria-label="Formulario de nueva marca"
     >
       {/* Content card */}
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-white p-5 shadow-xl sm:rounded-md sm:p-6">
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-elevated p-5 shadow-xl sm:rounded-md sm:p-6">
         <div className="mb-5 border-b border-border pb-4">
-          <h2 className="text-lg font-semibold text-[#3F3F3F]">Nueva marca</h2>
+          <h2 className="text-lg font-semibold text-text-primary">Nueva marca</h2>
           <p className="mt-1 text-sm text-text-secondary">
             {exerciseName
               ? `${exerciseName}: registra solo los datos necesarios.`
@@ -172,8 +172,8 @@ export default function PerformanceForm({
                     onClick={() => setVariant(option)}
                     className={`min-h-[44px] rounded-md border px-3 text-sm font-semibold transition-colors ${
                       variant === option
-                        ? 'border-primary bg-[#FFF1E8] text-primary'
-                        : 'border-border bg-white text-[#5F6267]'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-elevated text-text-secondary hover:bg-surface'
                     }`}
                   >
                     {option}
@@ -232,8 +232,8 @@ export default function PerformanceForm({
             </div>
           )}
 
-          <details className="mb-4 rounded-md border border-border bg-[#FAFAFA] p-3">
-            <summary className="cursor-pointer text-sm font-semibold text-[#4A4A4A]">
+          <details className="mb-4 rounded-md border border-border bg-surface p-3">
+            <summary className="cursor-pointer text-sm font-semibold text-text-primary">
               Campos avanzados
             </summary>
             <div className="mt-4 space-y-4">
@@ -269,11 +269,11 @@ export default function PerformanceForm({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Opcional"
               rows={3}
-              className="w-full resize-none rounded-md border border-border px-3 py-2 text-[#4A4A4A] placeholder:text-text-muted focus-ring"
+              className="w-full resize-none rounded-md border border-border bg-elevated px-3 py-2 text-text-primary placeholder:text-text-muted focus-ring"
             />
           </div>
 
-          <div className="sticky bottom-0 -mx-5 flex gap-3 border-t border-border bg-white px-5 pb-[max(env(safe-area-inset-bottom),0rem)] pt-4 sm:static sm:mx-0 sm:justify-end sm:px-0 sm:pb-0">
+          <div className="sticky bottom-0 -mx-5 flex gap-3 border-t border-border bg-elevated px-5 pb-[max(env(safe-area-inset-bottom),0rem)] pt-4 sm:static sm:mx-0 sm:justify-end sm:px-0 sm:pb-0">
             <Button
               type="button"
               onClick={onClose}

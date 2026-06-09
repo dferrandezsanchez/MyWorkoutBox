@@ -1,23 +1,25 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
+  darkMode: 'class',
   content: ['./src/**/*.{ts,tsx}', './index.html'],
   theme: {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#ED702D',
-          hover: '#D96424',
-          soft: '#F29A6A',
+          DEFAULT: 'rgb(var(--color-primary) / <alpha-value>)',
+          hover: 'rgb(var(--color-primary-hover) / <alpha-value>)',
+          soft: 'rgb(var(--color-primary-soft) / <alpha-value>)',
         },
         text: {
-          primary: '#808080',
-          secondary: '#A6A6A6',
-          muted: '#C7C7C7',
+          primary: 'rgb(var(--color-text-primary) / <alpha-value>)',
+          secondary: 'rgb(var(--color-text-secondary) / <alpha-value>)',
+          muted: 'rgb(var(--color-text-muted) / <alpha-value>)',
         },
-        background: '#FFFFFF',
-        surface: '#F5F5F5',
-        border: '#DDDDDD',
+        background: 'rgb(var(--color-background) / <alpha-value>)',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
+        elevated: 'rgb(var(--color-elevated) / <alpha-value>)',
+        border: 'rgb(var(--color-border) / <alpha-value>)',
       },
     },
   },

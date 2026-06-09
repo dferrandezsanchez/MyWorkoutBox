@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import { AppShell, EmptyState, StatusBadge, TextInput } from '../components/ui';
 import { useClients } from '../hooks/useClients';
@@ -38,13 +39,13 @@ export default function TrainerPage() {
       <div className="mx-auto max-w-2xl">
         <header className="mb-4">
           <p className="text-sm font-semibold uppercase tracking-wide text-primary">Entrenador</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[#282828]">Clientes</h1>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text-primary">Clientes</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Busca un cliente y actualiza sus marcas desde la ficha.
           </p>
         </header>
 
-        <div className="sticky top-[77px] z-20 mb-3 bg-[#F7F7F6] py-2 md:hidden">
+        <div className="sticky top-[77px] z-20 mb-3 bg-background py-2 md:hidden">
           <TextInput
             type="search"
             value={query}
@@ -56,9 +57,9 @@ export default function TrainerPage() {
           />
         </div>
 
-        <section className="overflow-hidden rounded-md border border-border bg-white shadow-sm">
+        <section className="overflow-hidden rounded-md border border-border bg-elevated shadow-sm">
           <div className="border-b border-border px-4 py-3">
-            <p className="text-sm font-semibold text-[#343434]">
+            <p className="text-sm font-semibold text-text-primary">
               {debouncedQuery ? 'Resultados' : 'Clientes activos'}
             </p>
             <p className="text-xs text-text-secondary">{activeClients.length} clientes</p>
@@ -78,7 +79,7 @@ export default function TrainerPage() {
                 <button
                   key={client.id}
                   onClick={() => navigate(`/clients/${client.id}`)}
-                  className="grid min-h-[72px] w-full grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#FFF7F2] focus-ring"
+                  className="grid min-h-[72px] w-full grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-primary/5 focus-ring"
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <Avatar
@@ -88,7 +89,7 @@ export default function TrainerPage() {
                       size="md"
                     />
                     <span className="min-w-0">
-                      <span className="block truncate font-semibold text-[#343434]">
+                      <span className="block truncate font-semibold text-text-primary">
                         {client.firstName} {client.lastName}
                       </span>
                       <span className="mt-0.5 block text-sm text-text-secondary">
@@ -98,7 +99,7 @@ export default function TrainerPage() {
                   </span>
                   <span className="flex items-center gap-2">
                     <StatusBadge status={client.status} />
-                    <span className="text-xl text-text-secondary">›</span>
+                    <ChevronRight size={18} className="text-text-secondary" />
                   </span>
                 </button>
               ))}
