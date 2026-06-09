@@ -43,6 +43,17 @@ export interface Exercise {
   updatedAt: string;
 }
 
+// Trainer user managed by ADMIN
+export interface Trainer {
+  id: string;
+  name: string;
+  email: string;
+  role: 'TRAINER';
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Performance record (with trainerName resolved via JOIN)
 export interface PerformanceRecord {
   id: string;
@@ -113,6 +124,19 @@ export interface UpdateExerciseData {
   defaultUnit?: PerformanceUnit;
   description?: string;
   status?: 'ACTIVE' | 'INACTIVE';
+}
+
+export interface CreateTrainerData {
+  name: string;
+  email: string;
+  password: string;
+  active?: boolean;
+}
+
+export interface UpdateTrainerData {
+  name?: string;
+  email?: string;
+  active?: boolean;
 }
 
 export interface CreatePerformanceData {

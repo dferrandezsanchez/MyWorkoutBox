@@ -6,6 +6,7 @@ import authRouter from './modules/auth/auth.router';
 import clientsRouter from './modules/clients/clients.router';
 import exercisesRouter from './modules/exercises/exercises.router';
 import performancesRouter from './modules/performances/performances.router';
+import trainersRouter from './modules/trainers/trainers.router';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +28,7 @@ app.get('/health', (_req, res) => {
 app.use('/auth', authRouter);
 app.use('/clients', clientsRouter);
 app.use('/exercises', exercisesRouter);
+app.use('/trainers', trainersRouter);
 // Performances routes use nested paths (/clients/:clientId/...) so mount at root
 app.use('/', performancesRouter);
 

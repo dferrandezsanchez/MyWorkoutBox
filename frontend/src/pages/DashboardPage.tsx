@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AppShell, Button, EmptyState, PageHeader, StatusBadge } from '../components/ui';
 import { useClients } from '../hooks/useClients';
 import { useExercises } from '../hooks/useExercises';
+import { useTrainers } from '../hooks/useTrainers';
 import type { Client } from '../types/api';
 
 function calculateAge(birthDate: string): number {
@@ -20,11 +21,13 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { data: clients, isLoading: isLoadingClients, isError: isClientsError } = useClients(undefined, true);
   const { data: exercises, isLoading: isLoadingExercises } = useExercises(true);
+  const { data: trainers, isLoading: isLoadingTrainers } = useTrainers(true);
 
   const activeClients = clients?.filter((client) => client.status === 'ACTIVE') ?? [];
   const inactiveClients = clients?.filter((client) => client.status === 'INACTIVE') ?? [];
   const activeExercises = exercises?.filter((exercise) => exercise.status === 'ACTIVE') ?? [];
   const inactiveExercises = exercises?.filter((exercise) => exercise.status === 'INACTIVE') ?? [];
+  const activeTrainers = trainers?.filter((trainer) => trainer.active) ?? [];
   const dataIssues = useMemo(
     () => activeClients.filter(hasDataIssue).slice(0, 6),
     [activeClients],
@@ -49,8 +52,8 @@ export default function DashboardPage() {
         {[
           ['Clientes activos', isLoadingClients ? '...' : activeClients.length],
           ['Clientes inactivos', isLoadingClients ? '...' : inactiveClients.length],
+          ['Entrenadores activos', isLoadingTrainers ? '...' : activeTrainers.length],
           ['Ejercicios activos', isLoadingExercises ? '...' : activeExercises.length],
-          ['Ejercicios inactivos', isLoadingExercises ? '...' : inactiveExercises.length],
         ].map(([label, value]) => (
           <div key={label} className="rounded-md border border-border bg-white p-4 shadow-sm">
             <p className="text-sm text-text-secondary">{label}</p>
@@ -75,7 +78,7 @@ export default function DashboardPage() {
               className="min-h-[112px] rounded-md border border-border bg-[#FAFAFA] p-4 text-left transition-colors hover:bg-[#FFF7F2] focus-ring"
             >
               <span className="block text-lg font-semibold text-[#282828]">Entrenadores</span>
-              <span className="mt-2 block text-sm text-text-secondary">Módulo preparado para la siguiente iteración.</span>
+              <span className="mt-2 block text-sm text-text-secondary">Altas, accesos, estado y contraseña.</span>
             </button>
             <button
               onClick={() => navigate('/admin/exercises')}
