@@ -4,7 +4,6 @@ set -Eeuo pipefail
 required_vars=(
   APP_PATH
   FRONTEND_PUBLIC_PATH
-  PM2_APP_NAME
   DATABASE_URL
   JWT_SECRET
   VITE_API_URL
@@ -23,6 +22,7 @@ BACKEND_DIR="$ROOT_DIR/backend"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 BACKUP_DIR="$APP_PATH/backups"
 UPLOADS_DIR="$APP_PATH/uploads"
+SERVICE_NAME="${SYSTEMD_SERVICE_NAME:-${PM2_APP_NAME:-myworkoutbox-api}}"
 
 mkdir -p "$BACKUP_DIR" "$FRONTEND_PUBLIC_PATH" "$UPLOADS_DIR"
 
@@ -81,13 +81,8 @@ publish_frontend() {
 }
 
 restart_backend() {
-  cd "$BACKEND_DIR"
-  if pm2 describe "$PM2_APP_NAME" >/dev/null 2>&1; then
-    pm2 restart "$PM2_APP_NAME" --update-env
-  else
-    pm2 start dist/index.js --name "$PM2_APP_NAME" --update-env
-  fi
-  pm2 save
+  systemctl --user restart "$SERVICE_NAME" 2>/dev/null && return 0
+  sudo -n systemctl restart "$SERVICE_NAME"
 }
 
 write_backend_env

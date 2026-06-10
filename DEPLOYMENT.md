@@ -8,7 +8,7 @@ This project is designed to deploy manually controlled releases from GitHub tags
 local branch -> merge to main -> create tag -> push tag
   -> GitHub Actions builds/tests
   -> GitHub Actions deploys over SSH to the VPS
-  -> PM2 restarts the backend
+  -> systemd restarts the backend
   -> Plesk/Nginx serves the frontend
 ```
 
@@ -39,7 +39,7 @@ Example secrets:
 ```txt
 APP_PATH=/var/www/vhosts/danielferrandez.dev/myworkoutbox
 FRONTEND_PUBLIC_PATH=/var/www/vhosts/danielferrandez.dev/myworkoutbox/public
-PM2_APP_NAME=myworkoutbox-api
+SYSTEMD_SERVICE_NAME=myworkoutbox-api
 DATABASE_URL=file:/var/www/vhosts/danielferrandez.dev/myworkoutbox/data/production.sqlite
 JWT_EXPIRES_IN=7d
 PORT=3000
@@ -62,10 +62,42 @@ cd /var/www/vhosts/danielferrandez.dev/myworkoutbox/repo
 git clone git@github.com:YOUR_ORG/YOUR_REPO.git .
 ```
 
-Install PM2 if it is not already available:
+Create the systemd service as root:
 
 ```bash
-npm install -g pm2
+cat > /etc/systemd/system/myworkoutbox-api.service <<'EOF'
+[Unit]
+Description=MyWorkoutBox API
+After=network.target
+
+[Service]
+Type=simple
+User=deploy-myworkoutbox
+Group=deploy-myworkoutbox
+WorkingDirectory=/var/www/vhosts/danielferrandez.dev/myworkoutbox/repo/backend
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /var/www/vhosts/danielferrandez.dev/myworkoutbox/repo/backend/dist/index.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable myworkoutbox-api
+```
+
+Allow the deploy user to restart only this service without a password:
+
+```bash
+cat > /etc/sudoers.d/myworkoutbox-deploy <<'EOF'
+deploy-myworkoutbox ALL=(root) NOPASSWD: /bin/systemctl restart myworkoutbox-api
+deploy-myworkoutbox ALL=(root) NOPASSWD: /usr/bin/systemctl restart myworkoutbox-api
+EOF
+
+chmod 440 /etc/sudoers.d/myworkoutbox-deploy
+visudo -cf /etc/sudoers.d/myworkoutbox-deploy
 ```
 
 Check server dependencies:
@@ -86,7 +118,7 @@ VPS_USER
 VPS_SSH_KEY
 APP_PATH
 FRONTEND_PUBLIC_PATH
-PM2_APP_NAME
+SYSTEMD_SERVICE_NAME
 DATABASE_URL
 JWT_SECRET
 JWT_EXPIRES_IN
