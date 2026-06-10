@@ -6,6 +6,7 @@ coverage/
 .env.*
 !.env.example
 !.env.test.example
+!.env.production.example
 
 backend/uploads/
 backend/prisma/dev.db
