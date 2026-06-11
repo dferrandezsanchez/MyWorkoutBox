@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { getCurrentTenant } from '../api/auth';
-import { getActiveTenantBrand, type TenantBrand } from '../config/branding';
+import { getDocumentTitle, PLATFORM_BRAND, type TenantBrand } from '../config/branding';
 import { AUTH_CONTEXT_EVENT, getStoredTenantBrand, getToken, setStoredTenantBrand } from '../store/auth';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
@@ -35,8 +35,8 @@ function getSystemTheme(): 'light' | 'dark' {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const fallbackBrand = useMemo(() => getActiveTenantBrand(), []);
-  const [brand, setBrand] = useState<TenantBrand>(() => getStoredTenantBrand() ?? fallbackBrand);
+  const fallbackBrand = useMemo(() => PLATFORM_BRAND, []);
+  const [brand, setBrand] = useState<TenantBrand>(() => (getToken() ? getStoredTenantBrand() : null) ?? fallbackBrand);
   const [preference, setPreferenceState] = useState<ThemePreference>(() => getStoredPreference());
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => getSystemTheme());
   const resolvedTheme = preference === 'system' ? systemTheme : preference;
@@ -50,7 +50,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const syncBrand = () => {
-      setBrand(getStoredTenantBrand() ?? fallbackBrand);
+      setBrand((getToken() ? getStoredTenantBrand() : null) ?? fallbackBrand);
     };
 
     window.addEventListener(AUTH_CONTEXT_EVENT, syncBrand);
@@ -96,7 +96,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.style.setProperty('--color-primary', hexToRgbTriplet(brand.primary));
     root.style.setProperty('--color-primary-hover', hexToRgbTriplet(brand.primaryHover));
     root.style.setProperty('--color-primary-soft', hexToRgbTriplet(brand.primarySoft));
-    document.title = brand.appName;
+    document.title = getDocumentTitle(brand);
   }, [brand, resolvedTheme]);
 
   const setPreference = (nextPreference: ThemePreference) => {
