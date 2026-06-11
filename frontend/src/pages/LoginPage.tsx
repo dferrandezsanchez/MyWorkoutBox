@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, LogIn } from 'lucide-react';
+import { Building2, LogIn, ShieldCheck } from 'lucide-react';
 import { login, selectTenant } from '../api/auth';
 import { setStoredTenantBrand, setToken } from '../store/auth';
-import { Button, TextInput, ThemeToggle } from '../components/ui';
+import { Button, Panel, TextInput, ThemeToggle } from '../components/ui';
 import { useTheme } from '../theme/ThemeProvider';
 import type { LoginSuccessResponse, TenantOption } from '../types/auth';
 
@@ -63,30 +63,35 @@ export default function LoginPage() {
   const labelClass = 'mb-1 block text-sm font-medium text-text-primary';
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
-      <div className="w-full max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-8">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_22%_8%,rgba(var(--color-primary)/0.22),transparent_32%),radial-gradient(circle_at_78%_16%,rgba(99,102,241,0.16),transparent_30%)]" />
+      <div className="relative w-full max-w-md">
         <div className="mb-8 text-center">
-          <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-md bg-primary text-lg font-bold text-white shadow-sm">
+          <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-xl font-bold text-white shadow-[0_18px_42px_rgba(var(--color-primary)/0.36)]">
             {brand.mark}
           </span>
-          <h1 className="text-2xl font-semibold text-text-primary">{brand.appName}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-text-primary">{brand.appName}</h1>
           <p className="mt-2 text-sm text-text-secondary">
             {brand.description}
           </p>
         </div>
 
-        <div className="rounded-md border border-border bg-elevated p-6 shadow-sm">
+        <Panel className="p-6">
           <div className="mb-6 flex items-start justify-between gap-3">
             <div>
-              <h2 className="mb-1 text-lg font-semibold text-text-primary">Iniciar sesión</h2>
-              <p className="text-sm text-text-secondary">Accede con tu cuenta de entrenador.</p>
+              <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                <ShieldCheck size={14} />
+                Acceso seguro
+              </p>
+              <h2 className="mb-1 text-xl font-semibold text-text-primary">Iniciar sesión</h2>
+              <p className="text-sm text-text-secondary">Accede con tu cuenta del centro.</p>
             </div>
             <ThemeToggle compact />
           </div>
 
           {selectionToken ? (
             <div>
-              <div className="mb-4 rounded-md border border-border bg-surface p-3">
+              <div className="mb-4 rounded-2xl border border-border/70 bg-surface/70 p-3">
                 <p className="text-sm font-semibold text-text-primary">Selecciona centro</p>
                 <p className="mt-1 text-sm text-text-secondary">
                   Tu usuario tiene acceso a varios espacios de trabajo.
@@ -100,9 +105,9 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => handleTenantSelect(tenant.id)}
                     disabled={isLoading}
-                    className="flex min-h-[56px] w-full items-center gap-3 rounded-md border border-border bg-elevated px-3 py-2 text-left transition-colors hover:border-primary hover:bg-primary/5 disabled:opacity-60 focus-ring"
+                    className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl border border-border/70 bg-elevated/80 px-3 py-2 text-left transition-colors hover:border-primary/50 hover:bg-primary/10 disabled:opacity-60 focus-ring"
                   >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
                       <Building2 size={18} />
                     </span>
                     <span>
@@ -164,7 +169,7 @@ export default function LoginPage() {
               {error && (
                 <p
                   role="alert"
-                  className="mb-4 rounded-md bg-red-50 px-3 py-2 text-center text-sm text-red-600 dark:bg-red-950/30 dark:text-red-300"
+                  className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-center text-sm text-red-600 dark:bg-red-500/10 dark:text-red-200"
                 >
                   {error}
                 </p>
@@ -190,7 +195,7 @@ export default function LoginPage() {
               {error}
             </p>
           )}
-        </div>
+        </Panel>
       </div>
     </div>
   );

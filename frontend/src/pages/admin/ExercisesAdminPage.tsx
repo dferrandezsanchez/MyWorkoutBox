@@ -60,14 +60,14 @@ export default function ExercisesAdminPage() {
         <MetricChip label="Inactivos" value={inactiveCount} />
       </section>
 
-      <section className="overflow-hidden rounded-md border border-border bg-elevated shadow-sm">
+      <section className="overflow-hidden rounded-2xl border border-border/70 bg-elevated/85 shadow-panel backdrop-blur">
         {!exercises || exercises.length === 0 ? (
           <div className="p-4">
             <EmptyState title="No hay ejercicios" />
           </div>
         ) : (
           exercises.map((ex) => (
-            <div key={ex.id} className="flex flex-col gap-3 border-b border-border p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+            <div key={ex.id} className="flex flex-col gap-3 border-b border-border/70 p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <p className="font-semibold text-text-primary">{ex.name}</p>
                 <p className="mt-1 text-sm text-text-secondary">
@@ -94,8 +94,8 @@ export default function ExercisesAdminPage() {
       </section>
 
         {showCreate && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-label="Crear ejercicio" onClick={(e) => e.target === e.currentTarget && setShowCreate(false)}>
-            <div className="w-full max-w-md rounded-md border border-border bg-elevated p-6 shadow-xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Crear ejercicio" onClick={(e) => e.target === e.currentTarget && setShowCreate(false)}>
+            <div className="w-full max-w-md rounded-2xl border border-border/70 bg-elevated/95 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
               <h2 className="text-lg font-semibold text-text-primary mb-4">Crear ejercicio</h2>
               <ExerciseForm onSubmit={async (data) => { await createMutation.mutateAsync(data as CreateExerciseData); setShowCreate(false); }} submitLabel="Crear" />
               <div className="flex justify-end gap-2 mt-4">
@@ -106,8 +106,8 @@ export default function ExercisesAdminPage() {
         )}
 
         {editingExercise && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-label="Editar ejercicio" onClick={(e) => e.target === e.currentTarget && setEditingExercise(null)}>
-            <div className="w-full max-w-md rounded-md border border-border bg-elevated p-6 shadow-xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Editar ejercicio" onClick={(e) => e.target === e.currentTarget && setEditingExercise(null)}>
+            <div className="w-full max-w-md rounded-2xl border border-border/70 bg-elevated/95 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
               <h2 className="text-lg font-semibold text-text-primary mb-4">Editar ejercicio</h2>
               <ExerciseForm
                 initial={editingExercise}

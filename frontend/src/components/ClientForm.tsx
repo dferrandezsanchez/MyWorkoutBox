@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from './ui';
 import type { CreateClientData, UpdateClientData } from '../types/api';
 
 interface ClientFormProps {
@@ -51,11 +52,12 @@ export default function ClientForm({
   };
 
   const inputClass =
-    'w-full border border-border bg-elevated rounded-md px-3 py-2 min-h-[44px] text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent';
-  const labelClass = 'block text-sm font-medium text-text-secondary mb-1';
+    'w-full rounded-xl border border-border/70 bg-elevated/90 px-3 py-2 min-h-[46px] text-sm text-text-primary shadow-sm placeholder:text-text-muted focus-ring';
+  const labelClass = 'mb-1.5 block text-sm font-semibold text-text-secondary';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
       <div>
         <label className={labelClass} htmlFor="firstName">Nombre</label>
         <input id="firstName" autoFocus className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
@@ -65,12 +67,14 @@ export default function ClientForm({
         <label className={labelClass} htmlFor="lastName">Apellidos</label>
         <input id="lastName" className={inputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} required />
       </div>
+      </div>
 
       <div>
         <label className={labelClass} htmlFor="birthDate">Fecha de nacimiento</label>
         <input id="birthDate" type="date" className={inputClass} value={birthDate} onChange={(e) => setBirthDate(e.target.value)} required />
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-3">
       <div>
         <label className={labelClass} htmlFor="height">Altura (cm)</label>
         <input id="height" type="number" className={inputClass} value={height} onChange={(e) => setHeight(e.target.value)} />
@@ -85,6 +89,7 @@ export default function ClientForm({
         <label className={labelClass} htmlFor="bodyFatPercentage">% Grasa corporal</label>
         <input id="bodyFatPercentage" type="number" step="0.1" min="0" max="100" className={inputClass} value={bodyFatPercentage} onChange={(e) => setBodyFatPercentage(e.target.value)} />
       </div>
+      </div>
 
       {showStatus && (
         <div>
@@ -98,13 +103,13 @@ export default function ClientForm({
 
       <div>
         <label className={labelClass} htmlFor="notes">Notas</label>
-        <textarea id="notes" className="w-full border border-border bg-elevated rounded-md px-3 py-2 text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <textarea id="notes" className="w-full resize-none rounded-xl border border-border/70 bg-elevated/90 px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus-ring" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </div>
 
       <div className="flex justify-end gap-2">
-        <button type="submit" disabled={isSubmitting} className="px-4 py-2 min-h-[44px] bg-primary hover:bg-primary-hover text-white rounded-md">
+        <Button type="submit" disabled={isSubmitting} variant="primary" className="w-full sm:w-auto">
           {isSubmitting ? 'Enviando...' : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );

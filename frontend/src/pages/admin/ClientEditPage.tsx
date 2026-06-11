@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import ClientForm from '../../components/ClientForm';
+import { Button, Panel } from '../../components/ui';
 import { useClient, useUpdateClient } from '../../hooks/useClients';
 
 export default function ClientEditPage() {
@@ -9,20 +10,29 @@ export default function ClientEditPage() {
   const { data: client, isLoading, isError } = useClient(id!);
   const updateMutation = useUpdateClient();
 
-  if (isLoading) return <p className="text-text-secondary">Cargando...</p>;
-  if (isError || !client) return <p className="text-red-500">No se encontró el cliente</p>;
+  if (isLoading) return <div className="min-h-screen bg-background p-6 text-text-secondary">Cargando...</div>;
+  if (isError || !client) return <div className="min-h-screen bg-background p-6 text-red-500">No se encontró el cliente</div>;
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-surface px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <h1 className="text-lg font-bold text-text-primary">Editar cliente</h1>
-          <button onClick={() => navigate(-1)} className="min-h-[44px] px-3 py-2 border border-border rounded-md">Cerrar</button>
+      <header className="border-b border-border/70 bg-elevated/85 px-4 py-4 shadow-sm backdrop-blur-xl">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Administración</p>
+            <h1 className="truncate text-xl font-bold text-text-primary">Editar cliente</h1>
+          </div>
+          <Button onClick={() => navigate(-1)} variant="secondary">Cerrar</Button>
         </div>
       </header>
 
-      <main role="main" className="max-w-4xl mx-auto px-4 py-6">
-        <div className="bg-surface border border-border rounded-lg p-6">
+      <main role="main" className="mx-auto max-w-4xl px-4 py-6">
+        <Panel className="p-4 sm:p-6">
+          <div className="mb-5 border-b border-border/70 pb-4">
+            <h2 className="text-lg font-semibold text-text-primary">
+              {client.firstName} {client.lastName}
+            </h2>
+            <p className="mt-1 text-sm text-text-secondary">Actualiza los datos operativos del cliente.</p>
+          </div>
           <ClientForm
             initial={{
               firstName: client.firstName,
@@ -40,7 +50,7 @@ export default function ClientEditPage() {
             }}
             showStatus
           />
-        </div>
+        </Panel>
       </main>
     </div>
   );

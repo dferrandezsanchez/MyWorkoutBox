@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, History, Plus } from 'lucide-react';
+import { ChevronLeft, Dumbbell, History, Plus, Trophy } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import PerformanceForm from '../components/PerformanceForm';
-import { AppShell, Button, EmptyState, StatusBadge } from '../components/ui';
+import { AppShell, Button, EmptyState, Panel, StatusBadge } from '../components/ui';
 import { useClient } from '../hooks/useClients';
 import { useCurrentPerformances, usePerformanceHistory } from '../hooks/usePerformances';
 import { formatPerformance, getBestRecord } from '../utils/exerciseTemplates';
@@ -53,54 +53,63 @@ export default function ClientProfilePage() {
 
   return (
     <AppShell title="Ficha cliente">
-      <div className="mx-auto max-w-3xl">
-        <header className="mb-4 rounded-md border border-border bg-elevated p-4 shadow-sm">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <Button onClick={() => navigate(-1)} className="inline-flex min-h-10 items-center gap-2 px-3">
-              <ChevronLeft size={16} />
-              Volver
-            </Button>
-            <StatusBadge status={client.status} />
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Avatar
-              photoUrl={client.photoUrl}
-              firstName={client.firstName}
-              lastName={client.lastName}
-              size="lg"
-            />
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-semibold tracking-tight text-text-primary">
-                {client.firstName} {client.lastName}
-              </h1>
-              <p className="mt-1 text-sm text-text-secondary">
-                {formatAge(client.birthDate)}
-                {client.height != null ? ` · ${client.height} cm` : ''}
-                {client.weight != null ? ` · ${client.weight} kg` : ''}
-              </p>
+      <div className="mx-auto max-w-4xl space-y-4">
+        <Panel className="relative overflow-hidden p-4 sm:p-5">
+          <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/25 blur-3xl" />
+          <div className="relative">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <Button onClick={() => navigate(-1)} className="inline-flex min-h-10 items-center gap-2 px-3">
+                <ChevronLeft size={16} />
+                Volver
+              </Button>
+              <StatusBadge status={client.status} />
             </div>
+
+            <div className="flex items-center gap-4">
+              <Avatar
+                photoUrl={client.photoUrl}
+                firstName={client.firstName}
+                lastName={client.lastName}
+                size="lg"
+              />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  Cliente activo
+                </p>
+                <h1 className="mt-1 truncate text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">
+                  {client.firstName} {client.lastName}
+                </h1>
+                <p className="mt-1 text-sm text-text-secondary">
+                  {formatAge(client.birthDate)}
+                  {client.height != null ? ` · ${client.height} cm` : ''}
+                  {client.weight != null ? ` · ${client.weight} kg` : ''}
+                </p>
+              </div>
+            </div>
+
+            {client.notes && (
+              <p className="mt-4 rounded-2xl border border-border/70 bg-surface/60 p-3 text-sm leading-6 text-text-secondary">
+                {client.notes}
+              </p>
+            )}
           </div>
+        </Panel>
 
-          {client.notes && (
-            <p className="mt-4 rounded-md bg-surface p-3 text-sm leading-6 text-text-secondary">
-              {client.notes}
-            </p>
-          )}
-        </header>
-
-        <section className="mb-3">
+        <section>
           <div className="mb-3 flex items-end justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold text-text-primary">Ejercicios</h2>
-              <p className="text-sm text-text-secondary">Marca actual y registro rápido.</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                Marcas
+              </p>
+              <h2 className="mt-1 text-xl font-semibold text-text-primary">Ejercicios de referencia</h2>
+              <p className="text-sm text-text-secondary">Última marca, mejor registro y actualización rápida.</p>
             </div>
           </div>
 
           {!currentPerformances || currentPerformances.length === 0 ? (
             <EmptyState title="No hay ejercicios activos" />
           ) : (
-            <div className="space-y-3">
+            <div className="grid gap-3 lg:grid-cols-2">
               {currentPerformances.map((item) => (
                 <ExerciseMarkCard
                   key={item.exerciseId}
@@ -145,38 +154,57 @@ function ExerciseMarkCard({
   const best = getBestRecord(history ?? []);
 
   return (
-    <article className="rounded-md border border-border bg-elevated p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold text-text-primary">
-            {item.exerciseName}
-          </h3>
-          <p className="mt-1 text-sm text-text-secondary">
-            Última: {formatPerformance(item.record)}
-          </p>
-          <p className="mt-1 text-sm text-text-secondary">
-            Mejor: {formatPerformance(best)}
-          </p>
+    <Panel className="max-w-full overflow-hidden p-4">
+      <div className="flex min-w-0 flex-col gap-3 min-[380px]:flex-row min-[380px]:items-start min-[380px]:justify-between">
+        <div className="flex min-w-0 gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20">
+            <Dumbbell size={20} />
+          </span>
+          <div className="min-w-0">
+            <h3 className="truncate text-base font-semibold text-text-primary">
+              {item.exerciseName}
+            </h3>
+            <p className="mt-1 text-sm text-text-secondary">
+              Última: <span className="font-semibold text-text-primary">{formatPerformance(item.record)}</span>
+            </p>
+          </div>
         </div>
-        <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+        <span className="w-fit max-w-full shrink-0 truncate rounded-full bg-primary/15 px-3 py-1 text-sm font-semibold text-primary ring-1 ring-primary/20">
           {item.record ? formatPerformance(item.record) : '-'}
         </span>
       </div>
 
-      <div className="mt-4 grid grid-cols-[1fr_1fr] gap-2">
-        <Button variant="primary" onClick={onUpdate} className="inline-flex items-center justify-center gap-2">
+      <div className="mt-4 grid grid-cols-1 gap-2 min-[380px]:grid-cols-2">
+        <div className="min-w-0 rounded-2xl border border-border/70 bg-surface/60 p-3">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+            <History size={13} />
+            Última
+          </p>
+          <p className="mt-1 truncate text-sm font-semibold text-text-primary">{formatPerformance(item.record)}</p>
+        </div>
+        <div className="min-w-0 rounded-2xl border border-border/70 bg-surface/60 p-3">
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+            <Trophy size={13} />
+            Mejor
+          </p>
+          <p className="mt-1 truncate text-sm font-semibold text-text-primary">{formatPerformance(best)}</p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-2 min-[380px]:grid-cols-[1.15fr_0.85fr]">
+        <Button variant="primary" onClick={onUpdate} className="inline-flex w-full items-center justify-center gap-2">
           <Plus size={16} />
           Actualizar
         </Button>
         <Button
           variant="secondary"
           onClick={() => navigate(`/clients/${clientId}/exercises/${item.exerciseId}`)}
-          className="inline-flex items-center justify-center gap-2"
+          className="inline-flex w-full items-center justify-center gap-2"
         >
           <History size={16} />
           Histórico
         </Button>
       </div>
-    </article>
+    </Panel>
   );
 }

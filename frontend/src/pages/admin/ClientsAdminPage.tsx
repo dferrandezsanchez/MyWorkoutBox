@@ -62,14 +62,14 @@ export default function ClientsAdminPage() {
         <MetricChip label="Inactivos" value={inactiveCount} />
       </section>
 
-      <section className="overflow-hidden rounded-md border border-border bg-elevated shadow-sm">
+      <section className="overflow-hidden rounded-2xl border border-border/70 bg-elevated/85 shadow-panel backdrop-blur">
         {!clients || clients.length === 0 ? (
           <div className="p-4">
             <EmptyState title="No hay clientes" />
           </div>
         ) : (
           clients.map((c) => (
-            <div key={c.id} className="border-b border-border p-3 last:border-b-0">
+            <div key={c.id} className="border-b border-border/70 p-3 last:border-b-0">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0 flex-1">
                   <ClientCard client={c} />
@@ -124,8 +124,8 @@ export default function ClientsAdminPage() {
 
         {/* Create modal */}
         {showCreate && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/40" role="dialog" aria-modal="true" aria-label="Crear cliente" onClick={(e) => e.target === e.currentTarget && setShowCreate(false)}>
-            <div className="w-full max-w-md rounded-md border border-border bg-elevated p-6 shadow-xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Crear cliente" onClick={(e) => e.target === e.currentTarget && setShowCreate(false)}>
+            <div className="w-full max-w-md rounded-2xl border border-border/70 bg-elevated/95 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
               <h2 className="text-lg font-semibold text-text-primary mb-4">Crear cliente</h2>
               <ClientForm
                 onSubmit={async (data) => {

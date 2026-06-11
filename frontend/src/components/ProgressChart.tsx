@@ -65,7 +65,7 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
 
   if (points.length < 2) {
     return (
-      <section className="mb-4 rounded-md border border-dashed border-border bg-elevated p-4 text-center">
+      <section className="mb-4 rounded-2xl border border-dashed border-border/80 bg-elevated/75 p-4 text-center">
         <p className="font-medium text-text-primary">Evolución</p>
         <p className="mt-1 text-sm text-text-secondary">
           Aún no hay suficientes marcas numéricas para dibujar una tendencia.
@@ -106,7 +106,7 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
   const yTicks = [yMax, (yMax + yMin) / 2, yMin];
 
   return (
-    <section className="mb-4 rounded-md border border-border bg-elevated p-4 shadow-sm">
+    <section className="mb-4 rounded-2xl border border-border/70 bg-elevated/85 p-4 shadow-panel backdrop-blur">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-text-primary">Evolución</h2>
@@ -117,10 +117,10 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
         <span
           className={`rounded-full px-3 py-1 text-sm font-semibold ${
             delta > 0
-              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+              ? 'bg-emerald-500/12 text-emerald-700 ring-1 ring-emerald-500/20 dark:text-emerald-300'
               : delta < 0
-                ? 'bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-300'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
+                ? 'bg-red-500/12 text-red-600 ring-1 ring-red-500/20 dark:text-red-300'
+                : 'bg-text-muted/10 text-text-secondary ring-1 ring-border'
           }`}
         >
           {delta > 0 ? '+' : ''}
@@ -206,12 +206,12 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
         </text>
       </svg>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 rounded-md bg-surface p-3 text-center text-xs text-text-secondary">
-        <div className="border-r border-border last:border-r-0">
+      <div className="mt-3 grid grid-cols-3 gap-2 rounded-2xl border border-border/70 bg-surface/60 p-3 text-center text-xs text-text-secondary">
+        <div className="border-r border-border/70 last:border-r-0">
           <p>Inicio</p>
           <p className="mt-1 font-semibold text-text-primary">{formatValue(first.value)}</p>
         </div>
-        <div className="border-r border-border last:border-r-0">
+        <div className="border-r border-border/70 last:border-r-0">
           <p>Mejor</p>
           <p className="mt-1 font-semibold text-text-primary">{formatValue(maxValue)}</p>
         </div>
