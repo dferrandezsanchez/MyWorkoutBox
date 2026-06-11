@@ -4,7 +4,7 @@ import { Building2, LogIn, ShieldCheck } from 'lucide-react';
 import { login, selectTenant } from '../api/auth';
 import { setStoredTenantBrand, setToken } from '../store/auth';
 import { Button, Panel, TextInput, ThemeToggle } from '../components/ui';
-import { useTheme } from '../theme/ThemeProvider';
+import { PLATFORM_BRAND } from '../config/branding';
 import type { LoginSuccessResponse, TenantOption } from '../types/auth';
 
 export default function LoginPage() {
@@ -15,7 +15,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectionToken, setSelectionToken] = useState<string | null>(null);
   const [tenantOptions, setTenantOptions] = useState<TenantOption[]>([]);
-  const { brand } = useTheme();
 
   const completeLogin = (response: LoginSuccessResponse) => {
     setStoredTenantBrand(response.tenant);
@@ -68,11 +67,11 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         <div className="mb-8 text-center">
           <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-xl font-bold text-white shadow-[0_18px_42px_rgba(var(--color-primary)/0.36)]">
-            {brand.mark}
+            {PLATFORM_BRAND.mark}
           </span>
-          <h1 className="text-3xl font-semibold tracking-tight text-text-primary">{brand.appName}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-text-primary">{PLATFORM_BRAND.appName}</h1>
           <p className="mt-2 text-sm text-text-secondary">
-            {brand.description}
+            {PLATFORM_BRAND.description}
           </p>
         </div>
 

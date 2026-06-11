@@ -18,6 +18,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getAuthUser, removeToken } from '../store/auth';
 import { useAuthUser } from '../hooks/useAuthUser';
 import { useTheme, type ThemePreference } from '../theme/ThemeProvider';
+import { PLATFORM_BRAND } from '../config/branding';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -285,15 +286,15 @@ export function AppShell({
           aria-label="Ir al panel"
         >
           <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-xl font-black text-primary ring-1 ring-primary/25">
-            {brand.mark}
+            {PLATFORM_BRAND.mark}
             <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-primary shadow-[0_0_18px_rgba(var(--color-primary)/0.85)]" />
           </span>
           <span className="min-w-0">
             <span className="block truncate text-2xl font-bold leading-none text-white">
-              {brand.appName}
+              {PLATFORM_BRAND.appName}
             </span>
             <span className="mt-1 block truncate text-[10px] font-semibold uppercase tracking-[0.2em] text-white/48">
-              {brand.claim}
+              {PLATFORM_BRAND.claim}
             </span>
           </span>
         </button>
@@ -362,11 +363,11 @@ export function AppShell({
               aria-label="Ir al panel"
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white shadow-[0_10px_24px_rgba(var(--color-primary)/0.34)]">
-                {brand.mark}
+                {PLATFORM_BRAND.mark}
               </span>
               <span className="min-w-0">
                 <span className="block truncate text-base font-semibold text-text-primary">{title}</span>
-                <span className="block truncate text-xs text-text-secondary">{brand.shortName}</span>
+                <span className="block truncate text-xs text-text-secondary">{brand.name}</span>
               </span>
             </button>
 
