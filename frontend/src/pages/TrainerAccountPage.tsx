@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { KeyRound, LogOut, Palette, UserCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { AppShell, Button, TextInput, ThemeToggle } from '../components/ui';
+import { AppShell, Button, Panel, TextInput, ThemeToggle } from '../components/ui';
 import { useAuthUser, useChangePassword, useUpdateAuthUser } from '../hooks/useAuthUser';
 import { removeToken } from '../store/auth';
 
@@ -32,16 +33,23 @@ export default function TrainerAccountPage() {
 
   return (
     <AppShell title="Cuenta">
-      <div className="mx-auto max-w-xl">
-        <header className="mb-5">
-          <p className="text-sm font-semibold uppercase tracking-wide text-primary">Entrenador</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text-primary">Cuenta</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Mantén tus datos de contacto actualizados.
-          </p>
-        </header>
+      <div className="mx-auto max-w-2xl space-y-5">
+        <Panel className="overflow-hidden p-5">
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-[0_14px_34px_rgba(var(--color-primary)/0.18)]">
+              <UserCircle size={30} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Entrenador</p>
+              <h1 className="mt-1 truncate text-3xl font-semibold tracking-tight text-text-primary">Cuenta</h1>
+              <p className="mt-1 text-sm text-text-secondary">
+                Datos de contacto, apariencia y seguridad.
+              </p>
+            </div>
+          </div>
+        </Panel>
 
-        <section className="rounded-md border border-border bg-elevated p-4 shadow-sm">
+        <Panel className="p-4 sm:p-5">
           {isLoading && <p className="text-text-secondary">Cargando cuenta...</p>}
           {isError && <p className="text-red-500">Error al cargar la cuenta</p>}
           {user && (
@@ -81,7 +89,7 @@ export default function TrainerAccountPage() {
                 />
               </div>
 
-              <div className="rounded-md bg-surface p-3 text-sm text-text-secondary">
+              <div className="rounded-2xl border border-border/70 bg-surface/70 p-3 text-sm text-text-secondary">
                 Rol: {user.role === 'ADMIN' ? 'Administrador' : 'Entrenador'}
               </div>
 
@@ -98,26 +106,37 @@ export default function TrainerAccountPage() {
                 >
                   {updateMutation.isPending ? 'Guardando...' : 'Guardar cambios'}
                 </Button>
-                <Button type="button" variant="secondary" onClick={logout}>
+                <Button type="button" variant="secondary" onClick={logout} className="inline-flex items-center justify-center gap-2">
+                  <LogOut size={16} />
                   Salir
                 </Button>
               </div>
             </form>
           )}
-        </section>
+        </Panel>
 
-        <section className="mt-5 rounded-md border border-border bg-elevated p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-text-primary">Apariencia</h2>
+        <Panel className="p-4 sm:p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/12 text-primary">
+              <Palette size={20} />
+            </div>
+            <h2 className="text-lg font-semibold text-text-primary">Apariencia</h2>
+          </div>
           <p className="mt-1 text-sm text-text-secondary">
             Usa el tema del dispositivo o fija una preferencia para esta cuenta.
           </p>
           <div className="mt-4">
             <ThemeToggle />
           </div>
-        </section>
+        </Panel>
 
-        <section className="mt-5 rounded-md border border-border bg-elevated p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-text-primary">Cambiar contraseña</h2>
+        <Panel className="p-4 sm:p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/12 text-primary">
+              <KeyRound size={20} />
+            </div>
+            <h2 className="text-lg font-semibold text-text-primary">Cambiar contraseña</h2>
+          </div>
           <p className="mt-1 text-sm text-text-secondary">
             Usa al menos 8 caracteres para la nueva contraseña.
           </p>
@@ -214,7 +233,7 @@ export default function TrainerAccountPage() {
               {passwordMutation.isPending ? 'Guardando...' : 'Cambiar contraseña'}
             </Button>
           </form>
-        </section>
+        </Panel>
       </div>
     </AppShell>
   );

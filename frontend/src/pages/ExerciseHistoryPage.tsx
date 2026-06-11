@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus } from 'lucide-react';
+import { ChevronLeft, LineChart, Plus } from 'lucide-react';
 import { useClient } from '../hooks/useClients';
 import { useExercise } from '../hooks/useExercises';
 import { usePerformanceHistory } from '../hooks/usePerformances';
 import PerformanceForm from '../components/PerformanceForm';
 import ProgressChart from '../components/ProgressChart';
-import { AppShell, Button, EmptyState } from '../components/ui';
+import { AppShell, Button, EmptyState, Panel } from '../components/ui';
 import { formatPerformance } from '../utils/exerciseTemplates';
 
 function formatDate(iso: string): string {
@@ -57,7 +57,7 @@ export default function ExerciseHistoryPage() {
   return (
     <AppShell title="Histórico">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-4 rounded-md border border-border bg-elevated p-4 shadow-sm">
+        <Panel className="mb-4 overflow-hidden p-4">
           <div className="mb-4 flex items-center justify-between gap-3">
             <Button onClick={() => navigate(-1)} className="inline-flex min-h-10 items-center gap-2 px-3">
               <ChevronLeft size={16} />
@@ -74,8 +74,11 @@ export default function ExerciseHistoryPage() {
             {exerciseName}
           </h1>
 
-          <div className="mt-4 rounded-md bg-primary/10 p-4">
-            <p className="text-sm font-medium text-primary">Marca actual</p>
+          <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/10 p-4">
+            <p className="flex items-center gap-2 text-sm font-semibold text-primary">
+              <LineChart size={16} />
+              Marca actual
+            </p>
             <p className="mt-1 text-3xl font-semibold text-text-primary">
               {formatPerformance(current)}
             </p>
@@ -83,7 +86,7 @@ export default function ExerciseHistoryPage() {
               {current ? formatDate(current.date) : 'Sin marcas registradas'}
             </p>
           </div>
-        </header>
+        </Panel>
 
         {!history || history.length === 0 ? (
           <EmptyState title="Sin marcas registradas" description="Crea la primera marca para este ejercicio." />
@@ -94,10 +97,7 @@ export default function ExerciseHistoryPage() {
               <h2 className="mb-3 text-lg font-semibold text-text-primary">Registros</h2>
               <ul className="space-y-3" aria-label="Histórico de marcas">
                 {history.map((record) => (
-                  <li
-                    key={record.id}
-                    className="rounded-md border border-border bg-elevated p-4 shadow-sm"
-                  >
+                  <li key={record.id} className="rounded-2xl border border-border/70 bg-elevated/80 p-4 shadow-sm">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-xl font-semibold text-text-primary">
@@ -113,7 +113,7 @@ export default function ExerciseHistoryPage() {
                     </div>
 
                     {record.notes && (
-                      <p className="mt-3 whitespace-pre-line rounded-md bg-surface p-3 text-sm text-text-secondary">
+                      <p className="mt-3 whitespace-pre-line rounded-2xl bg-surface/70 p-3 text-sm text-text-secondary">
                         {record.notes}
                       </p>
                     )}

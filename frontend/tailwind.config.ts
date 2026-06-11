@@ -5,6 +5,9 @@ const config: Config = {
   content: ['./src/**/*.{ts,tsx}', './index.html'],
   theme: {
     extend: {
+      boxShadow: {
+        panel: '0 18px 55px rgba(0, 0, 0, 0.12)',
+      },
       colors: {
         primary: {
           DEFAULT: 'rgb(var(--color-primary) / <alpha-value>)',

@@ -108,14 +108,14 @@ export default function PerformanceForm({
   };
 
   const inputClass =
-    'w-full border border-border bg-elevated rounded-md px-3 py-2 min-h-[44px] text-text-primary placeholder:text-text-muted focus-ring';
+    'w-full border border-border/70 bg-elevated/90 rounded-xl px-3 py-2 min-h-[46px] text-text-primary placeholder:text-text-muted shadow-sm focus-ring';
   const labelClass = 'block text-sm font-medium text-text-primary mb-1';
   const errorClass = 'text-red-500 text-xs mt-1';
 
   return (
     /* Backdrop */
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 px-0 sm:items-center sm:px-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 px-0 backdrop-blur-sm sm:items-center sm:px-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -124,8 +124,8 @@ export default function PerformanceForm({
       aria-label="Formulario de nueva marca"
     >
       {/* Content card */}
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-elevated p-5 shadow-xl sm:rounded-md sm:p-6">
-        <div className="mb-5 border-b border-border pb-4">
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-border/70 bg-elevated/95 p-5 shadow-[0_-18px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:rounded-2xl sm:p-6">
+        <div className="mb-5 border-b border-border/70 pb-4">
           <h2 className="text-lg font-semibold text-text-primary">Nueva marca</h2>
           <p className="mt-1 text-sm text-text-secondary">
             {exerciseName
@@ -170,10 +170,10 @@ export default function PerformanceForm({
                     key={option}
                     type="button"
                     onClick={() => setVariant(option)}
-                    className={`min-h-[44px] rounded-md border px-3 text-sm font-semibold transition-colors ${
+                    className={`min-h-[44px] rounded-xl border px-3 text-sm font-semibold transition-colors ${
                       variant === option
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border bg-elevated text-text-secondary hover:bg-surface'
+                        ? 'border-primary/60 bg-primary/15 text-primary'
+                        : 'border-border/70 bg-elevated/80 text-text-secondary hover:bg-surface'
                     }`}
                   >
                     {option}
@@ -232,7 +232,7 @@ export default function PerformanceForm({
             </div>
           )}
 
-          <details className="mb-4 rounded-md border border-border bg-surface p-3">
+          <details className="mb-4 rounded-2xl border border-border/70 bg-surface/70 p-3">
             <summary className="cursor-pointer text-sm font-semibold text-text-primary">
               Campos avanzados
             </summary>
@@ -269,11 +269,11 @@ export default function PerformanceForm({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Opcional"
               rows={3}
-              className="w-full resize-none rounded-md border border-border bg-elevated px-3 py-2 text-text-primary placeholder:text-text-muted focus-ring"
+              className="w-full resize-none rounded-xl border border-border/70 bg-elevated/90 px-3 py-2 text-text-primary placeholder:text-text-muted focus-ring"
             />
           </div>
 
-          <div className="sticky bottom-0 -mx-5 flex gap-3 border-t border-border bg-elevated px-5 pb-[max(env(safe-area-inset-bottom),0rem)] pt-4 sm:static sm:mx-0 sm:justify-end sm:px-0 sm:pb-0">
+          <div className="sticky bottom-0 -mx-5 flex gap-3 border-t border-border/70 bg-elevated/95 px-5 pb-[max(env(safe-area-inset-bottom),0rem)] pt-4 backdrop-blur-xl sm:static sm:mx-0 sm:justify-end sm:px-0 sm:pb-0">
             <Button
               type="button"
               onClick={onClose}

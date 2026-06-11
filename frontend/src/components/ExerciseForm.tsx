@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from './ui';
 import type { CreateExerciseData, UpdateExerciseData } from '../types/api';
 import type { PerformanceUnit } from '../types/api';
 
@@ -49,11 +50,12 @@ export default function ExerciseForm({
   };
 
   const inputClass =
-    'w-full border border-border bg-elevated rounded-md px-3 py-2 min-h-[44px] text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent';
-  const labelClass = 'block text-sm font-medium text-text-secondary mb-1';
+    'w-full rounded-xl border border-border/70 bg-elevated/90 px-3 py-2 min-h-[46px] text-sm text-text-primary shadow-sm placeholder:text-text-muted focus-ring';
+  const labelClass = 'mb-1.5 block text-sm font-semibold text-text-secondary';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-[1.4fr_1fr]">
       <div>
         <label className={labelClass} htmlFor="ex-name">Nombre</label>
         <input id="ex-name" autoFocus className={inputClass} value={name} onChange={(e) => setName(e.target.value)} required />
@@ -62,6 +64,7 @@ export default function ExerciseForm({
       <div>
         <label className={labelClass} htmlFor="ex-category">Categoría</label>
         <input id="ex-category" className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)} />
+      </div>
       </div>
 
       <div>
@@ -75,7 +78,7 @@ export default function ExerciseForm({
 
       <div>
         <label className={labelClass} htmlFor="ex-desc">Descripción</label>
-        <textarea id="ex-desc" className="w-full border border-border bg-elevated rounded-md px-3 py-2 text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+        <textarea id="ex-desc" className="w-full resize-none rounded-xl border border-border/70 bg-elevated/90 px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus-ring" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
 
       {showStatus && (
@@ -89,7 +92,7 @@ export default function ExerciseForm({
       )}
 
       <div className="flex justify-end">
-        <button type="submit" disabled={isSubmitting} className="px-4 py-2 min-h-[44px] bg-primary hover:bg-primary-hover text-white rounded-md">{isSubmitting ? 'Enviando...' : submitLabel}</button>
+        <Button type="submit" disabled={isSubmitting} variant="primary" className="w-full sm:w-auto">{isSubmitting ? 'Enviando...' : submitLabel}</Button>
       </div>
     </form>
   );

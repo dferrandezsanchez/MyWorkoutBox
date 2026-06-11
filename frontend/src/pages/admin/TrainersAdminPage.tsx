@@ -166,7 +166,7 @@ export default function TrainersAdminPage() {
         <MetricChip label="Inactivos" value={inactiveCount} />
       </section>
 
-      <section className="overflow-hidden rounded-md border border-border bg-elevated shadow-sm">
+      <section className="overflow-hidden rounded-2xl border border-border/70 bg-elevated/85 shadow-panel backdrop-blur">
         {!trainers || trainers.length === 0 ? (
           <div className="p-4">
             <EmptyState title="No hay entrenadores" description="Crea el primer acceso para el equipo técnico." />
@@ -175,7 +175,7 @@ export default function TrainersAdminPage() {
           trainers.map((trainer) => (
             <div
               key={trainer.id}
-              className="flex flex-col gap-3 border-b border-border p-4 last:border-b-0 lg:flex-row lg:items-center lg:justify-between"
+              className="flex flex-col gap-3 border-b border-border/70 p-4 last:border-b-0 lg:flex-row lg:items-center lg:justify-between"
             >
               <div className="flex min-w-0 items-start gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-text-primary text-sm font-bold text-background">
@@ -214,7 +214,7 @@ export default function TrainersAdminPage() {
 
       {(showCreate || editingTrainer) && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
           role="dialog"
           aria-modal="true"
           aria-label={showCreate ? 'Crear entrenador' : 'Editar entrenador'}
@@ -222,7 +222,7 @@ export default function TrainersAdminPage() {
         >
           <form
             onSubmit={showCreate ? handleCreate : handleUpdate}
-            className="w-full max-w-md rounded-md border border-border bg-elevated p-5 shadow-xl"
+            className="w-full max-w-md rounded-2xl border border-border/70 bg-elevated/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.35)]"
           >
             <h2 className="text-lg font-semibold text-text-primary">
               {showCreate ? 'Crear entrenador' : 'Editar entrenador'}
@@ -294,7 +294,7 @@ export default function TrainersAdminPage() {
 
       {passwordTrainer && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
           role="dialog"
           aria-modal="true"
           aria-label="Cambiar contraseña"
@@ -302,7 +302,7 @@ export default function TrainersAdminPage() {
         >
           <form
             onSubmit={handlePasswordReset}
-            className="w-full max-w-md rounded-md border border-border bg-elevated p-5 shadow-xl"
+            className="w-full max-w-md rounded-2xl border border-border/70 bg-elevated/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.35)]"
           >
             <h2 className="text-lg font-semibold text-text-primary">Cambiar contraseña</h2>
             <p className="mt-1 text-sm text-text-secondary">{passwordTrainer.name}</p>

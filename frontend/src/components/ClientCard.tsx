@@ -25,7 +25,7 @@ export default function ClientCard({ client }: ClientCardProps) {
           handleClick();
         }
       }}
-      className="group flex min-h-[64px] w-full cursor-pointer items-center gap-3 border-b border-border bg-elevated px-3 py-3 text-left transition-colors last:border-b-0 hover:bg-primary/5"
+      className="group flex min-h-[70px] w-full cursor-pointer items-center gap-3 border-b border-border/70 bg-elevated/75 px-3 py-3 text-left transition-colors last:border-b-0 hover:bg-primary/8 focus-ring"
       aria-label={`Ver perfil de ${client.firstName} ${client.lastName}`}
     >
       <Avatar
@@ -42,8 +42,10 @@ export default function ClientCard({ client }: ClientCardProps) {
         <p className="mt-0.5 text-xs text-text-secondary">Perfil y marcas</p>
       </div>
 
-      <StatusBadge status={client.status} />
-      <span className="text-text-muted transition-colors group-hover:text-primary">›</span>
+      <div className="hidden shrink-0 min-[380px]:block">
+        <StatusBadge status={client.status} />
+      </div>
+      <span className="shrink-0 text-text-muted transition-colors group-hover:text-primary">›</span>
     </div>
   );
 }
