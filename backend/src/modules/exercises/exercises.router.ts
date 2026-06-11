@@ -12,7 +12,7 @@ router.get('/', authenticate, async (req: any, res: Response, next: NextFunction
   try {
     const includeInactive =
       req.user?.role === Role.ADMIN && req.query.includeInactive === 'true';
-    const exercises = await exercisesService.listExercises(includeInactive);
+    const exercises = await exercisesService.listExercises(req.user!.tenantId, includeInactive);
     res.status(200).json(exercises);
   } catch (err) {
     next(err);
@@ -26,7 +26,7 @@ router.post(
   authorize(Role.ADMIN),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const exercise = await exercisesService.createExercise(req.body);
+      const exercise = await exercisesService.createExercise(req.user!.tenantId, req.body);
       res.status(201).json(exercise);
     } catch (err) {
       next(err);
@@ -37,7 +37,7 @@ router.post(
 // GET /exercises/:id — any authenticated user
 router.get('/:id', authenticate, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const exercise = await exercisesService.getExercise(req.params.id);
+    const exercise = await exercisesService.getExercise(req.user!.tenantId, req.params.id);
     res.status(200).json(exercise);
   } catch (err) {
     next(err);
@@ -51,7 +51,7 @@ router.put(
   authorize(Role.ADMIN),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const exercise = await exercisesService.updateExercise(req.params.id, req.body);
+      const exercise = await exercisesService.updateExercise(req.user!.tenantId, req.params.id, req.body);
       res.status(200).json(exercise);
     } catch (err) {
       next(err);
@@ -67,7 +67,7 @@ router.patch(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { status } = req.body as { status: Status };
-      const exercise = await exercisesService.setExerciseStatus(req.params.id, status);
+      const exercise = await exercisesService.setExerciseStatus(req.user!.tenantId, req.params.id, status);
       res.status(200).json(exercise);
     } catch (err) {
       next(err);

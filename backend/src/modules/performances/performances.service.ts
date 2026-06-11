@@ -55,16 +55,21 @@ export function getCurrentMark(records: PerformanceRecord[]): PerformanceRecord 
  * given clientId. Returns an array with one entry per active exercise (record
  * may be null when no mark has been registered yet).
  */
-export async function getCurrentMarks(clientId: string): Promise<CurrentMarkResult[]> {
+export async function getCurrentMarks(tenantId: string, clientId: string): Promise<CurrentMarkResult[]> {
+  const client = await prisma.client.findFirst({ where: { id: clientId, tenantId } });
+  if (!client) {
+    throw new AppError('Recurso no encontrado', 404);
+  }
+
   const exercises = await prisma.exercise.findMany({
-    where: { status: Status.ACTIVE },
+    where: { tenantId, status: Status.ACTIVE },
     orderBy: { name: 'asc' },
   });
 
   const results: CurrentMarkResult[] = await Promise.all(
     exercises.map(async (exercise) => {
       const records = await prisma.performanceRecord.findMany({
-        where: { clientId, exerciseId: exercise.id },
+        where: { tenantId, clientId, exerciseId: exercise.id },
         orderBy: { date: 'desc' },
         take: 1,
         include: {
@@ -96,11 +101,21 @@ export async function getCurrentMarks(clientId: string): Promise<CurrentMarkResu
  * date descending. Each record includes the trainer's name.
  */
 export async function getHistory(
+  tenantId: string,
   clientId: string,
   exerciseId: string
 ): Promise<(PerformanceRecord & { trainerName: string })[]> {
+  const [client, exercise] = await Promise.all([
+    prisma.client.findFirst({ where: { id: clientId, tenantId } }),
+    prisma.exercise.findFirst({ where: { id: exerciseId, tenantId } }),
+  ]);
+
+  if (!client || !exercise) {
+    throw new AppError('Recurso no encontrado', 404);
+  }
+
   const records = await prisma.performanceRecord.findMany({
-    where: { clientId, exerciseId },
+    where: { tenantId, clientId, exerciseId },
     orderBy: { date: 'desc' },
     include: {
       trainer: { select: { name: true } },
@@ -131,6 +146,7 @@ export async function getHistory(
  * Creates an AuditLog entry after a successful insert.
  */
 export async function createPerformance(
+  tenantId: string,
   clientId: string,
   exerciseId: string,
   trainerId: string,
@@ -153,13 +169,13 @@ export async function createPerformance(
   }
 
   // --- Validate client exists ---
-  const client = await prisma.client.findUnique({ where: { id: clientId } });
+  const client = await prisma.client.findFirst({ where: { id: clientId, tenantId } });
   if (!client) {
     throw new AppError('Recurso no encontrado', 404);
   }
 
   // --- Validate exercise exists and is ACTIVE ---
-  const exercise = await prisma.exercise.findUnique({ where: { id: exerciseId } });
+  const exercise = await prisma.exercise.findFirst({ where: { id: exerciseId, tenantId } });
   if (!exercise) {
     throw new AppError('Recurso no encontrado', 404);
   }
@@ -170,6 +186,7 @@ export async function createPerformance(
   // --- Create the record ---
   const record = await prisma.performanceRecord.create({
     data: {
+      tenantId,
       clientId,
       exerciseId,
       trainerId,          // from JWT, not from request body
@@ -187,6 +204,7 @@ export async function createPerformance(
   // --- Audit log ---
   await prisma.auditLog.create({
     data: {
+      tenantId,
       userId: trainerId,
       action: 'CREATE',
       entityType: 'PerformanceRecord',

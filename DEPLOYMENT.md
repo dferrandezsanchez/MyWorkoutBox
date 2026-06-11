@@ -44,8 +44,9 @@ DATABASE_URL=file:/var/www/vhosts/danielferrandez.dev/myworkoutbox/data/producti
 JWT_EXPIRES_IN=7d
 PORT=3000
 VITE_API_URL=https://tumeta.danielferrandez.dev/api
-VITE_TENANT_ID=tumeta
 ```
+
+Tenant branding is resolved after login from the authenticated tenant. `VITE_TENANT_ID` is only an optional local/demo fallback before authentication.
 
 ## One-Time Server Setup
 
@@ -124,7 +125,6 @@ JWT_SECRET
 JWT_EXPIRES_IN
 PORT
 VITE_API_URL
-VITE_TENANT_ID
 ```
 
 `VPS_SSH_KEY` should be a private key that can SSH into the VPS user and access the repo folder.

@@ -4,7 +4,7 @@
   "description": "Backend API para el sistema de control de marcas de entrenamiento",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node src/index.ts",
+    "dev": "ts-node --files src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest --run",

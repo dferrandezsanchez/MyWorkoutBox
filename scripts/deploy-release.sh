@@ -7,7 +7,6 @@ required_vars=(
   DATABASE_URL
   JWT_SECRET
   VITE_API_URL
-  VITE_TENANT_ID
 )
 
 for var_name in "${required_vars[@]}"; do
@@ -38,8 +37,10 @@ EOF
 write_frontend_env() {
   cat > "$FRONTEND_DIR/.env.production" <<EOF
 VITE_API_URL=${VITE_API_URL}
-VITE_TENANT_ID=${VITE_TENANT_ID}
 EOF
+  if [[ -n "${VITE_TENANT_ID:-}" ]]; then
+    printf 'VITE_TENANT_ID=%s\n' "$VITE_TENANT_ID" >> "$FRONTEND_DIR/.env.production"
+  fi
 }
 
 backup_sqlite_if_needed() {

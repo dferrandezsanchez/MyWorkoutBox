@@ -12,7 +12,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { clientId } = req.params;
-      const result = await performancesService.getCurrentMarks(clientId);
+      const result = await performancesService.getCurrentMarks(req.user!.tenantId, clientId);
       res.status(200).json(result);
     } catch (err) {
       next(err);
@@ -28,7 +28,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { clientId, exerciseId } = req.params;
-      const records = await performancesService.getHistory(clientId, exerciseId);
+      const records = await performancesService.getHistory(req.user!.tenantId, clientId, exerciseId);
       res.status(200).json(records);
     } catch (err) {
       next(err);
@@ -48,6 +48,7 @@ router.post(
       // trainerId is injected from the authenticated user — req.body.trainerId is ignored
       const trainerId = req.user!.userId;
       const record = await performancesService.createPerformance(
+        req.user!.tenantId,
         clientId,
         exerciseId,
         trainerId,

@@ -1,5 +1,12 @@
-export interface TenantBrand {
+import type { TenantBrand } from '../types/auth';
+
+export type { TenantBrand };
+
+export interface StaticTenantBrand {
   id: string;
+  organizationId: string;
+  name: string;
+  slug: string;
   appName: string;
   shortName: string;
   mark: string;
@@ -13,6 +20,9 @@ export interface TenantBrand {
 export const TENANT_BRANDS: Record<string, TenantBrand> = {
   platform: {
     id: 'platform',
+    organizationId: 'platform',
+    name: 'MyWorkoutBox',
+    slug: 'platform',
     appName: 'MyWorkoutBox',
     shortName: 'MWB',
     mark: 'MW',
@@ -24,6 +34,9 @@ export const TENANT_BRANDS: Record<string, TenantBrand> = {
   },
   tumeta: {
     id: 'tumeta',
+    organizationId: 'org_tumeta',
+    name: 'TuMeta Personal Training',
+    slug: 'tumeta-personal-training',
     appName: 'tumeta',
     shortName: 'TuMeta',
     mark: 't',

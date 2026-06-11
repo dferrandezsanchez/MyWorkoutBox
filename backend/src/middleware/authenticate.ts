@@ -4,6 +4,8 @@ import { Role } from '../types/domain';
 
 interface JwtPayload {
   sub: string;
+  tenantId: string;
+  organizationId: string;
   role: Role;
   iat: number;
   exp: number;
@@ -27,8 +29,15 @@ export function authenticate(req: any, res: Response, next: NextFunction): void 
 
   try {
     const payload = jwt.verify(token, secret) as JwtPayload;
+    if (!payload.tenantId || !payload.organizationId) {
+      res.status(401).json({ error: 'No autenticado' });
+      return;
+    }
+
     req.user = {
       userId: payload.sub,
+      tenantId: payload.tenantId,
+      organizationId: payload.organizationId,
       role: payload.role,
     };
     next();

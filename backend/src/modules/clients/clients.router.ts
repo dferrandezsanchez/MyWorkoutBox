@@ -27,12 +27,12 @@ const upload = multer({
 const router = Router();
 
 // GET /clients — any authenticated user
-router.get('/', authenticate, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.get('/', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
   try {
     const q = typeof req.query.q === 'string' ? req.query.q : undefined;
     const includeInactive =
       (req as any).user?.role === Role.ADMIN && req.query.includeInactive === 'true';
-    const clients = await clientsService.listClients(q, includeInactive);
+    const clients = await clientsService.listClients(req.user!.tenantId, q, includeInactive);
     res.status(200).json(clients);
   } catch (err) {
     next(err);
@@ -46,7 +46,7 @@ router.post(
   authorize(Role.ADMIN),
   async (req: any, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const client = await clientsService.createClient(req.body, req.user!.userId);
+      const client = await clientsService.createClient(req.user!.tenantId, req.body, req.user!.userId);
       res.status(201).json(client);
     } catch (err) {
       next(err);
@@ -55,9 +55,9 @@ router.post(
 );
 
 // GET /clients/:id — any authenticated user
-router.get('/:id', authenticate, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.get('/:id', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const client = await clientsService.getClient(req.params.id);
+    const client = await clientsService.getClient(req.user!.tenantId, req.params.id);
     res.status(200).json(client);
   } catch (err) {
     next(err);
@@ -71,7 +71,7 @@ router.put(
   authorize(Role.ADMIN),
   async (req: any, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const client = await clientsService.updateClient(req.params.id, req.body, req.user!.userId);
+      const client = await clientsService.updateClient(req.user!.tenantId, req.params.id, req.body, req.user!.userId);
       res.status(200).json(client);
     } catch (err) {
       next(err);
@@ -87,7 +87,7 @@ router.patch(
   async (req: any, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { status } = req.body as { status: Status };
-      const client = await clientsService.setClientStatus(req.params.id, status, req.user!.userId);
+      const client = await clientsService.setClientStatus(req.user!.tenantId, req.params.id, status, req.user!.userId);
       res.status(200).json(client);
     } catch (err) {
       next(err);
@@ -110,6 +110,7 @@ router.post(
 
       const consentAt = req.body.consentAt ? new Date(req.body.consentAt as string) : new Date();
       const client = await clientsService.uploadPhoto(
+        req.user!.tenantId,
         req.params.id,
         req.file,
         consentAt,
@@ -131,7 +132,7 @@ router.get(
   authorize(Role.ADMIN),
   async (req: any, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await clientsService.exportClient(req.params.id, req.user!.userId);
+      const result = await clientsService.exportClient(req.user!.tenantId, req.params.id, req.user!.userId);
       res.status(200).json(result);
     } catch (err) {
       next(err);
@@ -146,7 +147,7 @@ router.post(
   authorize(Role.ADMIN),
   async (req: any, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const client = await clientsService.anonymizeClient(req.params.id, req.user!.userId);
+      const client = await clientsService.anonymizeClient(req.user!.tenantId, req.params.id, req.user!.userId);
       res.status(200).json(client);
     } catch (err) {
       next(err);
@@ -161,7 +162,7 @@ router.delete(
   authorize(Role.ADMIN),
   async (req: any, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const client = await clientsService.deletePhoto(req.params.id, req.user!.userId);
+      const client = await clientsService.deletePhoto(req.user!.tenantId, req.params.id, req.user!.userId);
       res.status(200).json(client);
     } catch (err) {
       next(err);

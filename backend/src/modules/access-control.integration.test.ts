@@ -11,6 +11,7 @@ import {
 } from './clients/clients.service';
 import { createExercise } from './exercises/exercises.service';
 import { createPerformance, getCurrentMarks, getHistory } from './performances/performances.service';
+import { ensureTenantMembership, TEST_ORGANIZATION_ID, TEST_TENANT_ID } from '../test/tenant';
 
 let adminUserId: string;
 let trainerUserId: string;
@@ -36,6 +37,7 @@ beforeAll(async () => {
     },
   });
   adminUserId = admin.id;
+  await ensureTenantMembership(admin.id, Role.ADMIN);
 
   const trainer = await prisma.user.upsert({
     where: { email: 'access-trainer@gym.com' },
@@ -49,13 +51,14 @@ beforeAll(async () => {
     },
   });
   trainerUserId = trainer.id;
+  await ensureTenantMembership(trainer.id, Role.TRAINER);
 });
 
 describe('role based access control', () => {
   it('blocks TRAINER from admin client operations before the service runs', () => {
     // Feature: control-marcas-entrenamiento, Property 6: Control de acceso — TRAINER no puede hacer operaciones de ADMIN (clientes)
     const middleware = authorize(Role.ADMIN);
-    const req = { user: { userId: trainerUserId, role: Role.TRAINER } };
+    const req = { user: { userId: trainerUserId, tenantId: TEST_TENANT_ID, organizationId: TEST_ORGANIZATION_ID, role: Role.TRAINER } };
     const res = mockResponse();
     const next = vi.fn();
 
@@ -69,7 +72,7 @@ describe('role based access control', () => {
   it('blocks TRAINER from admin exercise operations before the service runs', () => {
     // Feature: control-marcas-entrenamiento, Property 6: Control de acceso — TRAINER no puede hacer operaciones de ADMIN (ejercicios)
     const middleware = authorize(Role.ADMIN);
-    const req = { user: { userId: trainerUserId, role: Role.TRAINER } };
+    const req = { user: { userId: trainerUserId, tenantId: TEST_TENANT_ID, organizationId: TEST_ORGANIZATION_ID, role: Role.TRAINER } };
     const res = mockResponse();
     const next = vi.fn();
 
@@ -82,6 +85,7 @@ describe('role based access control', () => {
 
   it('supports the client admin flow create, list, update and deactivate', async () => {
     const client = await createClient(
+      TEST_TENANT_ID,
       {
         firstName: 'Integration',
         lastName: 'Client',
@@ -91,18 +95,19 @@ describe('role based access control', () => {
       adminUserId,
     );
 
-    const listed = await listClients('Integration');
+    const listed = await listClients(TEST_TENANT_ID, 'Integration');
     expect(listed.some((item) => item.id === client.id)).toBe(true);
 
-    const updated = await updateClient(client.id, { firstName: 'Integration Updated' }, adminUserId);
+    const updated = await updateClient(TEST_TENANT_ID, client.id, { firstName: 'Integration Updated' }, adminUserId);
     expect(updated.firstName).toBe('Integration Updated');
 
-    const inactive = await setClientStatus(client.id, Status.INACTIVE, adminUserId);
+    const inactive = await setClientStatus(TEST_TENANT_ID, client.id, Status.INACTIVE, adminUserId);
     expect(inactive.status).toBe(Status.INACTIVE);
   });
 
   it('creates a performance and exposes current mark plus ordered history', async () => {
     const client = await createClient(
+      TEST_TENANT_ID,
       {
         firstName: 'Performance Flow',
         lastName: 'Client',
@@ -111,29 +116,29 @@ describe('role based access control', () => {
       adminUserId,
     );
 
-    const exercise = await createExercise({
+    const exercise = await createExercise(TEST_TENANT_ID, {
       name: `Performance Flow Exercise ${Date.now()}`,
       category: 'Test',
       defaultUnit: PerformanceUnit.kg,
       status: Status.ACTIVE,
     });
 
-    await createPerformance(client.id, exercise.id, trainerUserId, {
+    await createPerformance(TEST_TENANT_ID, client.id, exercise.id, trainerUserId, {
       value: 100,
       unit: PerformanceUnit.kg,
       date: '2026-06-01',
     });
-    await createPerformance(client.id, exercise.id, trainerUserId, {
+    await createPerformance(TEST_TENANT_ID, client.id, exercise.id, trainerUserId, {
       value: 110,
       unit: PerformanceUnit.kg,
       date: '2026-06-02',
     });
 
-    const currentMarks = await getCurrentMarks(client.id);
+    const currentMarks = await getCurrentMarks(TEST_TENANT_ID, client.id);
     const current = currentMarks.find((mark) => mark.exerciseId === exercise.id);
     expect(current?.record?.value).toBe('110');
 
-    const history = await getHistory(client.id, exercise.id);
+    const history = await getHistory(TEST_TENANT_ID, client.id, exercise.id);
     expect(history.map((record) => record.value)).toEqual(['110', '100']);
   });
 });

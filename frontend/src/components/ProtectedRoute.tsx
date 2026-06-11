@@ -4,6 +4,8 @@ import { getToken, removeToken } from '../store/auth';
 
 interface JwtPayload {
   sub: string;
+  tenantId: string;
+  organizationId: string;
   role: Role;
   iat: number;
   exp: number;
@@ -45,7 +47,7 @@ export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
   const payload = decodeJwtPayload(token);
 
   // Invalid token → redirect to login
-  if (!payload) {
+  if (!payload || !payload.tenantId || !payload.organizationId) {
     removeToken();
     return <Navigate to="/login" replace />;
   }

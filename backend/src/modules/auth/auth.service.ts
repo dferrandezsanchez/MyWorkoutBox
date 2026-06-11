@@ -7,6 +7,7 @@ import { AppError } from '../../middleware/errorHandler';
 export interface LoginResponse {
   token: string;
   user: PublicUser;
+  tenant: PublicTenant;
 }
 
 export interface PublicUser {
@@ -14,6 +15,37 @@ export interface PublicUser {
   name: string;
   email: string;
   role: Role;
+  tenantId: string;
+  organizationId: string;
+}
+
+export interface PublicTenant {
+  id: string;
+  organizationId: string;
+  name: string;
+  slug: string;
+  appName: string;
+  shortName: string;
+  mark: string;
+  claim: string;
+  description: string;
+  primary: string;
+  primaryHover: string;
+  primarySoft: string;
+}
+
+export interface TenantOption {
+  id: string;
+  organizationId: string;
+  name: string;
+  organizationName: string;
+  role: Role;
+}
+
+export interface TenantSelectionResponse {
+  tenantSelectionRequired: true;
+  selectionToken: string;
+  tenants: TenantOption[];
 }
 
 export interface UpdateMeInput {
@@ -26,7 +58,79 @@ export interface ChangePasswordInput {
   newPassword?: string;
 }
 
-export async function login(email: string, password: string): Promise<LoginResponse> {
+type LoginResult = LoginResponse | TenantSelectionResponse;
+
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new AppError('Error interno del servidor', 500);
+  }
+  return secret;
+}
+
+function signTenantToken(userId: string, tenantId: string, organizationId: string, role: Role): string {
+  return jwt.sign(
+    { sub: userId, tenantId, organizationId, role },
+    getJwtSecret(),
+    { expiresIn: process.env.JWT_EXPIRES_IN ?? '8h' } as jwt.SignOptions
+  );
+}
+
+function signSelectionToken(userId: string): string {
+  return jwt.sign(
+    { sub: userId, purpose: 'tenant-selection' },
+    getJwtSecret(),
+    { expiresIn: '10m' } as jwt.SignOptions
+  );
+}
+
+async function buildLoginResponse(user: { id: string; name: string; email: string }, tenantId: string): Promise<LoginResponse> {
+  const membership = await prisma.userTenantMembership.findFirst({
+    where: {
+      userId: user.id,
+      tenantId,
+      active: true,
+      tenant: { active: true, organization: { active: true } },
+    },
+    include: { tenant: true },
+  });
+
+  if (!membership) {
+    throw new AppError('Tenant no disponible', 403);
+  }
+
+  const role = membership.role as Role;
+  const tenant = membership.tenant;
+  const token = signTenantToken(user.id, tenant.id, tenant.organizationId, role);
+
+  return {
+    token,
+    tenant: {
+      id: tenant.id,
+      organizationId: tenant.organizationId,
+      name: tenant.name,
+      slug: tenant.slug,
+      appName: tenant.appName,
+      shortName: tenant.shortName,
+      mark: tenant.mark,
+      claim: tenant.claim,
+      description: tenant.description,
+      primary: tenant.primary,
+      primaryHover: tenant.primaryHover,
+      primarySoft: tenant.primarySoft,
+    },
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role,
+      tenantId: tenant.id,
+      organizationId: tenant.organizationId,
+    },
+  };
+}
+
+export async function login(email: string, password: string): Promise<LoginResult> {
   const user = await prisma.user.findUnique({ where: { email } });
 
   // Use a constant-time check even when user is not found to avoid timing attacks
@@ -40,34 +144,77 @@ export async function login(email: string, password: string): Promise<LoginRespo
     throw new AppError('Credenciales incorrectas', 401);
   }
 
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new AppError('Error interno del servidor', 500);
+  const memberships = await prisma.userTenantMembership.findMany({
+    where: {
+      userId: user.id,
+      active: true,
+      tenant: { active: true, organization: { active: true } },
+    },
+    include: {
+      tenant: {
+        include: { organization: true },
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  if (memberships.length === 0) {
+    throw new AppError('No tienes acceso a ningún centro activo', 403);
   }
 
-  const expiresIn = process.env.JWT_EXPIRES_IN ?? '8h';
-
-  const token = jwt.sign(
-    { sub: user.id, role: user.role },
-    secret,
-    { expiresIn } as jwt.SignOptions
-  );
+  if (memberships.length === 1) {
+    return buildLoginResponse(user, memberships[0].tenantId);
+  }
 
   return {
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role as Role,
-    },
+    tenantSelectionRequired: true,
+    selectionToken: signSelectionToken(user.id),
+    tenants: memberships.map((membership) => ({
+      id: membership.tenant.id,
+      organizationId: membership.tenant.organizationId,
+      name: membership.tenant.name,
+      organizationName: membership.tenant.organization.name,
+      role: membership.role as Role,
+    })),
   };
 }
 
-export async function getMe(userId: string): Promise<PublicUser> {
+export async function selectTenant(selectionToken: string, tenantId: string): Promise<LoginResponse> {
+  try {
+    const payload = jwt.verify(selectionToken, getJwtSecret()) as { sub: string; purpose?: string };
+    if (payload.purpose !== 'tenant-selection') {
+      throw new AppError('Token de selección inválido', 401);
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user || !user.active) {
+      throw new AppError('Credenciales incorrectas', 401);
+    }
+
+    return buildLoginResponse(user, tenantId);
+  } catch (err) {
+    if (err instanceof AppError) throw err;
+    throw new AppError('Token de selección inválido', 401);
+  }
+}
+
+export async function getMe(userId: string, tenantId: string, organizationId: string): Promise<PublicUser> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
 
   if (!user) {
+    throw new AppError('Recurso no encontrado', 404);
+  }
+
+  const membership = await prisma.userTenantMembership.findFirst({
+    where: {
+      userId,
+      tenantId,
+      active: true,
+      tenant: { active: true, organization: { active: true } },
+    },
+  });
+
+  if (!membership) {
     throw new AppError('Recurso no encontrado', 404);
   }
 
@@ -75,11 +222,13 @@ export async function getMe(userId: string): Promise<PublicUser> {
     id: user.id,
     name: user.name,
     email: user.email,
-    role: user.role as Role,
+    role: membership.role as Role,
+    tenantId,
+    organizationId,
   };
 }
 
-export async function updateMe(userId: string, data: UpdateMeInput): Promise<PublicUser> {
+export async function updateMe(userId: string, tenantId: string, organizationId: string, data: UpdateMeInput): Promise<PublicUser> {
   const name = data.name?.trim();
   const email = data.email?.trim().toLowerCase();
 
@@ -101,12 +250,7 @@ export async function updateMe(userId: string, data: UpdateMeInput): Promise<Pub
     data: { name, email },
   });
 
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role as Role,
-  };
+  return getMe(user.id, tenantId, organizationId);
 }
 
 export async function changePassword(userId: string, data: ChangePasswordInput): Promise<void> {
@@ -136,4 +280,29 @@ export async function changePassword(userId: string, data: ChangePasswordInput):
     where: { id: userId },
     data: { passwordHash },
   });
+}
+
+export async function getCurrentTenant(tenantId: string): Promise<PublicTenant> {
+  const tenant = await prisma.tenant.findFirst({
+    where: { id: tenantId, active: true },
+  });
+
+  if (!tenant) {
+    throw new AppError('Recurso no encontrado', 404);
+  }
+
+  return {
+    id: tenant.id,
+    organizationId: tenant.organizationId,
+    name: tenant.name,
+    slug: tenant.slug,
+    appName: tenant.appName,
+    shortName: tenant.shortName,
+    mark: tenant.mark,
+    claim: tenant.claim,
+    description: tenant.description,
+    primary: tenant.primary,
+    primaryHover: tenant.primaryHover,
+    primarySoft: tenant.primarySoft,
+  };
 }

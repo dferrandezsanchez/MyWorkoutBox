@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import type { User } from '@prisma/client';
+import type { User, UserTenantMembership } from '@prisma/client';
 import prisma from '../../prisma/client';
 import { AppError } from '../../middleware/errorHandler';
 import { Role } from '../../types/domain';
@@ -31,13 +31,13 @@ export interface ResetTrainerPasswordInput {
   password?: string;
 }
 
-function toTrainerUser(user: User): TrainerUser {
+function toTrainerUser(user: User, membership?: UserTenantMembership): TrainerUser {
   return {
     id: user.id,
     name: user.name,
     email: user.email,
-    role: user.role as Role,
-    active: user.active,
+    role: (membership?.role ?? user.role) as Role,
+    active: Boolean(user.active && (membership?.active ?? true)),
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -73,38 +73,57 @@ async function assertEmailAvailable(email: string, currentUserId?: string): Prom
   }
 }
 
-export async function listTrainers(includeInactive = true): Promise<TrainerUser[]> {
-  const users = await prisma.user.findMany({
+export async function listTrainers(tenantId: string, includeInactive = true): Promise<TrainerUser[]> {
+  const memberships = await prisma.userTenantMembership.findMany({
     where: {
+      tenantId,
       role: Role.TRAINER,
       ...(includeInactive ? {} : { active: true }),
+      user: includeInactive ? undefined : { active: true },
     },
-    orderBy: { name: 'asc' },
+    include: { user: true },
+    orderBy: { user: { name: 'asc' } },
   });
 
-  return users.map(toTrainerUser);
+  return memberships.map((membership) => toTrainerUser(membership.user, membership));
 }
 
-export async function getTrainer(id: string): Promise<TrainerUser> {
-  const user = await prisma.user.findUnique({ where: { id } });
+export async function getTrainer(tenantId: string, id: string): Promise<TrainerUser> {
+  const membership = await prisma.userTenantMembership.findUnique({
+    where: { userId_tenantId: { userId: id, tenantId } },
+    include: { user: true },
+  });
 
-  if (!user || user.role !== Role.TRAINER) {
+  if (!membership || membership.role !== Role.TRAINER) {
     throw new AppError('Recurso no encontrado', 404);
   }
 
-  return toTrainerUser(user);
+  return toTrainerUser(membership.user, membership);
 }
 
-export async function createTrainer(data: CreateTrainerInput): Promise<TrainerUser> {
+export async function createTrainer(tenantId: string, data: CreateTrainerInput): Promise<TrainerUser> {
   const name = normalizeName(data.name);
   const email = normalizeEmail(data.email);
   const password = validatePassword(data.password);
 
-  await assertEmailAvailable(email);
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    const existingMembership = await prisma.userTenantMembership.findUnique({
+      where: { userId_tenantId: { userId: existingUser.id, tenantId } },
+    });
+    if (existingMembership) {
+      throw new AppError('Ya existe un entrenador con ese email en este centro', 409);
+    }
+  }
 
   const passwordHash = await bcrypt.hash(password, 12);
-  const user = await prisma.user.create({
-    data: {
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: {
+      name,
+      active: data.active ?? true,
+    },
+    create: {
       name,
       email,
       passwordHash,
@@ -113,11 +132,17 @@ export async function createTrainer(data: CreateTrainerInput): Promise<TrainerUs
     },
   });
 
-  return toTrainerUser(user);
+  const membership = await prisma.userTenantMembership.upsert({
+    where: { userId_tenantId: { userId: user.id, tenantId } },
+    update: { role: Role.TRAINER, active: data.active ?? true },
+    create: { userId: user.id, tenantId, role: Role.TRAINER, active: data.active ?? true },
+  });
+
+  return toTrainerUser(user, membership);
 }
 
-export async function updateTrainer(id: string, data: UpdateTrainerInput): Promise<TrainerUser> {
-  await getTrainer(id);
+export async function updateTrainer(tenantId: string, id: string, data: UpdateTrainerInput): Promise<TrainerUser> {
+  await getTrainer(tenantId, id);
 
   const updateData: { name?: string; email?: string; active?: boolean } = {};
 
@@ -139,25 +164,33 @@ export async function updateTrainer(id: string, data: UpdateTrainerInput): Promi
     data: updateData,
   });
 
-  return toTrainerUser(user);
+  if (data.active !== undefined) {
+    await prisma.userTenantMembership.update({
+      where: { userId_tenantId: { userId: id, tenantId } },
+      data: { active: Boolean(data.active) },
+    });
+  }
+
+  return getTrainer(tenantId, user.id);
 }
 
-export async function setTrainerActive(id: string, active: boolean): Promise<TrainerUser> {
-  await getTrainer(id);
+export async function setTrainerActive(tenantId: string, id: string, active: boolean): Promise<TrainerUser> {
+  await getTrainer(tenantId, id);
 
-  const user = await prisma.user.update({
-    where: { id },
+  await prisma.userTenantMembership.update({
+    where: { userId_tenantId: { userId: id, tenantId } },
     data: { active },
   });
 
-  return toTrainerUser(user);
+  return getTrainer(tenantId, id);
 }
 
 export async function resetTrainerPassword(
+  tenantId: string,
   id: string,
   data: ResetTrainerPasswordInput,
 ): Promise<void> {
-  await getTrainer(id);
+  await getTrainer(tenantId, id);
 
   const password = validatePassword(data.password);
   const passwordHash = await bcrypt.hash(password, 12);

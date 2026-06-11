@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import prisma from '../../prisma/client';
 import { PerformanceUnit, Role, Status } from '../../types/domain';
 import { anonymizeClient, deletePhoto, exportClient } from './clients.service';
+import { ensureTenantMembership, TEST_TENANT_ID } from '../../test/tenant';
 
 let adminUserId: string;
 let clientId: string;
@@ -21,9 +22,11 @@ beforeAll(async () => {
     },
   });
   adminUserId = admin.id;
+  await ensureTenantMembership(admin.id, Role.ADMIN);
 
   const client = await prisma.client.create({
     data: {
+      tenantId: TEST_TENANT_ID,
       firstName: 'RGPD',
       lastName: 'Client',
       birthDate: new Date('1990-01-01T00:00:00.000Z'),
@@ -37,6 +40,7 @@ beforeAll(async () => {
 
   const exercise = await prisma.exercise.create({
     data: {
+      tenantId: TEST_TENANT_ID,
       name: `RGPD Exercise ${Date.now()}`,
       category: 'Test',
       defaultUnit: PerformanceUnit.kg,
@@ -47,6 +51,7 @@ beforeAll(async () => {
 
   await prisma.performanceRecord.create({
     data: {
+      tenantId: TEST_TENANT_ID,
       clientId,
       exerciseId,
       trainerId: adminUserId,
@@ -59,14 +64,14 @@ beforeAll(async () => {
 
 describe('RGPD client service', () => {
   it('exports personal data and performances', async () => {
-    const exported = await exportClient(clientId, adminUserId);
+    const exported = await exportClient(TEST_TENANT_ID, clientId, adminUserId);
 
     expect(exported.client.id).toBe(clientId);
     expect(exported.performances).toHaveLength(1);
   });
 
   it('deletes only the client photo fields', async () => {
-    const updated = await deletePhoto(clientId, adminUserId);
+    const updated = await deletePhoto(TEST_TENANT_ID, clientId, adminUserId);
 
     expect(updated.photoUrl).toBeNull();
     expect(updated.photoConsentAt).toBeNull();
@@ -75,7 +80,7 @@ describe('RGPD client service', () => {
   it('anonymizes personal fields and preserves performances', async () => {
     const countBefore = await prisma.performanceRecord.count({ where: { clientId } });
 
-    const updated = await anonymizeClient(clientId, adminUserId);
+    const updated = await anonymizeClient(TEST_TENANT_ID, clientId, adminUserId);
     const countAfter = await prisma.performanceRecord.count({ where: { clientId } });
     const auditLog = await prisma.auditLog.findFirst({
       where: { entityId: clientId, action: 'ANONYMIZE' },

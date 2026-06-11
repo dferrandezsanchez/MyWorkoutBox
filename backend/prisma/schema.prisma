@@ -21,12 +21,72 @@ model User {
 
   performances PerformanceRecord[]
   auditLogs    AuditLog[]
+  memberships  UserTenantMembership[]
 
   @@map("users")
 }
 
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenants Tenant[]
+
+  @@map("organizations")
+}
+
+model Tenant {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  slug           String   @unique
+  appName        String
+  shortName      String
+  mark           String
+  claim          String
+  description    String
+  primary        String
+  primaryHover   String
+  primarySoft    String
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  memberships  UserTenantMembership[]
+  clients      Client[]
+  exercises    Exercise[]
+  performances PerformanceRecord[]
+  auditLogs    AuditLog[]
+
+  @@index([organizationId])
+  @@map("tenants")
+}
+
+model UserTenantMembership {
+  id        String   @id @default(uuid())
+  userId    String
+  tenantId  String
+  role      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([userId, tenantId])
+  @@index([tenantId, role])
+  @@map("user_tenant_memberships")
+}
+
 model Client {
   id                String    @id @default(uuid())
+  tenantId          String
   firstName         String
   lastName          String
   birthDate         DateTime
@@ -41,13 +101,16 @@ model Client {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
+  tenant       Tenant              @relation(fields: [tenantId], references: [id])
   performances PerformanceRecord[]
 
+  @@index([tenantId, status])
   @@map("clients")
 }
 
 model Exercise {
   id          String          @id @default(uuid())
+  tenantId    String
   name        String
   category    String
   defaultUnit String
@@ -56,13 +119,16 @@ model Exercise {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
+  tenant       Tenant              @relation(fields: [tenantId], references: [id])
   performances PerformanceRecord[]
 
+  @@index([tenantId, status])
   @@map("exercises")
 }
 
 model PerformanceRecord {
   id          String          @id @default(uuid())
+  tenantId    String
   clientId    String
   exerciseId  String
   trainerId   String
@@ -77,16 +143,19 @@ model PerformanceRecord {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
   client   Client   @relation(fields: [clientId], references: [id])
   exercise Exercise @relation(fields: [exerciseId], references: [id])
   trainer  User     @relation(fields: [trainerId], references: [id])
 
+  @@index([tenantId, clientId])
   @@index([clientId, exerciseId, date(sort: Desc)])
   @@map("performance_records")
 }
 
 model AuditLog {
   id         String   @id @default(uuid())
+  tenantId   String
   userId     String
   action     String
   entityType String
@@ -94,8 +163,10 @@ model AuditLog {
   metadata   String?
   createdAt  DateTime @default(now())
 
+  tenant Tenant @relation(fields: [tenantId], references: [id])
   user User @relation(fields: [userId], references: [id])
 
+  @@index([tenantId, createdAt])
   @@index([entityType, entityId])
   @@index([userId, createdAt])
   @@map("audit_logs")

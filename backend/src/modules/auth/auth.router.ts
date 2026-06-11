@@ -15,6 +15,17 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction): P
   }
 });
 
+// POST /auth/select-tenant — public, uses a short-lived tenant selection token
+router.post('/select-tenant', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { selectionToken, tenantId } = req.body as { selectionToken: string; tenantId: string };
+    const result = await authService.selectTenant(selectionToken, tenantId);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /auth/logout — requires authentication (client-side invalidation)
 router.post('/logout', authenticate, (_req: Request, res: Response, next: NextFunction): void => {
   try {
@@ -27,7 +38,11 @@ router.post('/logout', authenticate, (_req: Request, res: Response, next: NextFu
 // GET /auth/me — requires authentication
 router.get('/me', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const user = await authService.getMe(req.user!.userId);
+    const user = await authService.getMe(
+      req.user!.userId,
+      req.user!.tenantId,
+      req.user!.organizationId,
+    );
     res.status(200).json(user);
   } catch (err) {
     next(err);
@@ -37,8 +52,23 @@ router.get('/me', authenticate, async (req: any, res: Response, next: NextFuncti
 // PUT /auth/me — update current user's contact info
 router.put('/me', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const user = await authService.updateMe(req.user!.userId, req.body);
+    const user = await authService.updateMe(
+      req.user!.userId,
+      req.user!.tenantId,
+      req.user!.organizationId,
+      req.body,
+    );
     res.status(200).json(user);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /auth/tenant — current tenant branding/context
+router.get('/tenant', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const tenant = await authService.getCurrentTenant(req.user!.tenantId);
+    res.status(200).json(tenant);
   } catch (err) {
     next(err);
   }

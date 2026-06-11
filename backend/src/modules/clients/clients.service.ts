@@ -40,12 +40,13 @@ function normalizeClientData<T extends CreateClientInput | UpdateClientInput>(da
   return normalized;
 }
 
-export async function listClients(query?: string, includeInactive = false): Promise<Client[]> {
+export async function listClients(tenantId: string, query?: string, includeInactive = false): Promise<Client[]> {
   const statusFilter = includeInactive ? undefined : Status.ACTIVE;
 
   if (query && query.trim() !== '') {
     return prisma.client.findMany({
       where: {
+        tenantId,
         ...(statusFilter ? { status: statusFilter } : {}),
         OR: [
           { firstName: { contains: query } },
@@ -57,13 +58,16 @@ export async function listClients(query?: string, includeInactive = false): Prom
   }
 
   return prisma.client.findMany({
-    where: statusFilter ? { status: statusFilter } : undefined,
+    where: {
+      tenantId,
+      ...(statusFilter ? { status: statusFilter } : {}),
+    },
     orderBy: { lastName: 'asc' },
   });
 }
 
-export async function getClient(id: string): Promise<Client> {
-  const client = await prisma.client.findUnique({ where: { id } });
+export async function getClient(tenantId: string, id: string): Promise<Client> {
+  const client = await prisma.client.findFirst({ where: { id, tenantId } });
 
   if (!client) {
     throw new AppError('Recurso no encontrado', 404);
@@ -73,13 +77,20 @@ export async function getClient(id: string): Promise<Client> {
 }
 
 export async function createClient(
+  tenantId: string,
   data: CreateClientInput,
   actorUserId: string
 ): Promise<Client> {
-  const client = await prisma.client.create({ data: normalizeClientData(data) });
+  const client = await prisma.client.create({
+    data: {
+      ...normalizeClientData(data),
+      tenantId,
+    },
+  });
 
   await prisma.auditLog.create({
     data: {
+      tenantId,
       userId: actorUserId,
       action: 'CREATE',
       entityType: 'Client',
@@ -91,17 +102,19 @@ export async function createClient(
 }
 
 export async function updateClient(
+  tenantId: string,
   id: string,
   data: UpdateClientInput,
   actorUserId: string
 ): Promise<Client> {
   // Throws 404 if not found
-  await getClient(id);
+  await getClient(tenantId, id);
 
   const client = await prisma.client.update({ where: { id }, data: normalizeClientData(data) });
 
   await prisma.auditLog.create({
     data: {
+      tenantId,
       userId: actorUserId,
       action: 'UPDATE',
       entityType: 'Client',
@@ -114,17 +127,19 @@ export async function updateClient(
 }
 
 export async function setClientStatus(
+  tenantId: string,
   id: string,
   status: Status,
   actorUserId: string
 ): Promise<Client> {
   // Throws 404 if not found
-  await getClient(id);
+  await getClient(tenantId, id);
 
   const client = await prisma.client.update({ where: { id }, data: { status } });
 
   await prisma.auditLog.create({
     data: {
+      tenantId,
       userId: actorUserId,
       action: 'UPDATE',
       entityType: 'Client',
@@ -137,13 +152,14 @@ export async function setClientStatus(
 }
 
 export async function uploadPhoto(
+  tenantId: string,
   id: string,
   file: Express.Multer.File,
   consentAt: Date,
   actorUserId: string
 ): Promise<Client> {
   // Throws 404 if not found
-  await getClient(id);
+  await getClient(tenantId, id);
 
   const uploadDir = path.join('uploads', 'clients');
   await fs.mkdir(uploadDir, { recursive: true });
@@ -163,6 +179,7 @@ export async function uploadPhoto(
 
   await prisma.auditLog.create({
     data: {
+      tenantId,
       userId: actorUserId,
       action: 'UPDATE',
       entityType: 'Client',
@@ -177,17 +194,19 @@ export async function uploadPhoto(
 // ── GDPR endpoints ────────────────────────────────────────────────────────────
 
 export async function exportClient(
+  tenantId: string,
   id: string,
   actorUserId: string
 ): Promise<{ client: Client; performances: import('@prisma/client').PerformanceRecord[] }> {
-  const client = await getClient(id);
+  const client = await getClient(tenantId, id);
 
   const performances = await prisma.performanceRecord.findMany({
-    where: { clientId: id },
+    where: { tenantId, clientId: id },
   });
 
   await prisma.auditLog.create({
     data: {
+      tenantId,
       userId: actorUserId,
       action: 'EXPORT',
       entityType: 'Client',
@@ -199,10 +218,11 @@ export async function exportClient(
 }
 
 export async function anonymizeClient(
+  tenantId: string,
   id: string,
   actorUserId: string
 ): Promise<Client> {
-  const client = await getClient(id);
+  const client = await getClient(tenantId, id);
 
   // Delete physical photo file if present
   if (client.photoUrl) {
@@ -228,6 +248,7 @@ export async function anonymizeClient(
 
   await prisma.auditLog.create({
     data: {
+      tenantId,
       userId: actorUserId,
       action: 'ANONYMIZE',
       entityType: 'Client',
@@ -239,10 +260,11 @@ export async function anonymizeClient(
 }
 
 export async function deletePhoto(
+  tenantId: string,
   id: string,
   actorUserId: string
 ): Promise<Client> {
-  const client = await getClient(id);
+  const client = await getClient(tenantId, id);
 
   // Delete physical photo file if present
   if (client.photoUrl) {
@@ -264,6 +286,7 @@ export async function deletePhoto(
 
   await prisma.auditLog.create({
     data: {
+      tenantId,
       userId: actorUserId,
       action: 'UPDATE',
       entityType: 'Client',

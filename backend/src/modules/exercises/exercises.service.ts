@@ -19,15 +19,18 @@ export interface UpdateExerciseInput {
   status?: Status;
 }
 
-export async function listExercises(includeInactive = false): Promise<Exercise[]> {
+export async function listExercises(tenantId: string, includeInactive = false): Promise<Exercise[]> {
   return prisma.exercise.findMany({
-    where: includeInactive ? undefined : { status: Status.ACTIVE },
+    where: {
+      tenantId,
+      ...(includeInactive ? {} : { status: Status.ACTIVE }),
+    },
     orderBy: { name: 'asc' },
   });
 }
 
-export async function getExercise(id: string): Promise<Exercise> {
-  const exercise = await prisma.exercise.findUnique({ where: { id } });
+export async function getExercise(tenantId: string, id: string): Promise<Exercise> {
+  const exercise = await prisma.exercise.findFirst({ where: { id, tenantId } });
 
   if (!exercise) {
     throw new AppError('Recurso no encontrado', 404);
@@ -36,20 +39,25 @@ export async function getExercise(id: string): Promise<Exercise> {
   return exercise;
 }
 
-export async function createExercise(data: CreateExerciseInput): Promise<Exercise> {
-  return prisma.exercise.create({ data });
+export async function createExercise(tenantId: string, data: CreateExerciseInput): Promise<Exercise> {
+  return prisma.exercise.create({
+    data: {
+      ...data,
+      tenantId,
+    },
+  });
 }
 
-export async function updateExercise(id: string, data: UpdateExerciseInput): Promise<Exercise> {
+export async function updateExercise(tenantId: string, id: string, data: UpdateExerciseInput): Promise<Exercise> {
   // Throws 404 if not found
-  await getExercise(id);
+  await getExercise(tenantId, id);
 
   return prisma.exercise.update({ where: { id }, data });
 }
 
-export async function setExerciseStatus(id: string, status: Status): Promise<Exercise> {
+export async function setExerciseStatus(tenantId: string, id: string, status: Status): Promise<Exercise> {
   // Throws 404 if not found
-  await getExercise(id);
+  await getExercise(tenantId, id);
 
   return prisma.exercise.update({ where: { id }, data: { status } });
 }

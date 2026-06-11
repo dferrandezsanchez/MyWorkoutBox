@@ -4,6 +4,7 @@ import prisma from '../../prisma/client';
 import { PerformanceUnit, Role, Status } from '../../types/domain';
 import { listExercises } from '../exercises/exercises.service';
 import { createPerformance, getCurrentMarks, getHistory } from './performances.service';
+import { ensureTenantMembership, TEST_TENANT_ID } from '../../test/tenant';
 
 let clientId: string;
 let exerciseId: string;
@@ -22,9 +23,11 @@ beforeAll(async () => {
     },
   });
   trainerId = trainer.id;
+  await ensureTenantMembership(trainer.id, Role.TRAINER);
 
   const client = await prisma.client.create({
     data: {
+      tenantId: TEST_TENANT_ID,
       firstName: 'Performance',
       lastName: 'Client',
       birthDate: new Date('1990-01-01T00:00:00.000Z'),
@@ -35,6 +38,7 @@ beforeAll(async () => {
 
   const exercise = await prisma.exercise.create({
     data: {
+      tenantId: TEST_TENANT_ID,
       name: `Performance Exercise ${Date.now()}`,
       category: 'Test',
       defaultUnit: PerformanceUnit.kg,
@@ -47,23 +51,23 @@ beforeAll(async () => {
 describe('performances.service integration', () => {
   it('preserves history and orders it newest first', async () => {
     // Feature: control-marcas-entrenamiento, Property 3: Creación de marca preserva el histórico
-    await createPerformance(clientId, exerciseId, trainerId, {
+    await createPerformance(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
       value: 80,
       unit: PerformanceUnit.kg,
       date: '2026-06-01',
     });
-    await createPerformance(clientId, exerciseId, trainerId, {
+    await createPerformance(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
       value: 90,
       unit: PerformanceUnit.kg,
       date: '2026-06-03',
     });
-    await createPerformance(clientId, exerciseId, trainerId, {
+    await createPerformance(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
       value: 85,
       unit: PerformanceUnit.kg,
       date: '2026-06-02',
     });
 
-    const history = await getHistory(clientId, exerciseId);
+    const history = await getHistory(TEST_TENANT_ID, clientId, exerciseId);
 
     // Feature: control-marcas-entrenamiento, Property 4: Histórico ordenado de más reciente a más antiguo
     expect(history).toHaveLength(3);
@@ -77,7 +81,7 @@ describe('performances.service integration', () => {
 
     // Feature: control-marcas-entrenamiento, Property 5: Marca rechazada sin campos obligatorios
     await expect(
-      createPerformance(clientId, exerciseId, trainerId, {
+      createPerformance(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
         value: '',
         unit: undefined as unknown as PerformanceUnit,
       }),
@@ -94,7 +98,7 @@ describe('performances.service integration', () => {
 
   it('always stores the authenticated trainerId', async () => {
     // Feature: control-marcas-entrenamiento, Property 7: El trainerId coincide con el usuario autenticado
-    const record = await createPerformance(clientId, exerciseId, trainerId, {
+    const record = await createPerformance(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
       value: 100,
       unit: PerformanceUnit.kg,
       date: '2026-06-04',
@@ -107,6 +111,7 @@ describe('performances.service integration', () => {
     // Feature: control-marcas-entrenamiento, Property 8: Ejercicios INACTIVE excluidos de listados y Current_Mark
     const inactiveExercise = await prisma.exercise.create({
       data: {
+        tenantId: TEST_TENANT_ID,
         name: `Inactive Performance Exercise ${Date.now()}`,
         category: 'Test',
         defaultUnit: PerformanceUnit.kg,
@@ -116,6 +121,7 @@ describe('performances.service integration', () => {
 
     await prisma.performanceRecord.create({
       data: {
+        tenantId: TEST_TENANT_ID,
         clientId,
         exerciseId: inactiveExercise.id,
         trainerId,
@@ -125,8 +131,8 @@ describe('performances.service integration', () => {
       },
     });
 
-    const exercises = await listExercises();
-    const currentMarks = await getCurrentMarks(clientId);
+    const exercises = await listExercises(TEST_TENANT_ID);
+    const currentMarks = await getCurrentMarks(TEST_TENANT_ID, clientId);
 
     expect(exercises.some((exercise) => exercise.id === inactiveExercise.id)).toBe(false);
     expect(currentMarks.some((mark) => mark.exerciseId === inactiveExercise.id)).toBe(false);

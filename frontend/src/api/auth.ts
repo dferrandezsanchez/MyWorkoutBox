@@ -1,8 +1,16 @@
 import apiClient from './axios';
-import type { LoginResponse, AuthUser } from '../types/auth';
+import type { LoginResponse, AuthUser, LoginSuccessResponse, TenantBrand } from '../types/auth';
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
   const response = await apiClient.post<LoginResponse>('/auth/login', { email, password });
+  return response.data;
+}
+
+export async function selectTenant(selectionToken: string, tenantId: string): Promise<LoginSuccessResponse> {
+  const response = await apiClient.post<LoginSuccessResponse>('/auth/select-tenant', {
+    selectionToken,
+    tenantId,
+  });
   return response.data;
 }
 
@@ -12,6 +20,11 @@ export async function logout(): Promise<void> {
 
 export async function getMe(): Promise<AuthUser> {
   const response = await apiClient.get<AuthUser>('/auth/me');
+  return response.data;
+}
+
+export async function getCurrentTenant(): Promise<TenantBrand> {
+  const response = await apiClient.get<TenantBrand>('/auth/tenant');
   return response.data;
 }
 

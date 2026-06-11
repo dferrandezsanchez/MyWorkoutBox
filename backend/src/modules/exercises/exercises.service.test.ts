@@ -2,17 +2,21 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import prisma from '../../prisma/client';
 import { PerformanceUnit, Status } from '../../types/domain';
 import { listExercises } from './exercises.service';
+import { ensureTestTenant, TEST_TENANT_ID } from '../../test/tenant';
 
 beforeAll(async () => {
+  await ensureTestTenant();
   await prisma.exercise.createMany({
     data: [
       {
+        tenantId: TEST_TENANT_ID,
         name: `Activo Test ${Date.now()}`,
         category: 'Test',
         defaultUnit: PerformanceUnit.kg,
         status: Status.ACTIVE,
       },
       {
+        tenantId: TEST_TENANT_ID,
         name: `Inactivo Test ${Date.now()}`,
         category: 'Test',
         defaultUnit: PerformanceUnit.kg,
@@ -24,14 +28,14 @@ beforeAll(async () => {
 
 describe('exercises.service listExercises', () => {
   it('returns only active exercises by default', async () => {
-    const exercises = await listExercises();
+    const exercises = await listExercises(TEST_TENANT_ID);
 
     expect(exercises.length).toBeGreaterThan(0);
     expect(exercises.every((exercise) => exercise.status === Status.ACTIVE)).toBe(true);
   });
 
   it('includes inactive exercises when requested', async () => {
-    const exercises = await listExercises(true);
+    const exercises = await listExercises(TEST_TENANT_ID, true);
 
     expect(exercises.some((exercise) => exercise.status === Status.INACTIVE)).toBe(true);
   });

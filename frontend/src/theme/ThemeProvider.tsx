@@ -1,5 +1,7 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { getCurrentTenant } from '../api/auth';
 import { getActiveTenantBrand, type TenantBrand } from '../config/branding';
+import { AUTH_CONTEXT_EVENT, getStoredTenantBrand, getToken, setStoredTenantBrand } from '../store/auth';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
@@ -33,7 +35,8 @@ function getSystemTheme(): 'light' | 'dark' {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const brand = useMemo(() => getActiveTenantBrand(), []);
+  const fallbackBrand = useMemo(() => getActiveTenantBrand(), []);
+  const [brand, setBrand] = useState<TenantBrand>(() => getStoredTenantBrand() ?? fallbackBrand);
   const [preference, setPreferenceState] = useState<ThemePreference>(() => getStoredPreference());
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => getSystemTheme());
   const resolvedTheme = preference === 'system' ? systemTheme : preference;
@@ -44,6 +47,48 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     media.addEventListener('change', onChange);
     return () => media.removeEventListener('change', onChange);
   }, []);
+
+  useEffect(() => {
+    const syncBrand = () => {
+      setBrand(getStoredTenantBrand() ?? fallbackBrand);
+    };
+
+    window.addEventListener(AUTH_CONTEXT_EVENT, syncBrand);
+    window.addEventListener('storage', syncBrand);
+    return () => {
+      window.removeEventListener(AUTH_CONTEXT_EVENT, syncBrand);
+      window.removeEventListener('storage', syncBrand);
+    };
+  }, [fallbackBrand]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshTenantBrand() {
+      if (!getToken()) {
+        setBrand(fallbackBrand);
+        return;
+      }
+
+      try {
+        const tenant = await getCurrentTenant();
+        if (!cancelled) {
+          setStoredTenantBrand(tenant);
+          setBrand(tenant);
+        }
+      } catch {
+        if (!cancelled) {
+          setBrand(getStoredTenantBrand() ?? fallbackBrand);
+        }
+      }
+    }
+
+    void refreshTenantBrand();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fallbackBrand]);
 
   useEffect(() => {
     const root = document.documentElement;

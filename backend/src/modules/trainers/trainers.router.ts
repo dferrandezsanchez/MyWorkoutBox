@@ -13,7 +13,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const includeInactive = req.query.includeInactive !== 'false';
-      const trainers = await trainersService.listTrainers(includeInactive);
+      const trainers = await trainersService.listTrainers(req.user!.tenantId, includeInactive);
       res.status(200).json(trainers);
     } catch (err) {
       next(err);
@@ -27,7 +27,7 @@ router.post(
   authorize(Role.ADMIN),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const trainer = await trainersService.createTrainer(req.body);
+      const trainer = await trainersService.createTrainer(req.user!.tenantId, req.body);
       res.status(201).json(trainer);
     } catch (err) {
       next(err);
@@ -41,7 +41,7 @@ router.get(
   authorize(Role.ADMIN),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const trainer = await trainersService.getTrainer(req.params.id);
+      const trainer = await trainersService.getTrainer(req.user!.tenantId, req.params.id);
       res.status(200).json(trainer);
     } catch (err) {
       next(err);
@@ -55,7 +55,7 @@ router.put(
   authorize(Role.ADMIN),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const trainer = await trainersService.updateTrainer(req.params.id, req.body);
+      const trainer = await trainersService.updateTrainer(req.user!.tenantId, req.params.id, req.body);
       res.status(200).json(trainer);
     } catch (err) {
       next(err);
@@ -70,7 +70,7 @@ router.patch(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { active } = req.body as { active: boolean };
-      const trainer = await trainersService.setTrainerActive(req.params.id, Boolean(active));
+      const trainer = await trainersService.setTrainerActive(req.user!.tenantId, req.params.id, Boolean(active));
       res.status(200).json(trainer);
     } catch (err) {
       next(err);
@@ -84,7 +84,7 @@ router.put(
   authorize(Role.ADMIN),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await trainersService.resetTrainerPassword(req.params.id, req.body);
+      await trainersService.resetTrainerPassword(req.user!.tenantId, req.params.id, req.body);
       res.status(200).json({ message: 'Contraseña actualizada correctamente' });
     } catch (err) {
       next(err);
