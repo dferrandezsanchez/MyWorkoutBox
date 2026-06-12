@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Building2, LogIn, ShieldCheck } from 'lucide-react';
 import { login, selectTenant } from '../api/auth';
 import { setStoredTenantBrand, setToken } from '../store/auth';
+import { queryClient } from '../queryClient';
 import { Button, Panel, TextInput, ThemeToggle } from '../components/ui';
 import { PLATFORM_BRAND } from '../config/branding';
 import type { LoginSuccessResponse, TenantOption } from '../types/auth';
@@ -32,6 +33,7 @@ export default function LoginPage() {
   };
 
   const completeLogin = (response: LoginSuccessResponse) => {
+    queryClient.clear();
     setStoredTenantBrand(response.tenant);
     setToken(response.token);
     navigate(getSafeNextPath() ?? (response.user.role === 'ADMIN' ? '/admin' : '/trainer'), {

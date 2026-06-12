@@ -131,6 +131,7 @@ export default function ExerciseHistoryPage() {
           exerciseId={exerciseId!}
           exerciseName={exercise.name}
           defaultUnit={exercise.defaultUnit}
+          exercise={exercise}
           onClose={() => setShowForm(false)}
         />
       )}

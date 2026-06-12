@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getToken, removeToken } from '../store/auth';
+import { queryClient } from '../queryClient';
 
 function buildLoginRedirect(reason: 'session-expired' | 'auth-required' = 'session-expired'): string {
   const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -38,6 +39,7 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 401 && !isLoginRequest) {
       removeToken();
+      queryClient.clear();
       window.location.assign(buildLoginRedirect('session-expired'));
     }
     return Promise.reject(error);

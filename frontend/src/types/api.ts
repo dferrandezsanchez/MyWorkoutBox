@@ -13,6 +13,56 @@ export type PerformanceUnit =
   | 'calories'
   | 'text';
 
+export type ExerciseCategory =
+  | 'strength'
+  | 'functional'
+  | 'core'
+  | 'endurance'
+  | 'mobility'
+  | 'technique';
+
+export type MovementPattern =
+  | 'push'
+  | 'pull'
+  | 'squat'
+  | 'hinge'
+  | 'lunge'
+  | 'core'
+  | 'locomotion'
+  | 'carry'
+  | 'olympic'
+  | 'gymnastic'
+  | 'conditioning'
+  | 'mobility'
+  | 'general';
+
+export type EvaluationType =
+  | 'repetitions'
+  | 'weight_reps'
+  | 'max_time'
+  | 'distance'
+  | 'time_to_complete'
+  | 'amrap'
+  | 'rounds_reps'
+  | 'qualitative';
+
+export type ImprovementDirection = 'higher' | 'lower' | 'qualitative';
+
+export interface MeasurementField {
+  key: 'value' | 'weight' | 'repetitions' | 'duration' | 'distance';
+  label: string;
+  unit?: PerformanceUnit;
+  required: boolean;
+  primary?: boolean;
+}
+
+export interface VariantGroup {
+  key: string;
+  label: string;
+  options: string[];
+  required: boolean;
+}
+
 // Client
 export interface Client {
   id: string;
@@ -35,8 +85,13 @@ export interface Client {
 export interface Exercise {
   id: string;
   name: string;
-  category: string;
+  category: ExerciseCategory | string;
+  movementPattern: MovementPattern | string;
+  evaluationType: EvaluationType | string;
+  improvementDirection: ImprovementDirection | string;
   defaultUnit: PerformanceUnit;
+  measurementFields: string;
+  variantGroups: string;
   description?: string;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
@@ -77,6 +132,7 @@ export interface PerformanceRecord {
 export interface CurrentMark {
   exerciseId: string;
   exerciseName: string;
+  exercise: Exercise;
   record: PerformanceRecord | null;
 }
 
@@ -112,16 +168,26 @@ export interface UpdateClientData {
 
 export interface CreateExerciseData {
   name: string;
-  category: string;
+  category: ExerciseCategory | string;
+  movementPattern?: MovementPattern | string;
+  evaluationType?: EvaluationType | string;
+  improvementDirection?: ImprovementDirection | string;
   defaultUnit: PerformanceUnit;
+  measurementFields?: MeasurementField[];
+  variantGroups?: VariantGroup[];
   description?: string;
   status?: 'ACTIVE' | 'INACTIVE';
 }
 
 export interface UpdateExerciseData {
   name?: string;
-  category?: string;
+  category?: ExerciseCategory | string;
+  movementPattern?: MovementPattern | string;
+  evaluationType?: EvaluationType | string;
+  improvementDirection?: ImprovementDirection | string;
   defaultUnit?: PerformanceUnit;
+  measurementFields?: MeasurementField[];
+  variantGroups?: VariantGroup[];
   description?: string;
   status?: 'ACTIVE' | 'INACTIVE';
 }

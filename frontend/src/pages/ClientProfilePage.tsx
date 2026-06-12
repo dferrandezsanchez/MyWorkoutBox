@@ -7,7 +7,7 @@ import { AppShell, Button, EmptyState, Panel, StatusBadge } from '../components/
 import { useClient } from '../hooks/useClients';
 import { useCurrentPerformances, usePerformanceHistory } from '../hooks/usePerformances';
 import { formatPerformance, getBestRecord } from '../utils/exerciseTemplates';
-import type { CurrentMark } from '../types/api';
+import type { CurrentMark, Exercise } from '../types/api';
 
 function calculateAge(birthDate: string): number {
   return Math.floor(
@@ -23,7 +23,7 @@ function formatAge(birthDate: string): string {
 export default function ClientProfilePage() {
   const { id: clientId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [showForm, setShowForm] = useState<{ exerciseId: string; exerciseName: string } | null>(null);
+  const [showForm, setShowForm] = useState<{ exerciseId: string; exerciseName: string; exercise?: Exercise } | null>(null);
 
   const { data: client, isLoading: isLoadingClient, isError: isErrorClient } = useClient(clientId!);
   const {
@@ -119,6 +119,7 @@ export default function ClientProfilePage() {
                     setShowForm({
                       exerciseId: item.exerciseId,
                       exerciseName: item.exerciseName,
+                      exercise: item.exercise,
                     })
                   }
                 />
@@ -133,6 +134,7 @@ export default function ClientProfilePage() {
           clientId={clientId!}
           exerciseId={showForm.exerciseId}
           exerciseName={showForm.exerciseName}
+          exercise={showForm.exercise}
           onClose={() => setShowForm(null)}
         />
       )}
@@ -151,7 +153,7 @@ function ExerciseMarkCard({
 }) {
   const navigate = useNavigate();
   const { data: history } = usePerformanceHistory(clientId, item.exerciseId);
-  const best = getBestRecord(history ?? []);
+  const best = getBestRecord(history ?? [], item.exercise);
 
   return (
     <Panel className="max-w-full overflow-hidden p-4">

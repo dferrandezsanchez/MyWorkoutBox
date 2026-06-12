@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { getAuthUser, removeToken } from '../store/auth';
 import { useAuthUser } from '../hooks/useAuthUser';
 import { useTheme, type ThemePreference } from '../theme/ThemeProvider';
@@ -242,6 +243,7 @@ export function AppShell({
 }: AppShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const user = getAuthUser();
   const { data: fullUser } = useAuthUser();
   const { brand } = useTheme();
@@ -250,6 +252,7 @@ export function AppShell({
 
   const logout = () => {
     removeToken();
+    queryClient.clear();
     navigate('/login');
   };
 
