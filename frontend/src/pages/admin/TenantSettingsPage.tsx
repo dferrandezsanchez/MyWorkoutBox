@@ -20,11 +20,23 @@ const FIELD_LABELS: Record<string, string> = {
   primarySoft: 'Color suave',
 };
 
+function normalizeHexColor(value: string, fallback: string): string {
+  return HEX_COLOR_RE.test(value.trim()) ? value.trim() : fallback;
+}
+
 function getApiError(error: unknown): { message: string; fields: string[] } {
   if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { error?: string; fields?: string[] } | undefined;
+    const data = error.response?.data as { error?: string; fields?: string[] } | string | undefined;
+    if (typeof data === 'string') {
+      return {
+        message: `No se pudieron guardar los ajustes. Respuesta del servidor: ${data.slice(0, 180)}`,
+        fields: [],
+      };
+    }
+
+    const status = error.response?.status;
     return {
-      message: data?.error ?? 'No se pudieron guardar los ajustes.',
+      message: data?.error ?? `No se pudieron guardar los ajustes${status ? ` (HTTP ${status})` : ''}.`,
       fields: data?.fields ?? [],
     };
   }
@@ -101,10 +113,7 @@ export default function TenantSettingsPage() {
   const clientInvalidFields = [
     !form.name.trim() ? 'name' : '',
     !form.shortName.trim() ? 'shortName' : '',
-    !form.mark.trim() || form.mark.trim().length > 4 ? 'mark' : '',
-    !HEX_COLOR_RE.test(form.primary) ? 'primary' : '',
-    !HEX_COLOR_RE.test(form.primaryHover) ? 'primaryHover' : '',
-    !HEX_COLOR_RE.test(form.primarySoft) ? 'primarySoft' : '',
+    !form.mark.trim() ? 'mark' : '',
   ].filter(Boolean);
   const errorFields = formError?.fields.length ? formError.fields : clientInvalidFields;
   const hasFieldError = (field: string) => errorFields.includes(field);
@@ -135,7 +144,17 @@ export default function TenantSettingsPage() {
               }
 
               try {
-                await updateMutation.mutateAsync(form);
+                await updateMutation.mutateAsync({
+                  ...form,
+                  name: form.name.trim(),
+                  shortName: form.shortName.trim(),
+                  mark: form.mark.trim().slice(0, 4),
+                  claim: form.claim.trim(),
+                  description: form.description.trim(),
+                  primary: normalizeHexColor(form.primary, DEFAULT_COLORS.primary),
+                  primaryHover: normalizeHexColor(form.primaryHover, DEFAULT_COLORS.primaryHover),
+                  primarySoft: normalizeHexColor(form.primarySoft, DEFAULT_COLORS.primarySoft),
+                });
                 setSaved(true);
               } catch (error) {
                 setFormError(getApiError(error));
@@ -181,7 +200,7 @@ export default function TenantSettingsPage() {
                   aria-invalid={hasFieldError('mark')}
                   required
                 />
-                {hasFieldError('mark') && <FieldError>Usa entre 1 y 4 caracteres.</FieldError>}
+                {hasFieldError('mark') && <FieldError>Introduce una marca. Si es larga, se usaran los primeros 4 caracteres.</FieldError>}
               </div>
               <div>
                 <label className={inputLabel} htmlFor="tenant-claim">Claim</label>

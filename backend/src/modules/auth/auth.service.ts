@@ -72,6 +72,18 @@ export interface UpdateTenantInput {
 
 type LoginResult = LoginResponse | TenantSelectionResponse;
 const HEX_COLOR_RE = /^#[0-9A-Fa-f]{6}$/;
+const DEFAULT_TENANT_BRAND = {
+  claim: 'Training Intelligence',
+  description: 'Gestión de clientes, entrenadores, ejercicios y marcas.',
+  primary: '#2563EB',
+  primaryHover: '#1D4ED8',
+  primarySoft: '#93C5FD',
+};
+
+function normalizeHexColor(value: string | undefined, fallback: string): string {
+  const normalized = value?.trim();
+  return normalized && HEX_COLOR_RE.test(normalized) ? normalized : fallback;
+}
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -326,9 +338,9 @@ export async function updateCurrentTenant(tenantId: string, data: UpdateTenantIn
   const mark = data.mark?.trim();
   const claim = data.claim?.trim();
   const description = data.description?.trim();
-  const primary = data.primary?.trim();
-  const primaryHover = data.primaryHover?.trim();
-  const primarySoft = data.primarySoft?.trim();
+  const primary = normalizeHexColor(data.primary, DEFAULT_TENANT_BRAND.primary);
+  const primaryHover = normalizeHexColor(data.primaryHover, DEFAULT_TENANT_BRAND.primaryHover);
+  const primarySoft = normalizeHexColor(data.primarySoft, DEFAULT_TENANT_BRAND.primarySoft);
 
   if (!name) {
     throw new AppError('El nombre del centro es obligatorio', 400, ['name']);
@@ -338,21 +350,8 @@ export async function updateCurrentTenant(tenantId: string, data: UpdateTenantIn
     throw new AppError('El nombre corto es obligatorio', 400, ['shortName']);
   }
 
-  if (!mark || mark.length > 4) {
-    throw new AppError('La marca debe tener entre 1 y 4 caracteres', 400, ['mark']);
-  }
-
-  const invalidColorFields = [
-    ['primary', primary],
-    ['primaryHover', primaryHover],
-    ['primarySoft', primarySoft],
-  ]
-    .filter(([, value]) => !value || !HEX_COLOR_RE.test(value))
-    .map(([field]) => field)
-    .filter((field): field is string => Boolean(field));
-
-  if (invalidColorFields.length > 0) {
-    throw new AppError('Los colores deben estar en formato hexadecimal #RRGGBB', 400, invalidColorFields);
+  if (!mark) {
+    throw new AppError('La marca es obligatoria', 400, ['mark']);
   }
 
   await prisma.tenant.update({
@@ -361,9 +360,9 @@ export async function updateCurrentTenant(tenantId: string, data: UpdateTenantIn
       name,
       appName: data.appName?.trim() || name,
       shortName,
-      mark,
-      claim: claim || 'Training Intelligence',
-      description: description || 'Gestión de clientes, entrenadores, ejercicios y marcas.',
+      mark: mark.slice(0, 4),
+      claim: claim || DEFAULT_TENANT_BRAND.claim,
+      description: description || DEFAULT_TENANT_BRAND.description,
       primary,
       primaryHover,
       primarySoft,
