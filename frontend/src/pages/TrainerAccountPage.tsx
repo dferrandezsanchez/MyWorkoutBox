@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { KeyRound, LogOut, Palette, UserCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { AppShell, Button, Panel, TextInput, ThemeToggle } from '../components/ui';
 import { useAuthUser, useChangePassword, useUpdateAuthUser } from '../hooks/useAuthUser';
 import { removeToken } from '../store/auth';
 
 export default function TrainerAccountPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: user, isLoading, isError } = useAuthUser();
   const updateMutation = useUpdateAuthUser();
   const passwordMutation = useChangePassword();
@@ -28,6 +30,7 @@ export default function TrainerAccountPage() {
 
   const logout = () => {
     removeToken();
+    queryClient.clear();
     navigate('/login');
   };
 

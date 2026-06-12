@@ -1,4 +1,4 @@
-import type { PerformanceRecord, PerformanceUnit } from '../types/api';
+import type { Exercise, PerformanceRecord, PerformanceUnit } from '../types/api';
 
 export type ExerciseTemplateKind = 'pullups' | 'strength' | 'time' | 'distance' | 'reps';
 
@@ -110,13 +110,19 @@ export function formatPerformance(record?: PerformanceRecord | null): string {
   return variant ? `${base} · ${variant}` : base;
 }
 
-export function getBestRecord(records: PerformanceRecord[] = []): PerformanceRecord | null {
+export function getBestRecord(records: PerformanceRecord[] = [], exercise?: Pick<Exercise, 'improvementDirection'>): PerformanceRecord | null {
   if (!records.length) return null;
+  if (exercise?.improvementDirection === 'qualitative') return records[0];
 
   return records.reduce((best, record) => {
     const bestValue = Number(best.value) || 0;
     const recordValue = Number(record.value) || 0;
-    if (recordValue !== bestValue) return recordValue > bestValue ? record : best;
+    if (recordValue !== bestValue) {
+      if (exercise?.improvementDirection === 'lower') {
+        return recordValue < bestValue ? record : best;
+      }
+      return recordValue > bestValue ? record : best;
+    }
 
     const bestReps = best.repetitions ?? 0;
     const recordReps = record.repetitions ?? 0;

@@ -109,15 +109,20 @@ model Client {
 }
 
 model Exercise {
-  id          String          @id @default(uuid())
-  tenantId    String
-  name        String
-  category    String
-  defaultUnit String
-  description String?
-  status      String          @default("ACTIVE")
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id                   String          @id @default(uuid())
+  tenantId             String
+  name                 String
+  category             String
+  movementPattern      String          @default("general")
+  evaluationType       String          @default("repetitions")
+  improvementDirection String          @default("higher")
+  defaultUnit          String
+  measurementFields    String          @default("[]")
+  variantGroups        String          @default("[]")
+  description          String?
+  status               String          @default("ACTIVE")
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
   tenant       Tenant              @relation(fields: [tenantId], references: [id])
   performances PerformanceRecord[]

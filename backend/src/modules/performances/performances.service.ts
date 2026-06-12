@@ -26,6 +26,17 @@ function normalizePerformanceDate(date?: Date | string): Date {
 export interface CurrentMarkResult {
   exerciseId: string;
   exerciseName: string;
+  exercise: {
+    id: string;
+    name: string;
+    category: string;
+    movementPattern: string;
+    evaluationType: string;
+    improvementDirection: string;
+    defaultUnit: string;
+    measurementFields: string;
+    variantGroups: string;
+  };
   record: (PerformanceRecord & { trainerName: string }) | null;
 }
 
@@ -78,7 +89,22 @@ export async function getCurrentMarks(tenantId: string, clientId: string): Promi
       });
 
       if (records.length === 0) {
-        return { exerciseId: exercise.id, exerciseName: exercise.name, record: null };
+        return {
+          exerciseId: exercise.id,
+          exerciseName: exercise.name,
+          exercise: {
+            id: exercise.id,
+            name: exercise.name,
+            category: exercise.category,
+            movementPattern: exercise.movementPattern,
+            evaluationType: exercise.evaluationType,
+            improvementDirection: exercise.improvementDirection,
+            defaultUnit: exercise.defaultUnit,
+            measurementFields: exercise.measurementFields,
+            variantGroups: exercise.variantGroups,
+          },
+          record: null,
+        };
       }
 
       const raw = records[0];
@@ -89,7 +115,22 @@ export async function getCurrentMarks(tenantId: string, clientId: string): Promi
       // Remove the nested trainer object from the spread to keep the shape clean
       delete (record as unknown as Record<string, unknown>)['trainer'];
 
-      return { exerciseId: exercise.id, exerciseName: exercise.name, record };
+      return {
+        exerciseId: exercise.id,
+        exerciseName: exercise.name,
+        exercise: {
+          id: exercise.id,
+          name: exercise.name,
+          category: exercise.category,
+          movementPattern: exercise.movementPattern,
+          evaluationType: exercise.evaluationType,
+          improvementDirection: exercise.improvementDirection,
+          defaultUnit: exercise.defaultUnit,
+          measurementFields: exercise.measurementFields,
+          variantGroups: exercise.variantGroups,
+        },
+        record,
+      };
     })
   );
 

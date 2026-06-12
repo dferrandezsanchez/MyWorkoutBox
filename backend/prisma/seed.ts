@@ -9,6 +9,164 @@ const PLATFORM_PRIMARY = '#2563EB';
 const PLATFORM_PRIMARY_HOVER = '#1D4ED8';
 const PLATFORM_PRIMARY_SOFT = '#93C5FD';
 
+const BASE_EXERCISES = [
+  {
+    slug: 'dominadas',
+    name: 'Dominadas',
+    category: 'strength',
+    movementPattern: 'pull',
+    evaluationType: 'repetitions',
+    improvementDirection: 'higher',
+    defaultUnit: PerformanceUnit.repetitions,
+    description: 'Dominadas estrictas con registro de agarre, asistencia y lastre.',
+    measurementFields: [
+      { key: 'value', label: 'Repeticiones', unit: PerformanceUnit.repetitions, required: true, primary: true },
+      { key: 'weight', label: 'Peso adicional', unit: PerformanceUnit.kg, required: false },
+    ],
+    variantGroups: [
+      { key: 'agarre', label: 'Agarre', options: ['Prono', 'Supino', 'Neutro'], required: false },
+      { key: 'asistencia', label: 'Asistencia', options: ['Libre', 'Banda', 'Máquina'], required: false },
+    ],
+  },
+  {
+    slug: 'peso_muerto',
+    name: 'Peso muerto',
+    category: 'strength',
+    movementPattern: 'hinge',
+    evaluationType: 'weight_reps',
+    improvementDirection: 'higher',
+    defaultUnit: PerformanceUnit.kg,
+    description: 'Peso muerto con variante y repeticiones.',
+    measurementFields: [
+      { key: 'value', label: 'Peso', unit: PerformanceUnit.kg, required: true, primary: true },
+      { key: 'repetitions', label: 'Repeticiones', unit: PerformanceUnit.repetitions, required: true },
+    ],
+    variantGroups: [
+      { key: 'variante', label: 'Variante', options: ['Convencional', 'Sumo', 'Rumano'], required: false },
+    ],
+  },
+  {
+    slug: 'sentadilla',
+    name: 'Sentadilla',
+    category: 'strength',
+    movementPattern: 'squat',
+    evaluationType: 'weight_reps',
+    improvementDirection: 'higher',
+    defaultUnit: PerformanceUnit.kg,
+    description: 'Sentadilla con variante y repeticiones.',
+    measurementFields: [
+      { key: 'value', label: 'Peso', unit: PerformanceUnit.kg, required: true, primary: true },
+      { key: 'repetitions', label: 'Repeticiones', unit: PerformanceUnit.repetitions, required: true },
+    ],
+    variantGroups: [
+      { key: 'variante', label: 'Variante', options: ['Trasera', 'Frontal', 'Goblet'], required: false },
+    ],
+  },
+  {
+    slug: 'zancadas',
+    name: 'Zancadas',
+    category: 'functional',
+    movementPattern: 'lunge',
+    evaluationType: 'weight_reps',
+    improvementDirection: 'higher',
+    defaultUnit: PerformanceUnit.kg,
+    description: 'Zancadas con peso y repeticiones por pierna.',
+    measurementFields: [
+      { key: 'value', label: 'Peso', unit: PerformanceUnit.kg, required: true, primary: true },
+      { key: 'repetitions', label: 'Reps por pierna', unit: PerformanceUnit.repetitions, required: true },
+    ],
+    variantGroups: [
+      { key: 'variante', label: 'Variante', options: ['Caminando', 'Atrás', 'Búlgara'], required: false },
+    ],
+  },
+  {
+    slug: 'plancha_frontal',
+    name: 'Plancha frontal',
+    category: 'core',
+    movementPattern: 'core',
+    evaluationType: 'max_time',
+    improvementDirection: 'higher',
+    defaultUnit: PerformanceUnit.seconds,
+    description: 'Tiempo máximo con técnica estable.',
+    measurementFields: [
+      { key: 'value', label: 'Tiempo', unit: PerformanceUnit.seconds, required: true, primary: true },
+    ],
+    variantGroups: [
+      { key: 'variante', label: 'Variante', options: ['Frontal', 'Lateral izquierda', 'Lateral derecha'], required: false },
+    ],
+  },
+  {
+    slug: 'burpees',
+    name: 'Burpees',
+    category: 'functional',
+    movementPattern: 'conditioning',
+    evaluationType: 'repetitions',
+    improvementDirection: 'higher',
+    defaultUnit: PerformanceUnit.repetitions,
+    description: 'Repeticiones completadas con estándar definido por el centro.',
+    measurementFields: [
+      { key: 'value', label: 'Repeticiones', unit: PerformanceUnit.repetitions, required: true, primary: true },
+      { key: 'duration', label: 'Tiempo límite', unit: PerformanceUnit.minutes, required: false },
+    ],
+    variantGroups: [
+      { key: 'variante', label: 'Variante', options: ['Estándar', 'Over bar', 'Box-facing'], required: false },
+    ],
+  },
+  {
+    slug: 'carrera',
+    name: 'Carrera',
+    category: 'endurance',
+    movementPattern: 'locomotion',
+    evaluationType: 'time_to_complete',
+    improvementDirection: 'lower',
+    defaultUnit: PerformanceUnit.seconds,
+    description: 'Tiempo para completar una distancia definida.',
+    measurementFields: [
+      { key: 'value', label: 'Tiempo', unit: PerformanceUnit.seconds, required: true, primary: true },
+      { key: 'distance', label: 'Distancia', unit: PerformanceUnit.meters, required: true },
+    ],
+    variantGroups: [
+      { key: 'distancia_objetivo', label: 'Distancia objetivo', options: ['400 m', '1 km', '5 km'], required: false },
+    ],
+  },
+] as const;
+
+async function seedBaseExercises(tenantId: string, idPrefix: string) {
+  for (const exercise of BASE_EXERCISES) {
+    await prisma.exercise.upsert({
+      where: { id: `${idPrefix}_ex_${exercise.slug}` },
+      update: {
+        tenantId,
+        name: exercise.name,
+        category: exercise.category,
+        movementPattern: exercise.movementPattern,
+        evaluationType: exercise.evaluationType,
+        improvementDirection: exercise.improvementDirection,
+        defaultUnit: exercise.defaultUnit,
+        measurementFields: JSON.stringify(exercise.measurementFields),
+        variantGroups: JSON.stringify(exercise.variantGroups),
+        description: exercise.description,
+        status: Status.ACTIVE,
+      },
+      create: {
+        id: `${idPrefix}_ex_${exercise.slug}`,
+        tenantId,
+        name: exercise.name,
+        category: exercise.category,
+        movementPattern: exercise.movementPattern,
+        evaluationType: exercise.evaluationType,
+        improvementDirection: exercise.improvementDirection,
+        defaultUnit: exercise.defaultUnit,
+        measurementFields: JSON.stringify(exercise.measurementFields),
+        variantGroups: JSON.stringify(exercise.variantGroups),
+        description: exercise.description,
+        status: Status.ACTIVE,
+      },
+    });
+  }
+  console.log(`✓ Base exercises ready for ${tenantId}: ${BASE_EXERCISES.length}`);
+}
+
 async function ensureUser(email: string, name: string, password: string, role: Role) {
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   return prisma.user.upsert({
@@ -91,56 +249,7 @@ async function seedDemoTenant() {
   await ensureMembership(trainer.id, tenant.id, Role.TRAINER);
   console.log(`✓ Demo users ready: ${admin.email}, ${trainer.email}`);
 
-  const exercises = [
-    {
-      id: 'demo_ex_dominadas',
-      name: 'Dominadas',
-      category: 'Espalda',
-      defaultUnit: PerformanceUnit.repetitions,
-      description: 'Dominadas estrictas con registro de agarre en notas.',
-    },
-    {
-      id: 'demo_ex_peso_muerto',
-      name: 'Peso muerto',
-      category: 'Fuerza',
-      defaultUnit: PerformanceUnit.kg,
-      description: 'Peso muerto convencional o variante indicada por el entrenador.',
-    },
-    {
-      id: 'demo_ex_zancadas',
-      name: 'Zancadas',
-      category: 'Pierna',
-      defaultUnit: PerformanceUnit.kg,
-      description: 'Zancadas con registro de repeticiones por pierna.',
-    },
-    {
-      id: 'demo_ex_plancha',
-      name: 'Plancha frontal',
-      category: 'Core',
-      defaultUnit: PerformanceUnit.seconds,
-      description: 'Tiempo máximo con técnica estable.',
-    },
-  ];
-
-  for (const exercise of exercises) {
-    await prisma.exercise.upsert({
-      where: { id: exercise.id },
-      update: {
-        tenantId: tenant.id,
-        name: exercise.name,
-        category: exercise.category,
-        defaultUnit: exercise.defaultUnit,
-        description: exercise.description,
-        status: Status.ACTIVE,
-      },
-      create: {
-        ...exercise,
-        tenantId: tenant.id,
-        status: Status.ACTIVE,
-      },
-    });
-  }
-  console.log(`✓ Demo exercises ready: ${exercises.length}`);
+  await seedBaseExercises(tenant.id, 'demo');
 
   const clients = [
     {
@@ -206,8 +315,8 @@ async function seedDemoTenant() {
     ['demo_perf_alex_deadlift_2', 'demo_client_alex', 'demo_ex_peso_muerto', '125', PerformanceUnit.kg, '2026-06-02T10:00:00.000Z', 125, 3, null, null, '3 repeticiones'],
     ['demo_perf_marta_zancadas_1', 'demo_client_marta', 'demo_ex_zancadas', '24', PerformanceUnit.kg, '2026-05-12T11:00:00.000Z', 24, 10, null, null, '10 por pierna'],
     ['demo_perf_marta_zancadas_2', 'demo_client_marta', 'demo_ex_zancadas', '28', PerformanceUnit.kg, '2026-06-03T11:00:00.000Z', 28, 8, null, null, '8 por pierna'],
-    ['demo_perf_javier_plancha_1', 'demo_client_javier', 'demo_ex_plancha', '75', PerformanceUnit.seconds, '2026-05-18T09:30:00.000Z', null, null, 75, null, 'Buena estabilidad'],
-    ['demo_perf_javier_plancha_2', 'demo_client_javier', 'demo_ex_plancha', '95', PerformanceUnit.seconds, '2026-06-06T09:30:00.000Z', null, null, 95, null, 'Mejor control lumbar'],
+    ['demo_perf_javier_plancha_1', 'demo_client_javier', 'demo_ex_plancha_frontal', '75', PerformanceUnit.seconds, '2026-05-18T09:30:00.000Z', null, null, 75, null, 'Variante: Frontal | Buena estabilidad'],
+    ['demo_perf_javier_plancha_2', 'demo_client_javier', 'demo_ex_plancha_frontal', '95', PerformanceUnit.seconds, '2026-06-06T09:30:00.000Z', null, null, 95, null, 'Variante: Frontal | Mejor control lumbar'],
   ] as const;
 
   for (const [id, clientId, exerciseId, value, unit, date, weight, repetitions, duration, distance, notes] of records) {
@@ -303,6 +412,8 @@ async function seedTuMetaTenant() {
   const trainer = await ensureUser('trainer@gym.com', 'Entrenador TuMeta', 'Trainer1234!', Role.TRAINER);
   console.log(`✓ TuMeta trainer user ready: ${trainer.email} (id: ${trainer.id})`);
   await ensureMembership(trainer.id, tenant.id, Role.TRAINER);
+
+  await seedBaseExercises(tenant.id, 'tumeta');
 }
 
 async function main() {

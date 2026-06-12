@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { Role } from '../types/auth';
 import { getToken, removeToken } from '../store/auth';
+import { queryClient } from '../queryClient';
 
 interface JwtPayload {
   sub: string;
@@ -52,6 +53,7 @@ export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
   // Invalid token → redirect to login
   if (!payload || !payload.tenantId || !payload.organizationId) {
     removeToken();
+    queryClient.clear();
     return <Navigate to={`/login?reason=session-expired&next=${encodeURIComponent(currentPath)}`} replace />;
   }
 
@@ -59,6 +61,7 @@ export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
   const now = Math.floor(Date.now() / 1000);
   if (payload.exp <= now) {
     removeToken();
+    queryClient.clear();
     return <Navigate to={`/login?reason=session-expired&next=${encodeURIComponent(currentPath)}`} replace />;
   }
 
