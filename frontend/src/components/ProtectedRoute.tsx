@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import type { Role } from '../types/auth';
 import { getToken, removeToken } from '../store/auth';
 
@@ -37,11 +37,14 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
+  const location = useLocation();
   const token = getToken();
+  const currentPath = `${location.pathname}${location.search}${location.hash}`;
+  const loginPath = `/login?reason=auth-required&next=${encodeURIComponent(currentPath)}`;
 
   // No token → redirect to login
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={loginPath} replace />;
   }
 
   const payload = decodeJwtPayload(token);
@@ -49,14 +52,14 @@ export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
   // Invalid token → redirect to login
   if (!payload || !payload.tenantId || !payload.organizationId) {
     removeToken();
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/login?reason=session-expired&next=${encodeURIComponent(currentPath)}`} replace />;
   }
 
   // Expired token → remove and redirect to login
   const now = Math.floor(Date.now() / 1000);
   if (payload.exp <= now) {
     removeToken();
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/login?reason=session-expired&next=${encodeURIComponent(currentPath)}`} replace />;
   }
 
   // Role check → redirect to home if insufficient role

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Building2, LogIn, ShieldCheck } from 'lucide-react';
 import { login, selectTenant } from '../api/auth';
 import { setStoredTenantBrand, setToken } from '../store/auth';
@@ -9,17 +9,34 @@ import type { LoginSuccessResponse, TenantOption } from '../types/auth';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectionToken, setSelectionToken] = useState<string | null>(null);
   const [tenantOptions, setTenantOptions] = useState<TenantOption[]>([]);
+  const reason = searchParams.get('reason');
+  const nextPath = searchParams.get('next');
+
+  const getSafeNextPath = () => {
+    if (!nextPath || !nextPath.startsWith('/') || nextPath.startsWith('//')) {
+      return null;
+    }
+
+    if (nextPath.startsWith('/login')) {
+      return null;
+    }
+
+    return nextPath;
+  };
 
   const completeLogin = (response: LoginSuccessResponse) => {
     setStoredTenantBrand(response.tenant);
     setToken(response.token);
-    navigate(response.user.role === 'ADMIN' ? '/admin' : '/trainer');
+    navigate(getSafeNextPath() ?? (response.user.role === 'ADMIN' ? '/admin' : '/trainer'), {
+      replace: true,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,6 +93,18 @@ export default function LoginPage() {
         </div>
 
         <Panel className="p-6">
+          {reason === 'session-expired' && !selectionToken && (
+            <div className="mb-4 rounded-2xl border border-amber-300/40 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100">
+              Tu sesión ha caducado. Inicia sesión de nuevo para continuar.
+            </div>
+          )}
+
+          {reason === 'auth-required' && !selectionToken && (
+            <div className="mb-4 rounded-2xl border border-border/70 bg-surface/70 px-4 py-3 text-sm text-text-secondary">
+              Inicia sesión para acceder a la plataforma.
+            </div>
+          )}
+
           <div className="mb-6 flex items-start justify-between gap-3">
             <div>
               <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">

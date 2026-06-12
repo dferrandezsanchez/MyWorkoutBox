@@ -165,13 +165,36 @@ location /uploads/ {
 }
 ```
 
-For React Router, Plesk/Nginx also needs SPA fallback to `index.html`. If Plesk does not add it automatically, add:
+React Router uses client-side routes such as `/trainer`, `/admin`, and `/clients/:id`.
+On mobile, an inactive browser tab can be reloaded directly on one of those paths. The web
+server must then return `index.html` instead of Plesk's 404 page.
+
+In Plesk, add this under the subdomain's **Additional Apache directives**:
+
+```apache
+FallbackResource /index.html
+```
+
+If `FallbackResource` is not available, use the rewrite fallback:
+
+```apache
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ /index.html [L]
+</IfModule>
+```
+
+If the domain is served directly by Nginx instead of Apache behind Plesk, the equivalent is:
 
 ```nginx
 location / {
   try_files $uri $uri/ /index.html;
 }
 ```
+
+Do not apply this fallback to `/api/` or `/uploads/`; those paths must keep the proxy rules above.
 
 ## First Release
 

@@ -1,6 +1,17 @@
 import axios from 'axios';
 import { getToken, removeToken } from '../store/auth';
 
+function buildLoginRedirect(reason: 'session-expired' | 'auth-required' = 'session-expired'): string {
+  const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const params = new URLSearchParams({ reason });
+
+  if (currentPath && !currentPath.startsWith('/login')) {
+    params.set('next', currentPath);
+  }
+
+  return `/login?${params.toString()}`;
+}
+
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000',
   headers: {
@@ -21,9 +32,13 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url ?? '';
+    const isLoginRequest =
+      requestUrl.includes('/auth/login') || requestUrl.includes('/auth/select-tenant');
+
+    if (error.response?.status === 401 && !isLoginRequest) {
       removeToken();
-      window.location.href = '/login';
+      window.location.assign(buildLoginRedirect('session-expired'));
     }
     return Promise.reject(error);
   }
