@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 import { Palette, Save } from 'lucide-react';
 import { AppShell, Button, EmptyState, PageHeader, Panel, TextInput } from '../../components/ui';
 import { PLATFORM_BRAND } from '../../config/branding';
@@ -9,11 +10,33 @@ const DEFAULT_COLORS = {
   primaryHover: PLATFORM_BRAND.primaryHover,
   primarySoft: PLATFORM_BRAND.primarySoft,
 };
+const HEX_COLOR_RE = /^#[0-9A-Fa-f]{6}$/;
+const FIELD_LABELS: Record<string, string> = {
+  name: 'Nombre del centro',
+  shortName: 'Nombre corto',
+  mark: 'Marca',
+  primary: 'Color principal',
+  primaryHover: 'Color hover',
+  primarySoft: 'Color suave',
+};
+
+function getApiError(error: unknown): { message: string; fields: string[] } {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as { error?: string; fields?: string[] } | undefined;
+    return {
+      message: data?.error ?? 'No se pudieron guardar los ajustes.',
+      fields: data?.fields ?? [],
+    };
+  }
+
+  return { message: 'No se pudieron guardar los ajustes.', fields: [] };
+}
 
 export default function TenantSettingsPage() {
   const { data: tenant, isLoading, isError } = useCurrentTenant();
   const updateMutation = useUpdateCurrentTenant();
   const [saved, setSaved] = useState(false);
+  const [formError, setFormError] = useState<{ message: string; fields: string[] } | null>(null);
   const [form, setForm] = useState({
     name: '',
     shortName: '',
@@ -57,6 +80,7 @@ export default function TenantSettingsPage() {
 
   const setValue = (key: keyof typeof form, value: string) => {
     setSaved(false);
+    setFormError(null);
     setForm((current) => ({ ...current, [key]: value }));
   };
 
@@ -74,6 +98,16 @@ export default function TenantSettingsPage() {
   };
 
   const inputLabel = 'mb-1.5 block text-sm font-semibold text-text-secondary';
+  const clientInvalidFields = [
+    !form.name.trim() ? 'name' : '',
+    !form.shortName.trim() ? 'shortName' : '',
+    !form.mark.trim() || form.mark.trim().length > 4 ? 'mark' : '',
+    !HEX_COLOR_RE.test(form.primary) ? 'primary' : '',
+    !HEX_COLOR_RE.test(form.primaryHover) ? 'primaryHover' : '',
+    !HEX_COLOR_RE.test(form.primarySoft) ? 'primarySoft' : '',
+  ].filter(Boolean);
+  const errorFields = formError?.fields.length ? formError.fields : clientInvalidFields;
+  const hasFieldError = (field: string) => errorFields.includes(field);
 
   return (
     <AppShell>
@@ -90,8 +124,22 @@ export default function TenantSettingsPage() {
             onSubmit={async (event) => {
               event.preventDefault();
               setSaved(false);
-              await updateMutation.mutateAsync(form);
-              setSaved(true);
+              setFormError(null);
+
+              if (clientInvalidFields.length > 0) {
+                setFormError({
+                  message: 'Revisa los campos marcados antes de guardar.',
+                  fields: clientInvalidFields,
+                });
+                return;
+              }
+
+              try {
+                await updateMutation.mutateAsync(form);
+                setSaved(true);
+              } catch (error) {
+                setFormError(getApiError(error));
+              }
             }}
           >
             <div className="grid gap-4 sm:grid-cols-[1.2fr_0.8fr]">
@@ -102,8 +150,10 @@ export default function TenantSettingsPage() {
                   value={form.name}
                   onChange={(event) => setValue('name', event.target.value)}
                   className="w-full"
+                  aria-invalid={hasFieldError('name')}
                   required
                 />
+                {hasFieldError('name') && <FieldError>Introduce un nombre para el centro.</FieldError>}
               </div>
               <div>
                 <label className={inputLabel} htmlFor="tenant-short">Nombre corto</label>
@@ -112,8 +162,10 @@ export default function TenantSettingsPage() {
                   value={form.shortName}
                   onChange={(event) => setValue('shortName', event.target.value)}
                   className="w-full"
+                  aria-invalid={hasFieldError('shortName')}
                   required
                 />
+                {hasFieldError('shortName') && <FieldError>Introduce un nombre corto.</FieldError>}
               </div>
             </div>
 
@@ -126,8 +178,10 @@ export default function TenantSettingsPage() {
                   maxLength={4}
                   onChange={(event) => setValue('mark', event.target.value)}
                   className="w-full"
+                  aria-invalid={hasFieldError('mark')}
                   required
                 />
+                {hasFieldError('mark') && <FieldError>Usa entre 1 y 4 caracteres.</FieldError>}
               </div>
               <div>
                 <label className={inputLabel} htmlFor="tenant-claim">Claim</label>
@@ -163,23 +217,28 @@ export default function TenantSettingsPage() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <ColorField label="Principal" value={form.primary} onChange={(value) => setValue('primary', value)} />
-                <ColorField label="Hover" value={form.primaryHover} onChange={(value) => setValue('primaryHover', value)} />
-                <ColorField label="Suave" value={form.primarySoft} onChange={(value) => setValue('primarySoft', value)} />
+                <ColorField label="Principal" value={form.primary} hasError={hasFieldError('primary')} onChange={(value) => setValue('primary', value)} />
+                <ColorField label="Hover" value={form.primaryHover} hasError={hasFieldError('primaryHover')} onChange={(value) => setValue('primaryHover', value)} />
+                <ColorField label="Suave" value={form.primarySoft} hasError={hasFieldError('primarySoft')} onChange={(value) => setValue('primarySoft', value)} />
               </div>
             </div>
 
             {saved && <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-300">Ajustes guardados.</p>}
-            {updateMutation.isError && (
-              <p className="text-sm font-semibold text-red-600 dark:text-red-300">
-                No se pudieron guardar los ajustes. Revisa los campos.
-              </p>
+            {formError && (
+              <div className="rounded-2xl border border-red-300/50 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+                <p className="font-semibold">{formError.message}</p>
+                {errorFields.length > 0 && (
+                  <p className="mt-1">
+                    Campos: {errorFields.map((field) => FIELD_LABELS[field] ?? field).join(', ')}.
+                  </p>
+                )}
+              </div>
             )}
 
             <Button
               type="submit"
               variant="primary"
-              disabled={updateMutation.isPending || !form.name.trim() || !form.shortName.trim() || !form.mark.trim()}
+              disabled={updateMutation.isPending}
               className="inline-flex w-full items-center justify-center gap-2 sm:w-auto"
             >
               <Save size={16} />
@@ -241,14 +300,16 @@ export default function TenantSettingsPage() {
 function ColorField({
   label,
   value,
+  hasError = false,
   onChange,
 }: {
   label: string;
   value: string;
+  hasError?: boolean;
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="block rounded-2xl border border-border/70 bg-surface/70 p-3">
+    <label className={`block rounded-2xl border bg-surface/70 p-3 ${hasError ? 'border-red-400/70' : 'border-border/70'}`}>
       <span className="text-sm font-semibold text-text-primary">{label}</span>
       <span className="mt-3 flex items-center gap-2">
         <input
@@ -262,8 +323,14 @@ function ColorField({
           onChange={(event) => onChange(event.target.value)}
           pattern="^#[0-9A-Fa-f]{6}$"
           className="min-w-0 flex-1"
+          aria-invalid={hasError}
         />
       </span>
+      {hasError && <FieldError>Usa formato hexadecimal, por ejemplo #2563EB.</FieldError>}
     </label>
   );
+}
+
+function FieldError({ children }: { children: React.ReactNode }) {
+  return <p className="mt-1 text-xs font-semibold text-red-600 dark:text-red-300">{children}</p>;
 }
