@@ -13,6 +13,7 @@ const ClientsAdminPage = React.lazy(() => import('./pages/admin/ClientsAdminPage
 const ExercisesAdminPage = React.lazy(() => import('./pages/admin/ExercisesAdminPage'));
 const ClientEditPage = React.lazy(() => import('./pages/admin/ClientEditPage'));
 const TrainersAdminPage = React.lazy(() => import('./pages/admin/TrainersAdminPage'));
+const TenantSettingsPage = React.lazy(() => import('./pages/admin/TenantSettingsPage'));
 
 const LoadingFallback = (
   <div className="flex min-h-screen items-center justify-center">
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="/admin/clients/:id" element={<ClientEditPage />} />
           <Route path="/admin/exercises" element={<ExercisesAdminPage />} />
           <Route path="/admin/trainers" element={<TrainersAdminPage />} />
+          <Route path="/admin/settings" element={<TenantSettingsPage />} />
         </Route>
 
         {/* Catch-all */}

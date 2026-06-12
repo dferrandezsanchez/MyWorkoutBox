@@ -58,7 +58,20 @@ export interface ChangePasswordInput {
   newPassword?: string;
 }
 
+export interface UpdateTenantInput {
+  name?: string;
+  appName?: string;
+  shortName?: string;
+  mark?: string;
+  claim?: string;
+  description?: string;
+  primary?: string;
+  primaryHover?: string;
+  primarySoft?: string;
+}
+
 type LoginResult = LoginResponse | TenantSelectionResponse;
+const HEX_COLOR_RE = /^#[0-9A-Fa-f]{6}$/;
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -305,4 +318,57 @@ export async function getCurrentTenant(tenantId: string): Promise<PublicTenant> 
     primaryHover: tenant.primaryHover,
     primarySoft: tenant.primarySoft,
   };
+}
+
+export async function updateCurrentTenant(tenantId: string, data: UpdateTenantInput): Promise<PublicTenant> {
+  const name = data.name?.trim();
+  const shortName = data.shortName?.trim();
+  const mark = data.mark?.trim();
+  const claim = data.claim?.trim();
+  const description = data.description?.trim();
+  const primary = data.primary?.trim();
+  const primaryHover = data.primaryHover?.trim();
+  const primarySoft = data.primarySoft?.trim();
+
+  if (!name) {
+    throw new AppError('El nombre del centro es obligatorio', 400, ['name']);
+  }
+
+  if (!shortName) {
+    throw new AppError('El nombre corto es obligatorio', 400, ['shortName']);
+  }
+
+  if (!mark || mark.length > 4) {
+    throw new AppError('La marca debe tener entre 1 y 4 caracteres', 400, ['mark']);
+  }
+
+  const invalidColorFields = [
+    ['primary', primary],
+    ['primaryHover', primaryHover],
+    ['primarySoft', primarySoft],
+  ]
+    .filter(([, value]) => !value || !HEX_COLOR_RE.test(value))
+    .map(([field]) => field)
+    .filter((field): field is string => Boolean(field));
+
+  if (invalidColorFields.length > 0) {
+    throw new AppError('Los colores deben estar en formato hexadecimal #RRGGBB', 400, invalidColorFields);
+  }
+
+  await prisma.tenant.update({
+    where: { id: tenantId },
+    data: {
+      name,
+      appName: data.appName?.trim() || name,
+      shortName,
+      mark,
+      claim: claim || 'Training Intelligence',
+      description: description || 'Gestión de clientes, entrenadores, ejercicios y marcas.',
+      primary,
+      primaryHover,
+      primarySoft,
+    },
+  });
+
+  return getCurrentTenant(tenantId);
 }

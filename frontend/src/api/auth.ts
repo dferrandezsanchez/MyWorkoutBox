@@ -28,6 +28,11 @@ export async function getCurrentTenant(): Promise<TenantBrand> {
   return response.data;
 }
 
+export async function updateCurrentTenant(data: Partial<TenantBrand>): Promise<TenantBrand> {
+  const response = await apiClient.put<TenantBrand>('/auth/tenant', data);
+  return response.data;
+}
+
 export async function updateMe(data: { name: string; email: string }): Promise<AuthUser> {
   const response = await apiClient.put<AuthUser>('/auth/me', data);
   return response.data;
