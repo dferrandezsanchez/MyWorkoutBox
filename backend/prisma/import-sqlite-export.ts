@@ -62,12 +62,22 @@ function toBoolean(value: unknown): boolean {
   return Boolean(value);
 }
 
+function toDate(value: unknown): Date {
+  if (value instanceof Date) return value;
+  if (typeof value === 'number') return new Date(value);
+  if (typeof value === 'string') {
+    if (/^-?\d+$/.test(value)) return new Date(Number(value));
+    return new Date(value.replace(' ', 'T'));
+  }
+  return new Date(String(value));
+}
+
 function normalizeRows(table: TableName, rows: Row[]): Row[] {
   return rows.map((row) => {
     const normalized = { ...row };
     for (const field of DATE_FIELDS[table]) {
       if (normalized[field] !== null && normalized[field] !== undefined) {
-        normalized[field] = new Date(String(normalized[field]));
+        normalized[field] = toDate(normalized[field]);
       }
     }
     for (const field of BOOLEAN_FIELDS[table]) {
