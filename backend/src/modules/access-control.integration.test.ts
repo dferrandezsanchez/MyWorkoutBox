@@ -1,16 +1,9 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcrypt';
-import prisma from '../prisma/client';
-import { authorize } from '../middleware/authorize';
+import prisma from '../infrastructure/prisma/prisma-client';
+import { authorize } from '../interfaces/http/middleware/authorize';
 import { PerformanceUnit, Role, Status } from '../types/domain';
-import {
-  createClient,
-  listClients,
-  setClientStatus,
-  updateClient,
-} from './clients/clients.service';
-import { createExercise } from './exercises/exercises.service';
-import { createPerformance, getCurrentMarks, getHistory } from './performances/performances.service';
+import { createContainer } from '../main/container';
 import { ensureTenantMembership, TEST_ORGANIZATION_ID, TEST_TENANT_ID } from '../test/tenant';
 
 let adminUserId: string;
@@ -84,7 +77,8 @@ describe('role based access control', () => {
   });
 
   it('supports the client admin flow create, list, update and deactivate', async () => {
-    const client = await createClient(
+    const clientsUseCases = createContainer().clients;
+    const client = await clientsUseCases.create.execute(
       TEST_TENANT_ID,
       {
         firstName: 'Integration',
@@ -95,18 +89,19 @@ describe('role based access control', () => {
       adminUserId,
     );
 
-    const listed = await listClients(TEST_TENANT_ID, 'Integration');
+    const listed = await clientsUseCases.list.execute(TEST_TENANT_ID, 'Integration');
     expect(listed.some((item) => item.id === client.id)).toBe(true);
 
-    const updated = await updateClient(TEST_TENANT_ID, client.id, { firstName: 'Integration Updated' }, adminUserId);
+    const updated = await clientsUseCases.update.execute(TEST_TENANT_ID, client.id, { firstName: 'Integration Updated' }, adminUserId);
     expect(updated.firstName).toBe('Integration Updated');
 
-    const inactive = await setClientStatus(TEST_TENANT_ID, client.id, Status.INACTIVE, adminUserId);
+    const inactive = await clientsUseCases.setStatus.execute(TEST_TENANT_ID, client.id, Status.INACTIVE, adminUserId);
     expect(inactive.status).toBe(Status.INACTIVE);
   });
 
   it('creates a performance and exposes current mark plus ordered history', async () => {
-    const client = await createClient(
+    const container = createContainer();
+    const client = await container.clients.create.execute(
       TEST_TENANT_ID,
       {
         firstName: 'Performance Flow',
@@ -116,29 +111,29 @@ describe('role based access control', () => {
       adminUserId,
     );
 
-    const exercise = await createExercise(TEST_TENANT_ID, {
+    const exercise = await container.exercises.create.execute(TEST_TENANT_ID, {
       name: `Performance Flow Exercise ${Date.now()}`,
       category: 'Test',
       defaultUnit: PerformanceUnit.kg,
       status: Status.ACTIVE,
     });
 
-    await createPerformance(TEST_TENANT_ID, client.id, exercise.id, trainerUserId, {
+    await container.performances.create.execute(TEST_TENANT_ID, client.id, exercise.id, trainerUserId, {
       value: 100,
       unit: PerformanceUnit.kg,
       date: '2026-06-01',
     });
-    await createPerformance(TEST_TENANT_ID, client.id, exercise.id, trainerUserId, {
+    await container.performances.create.execute(TEST_TENANT_ID, client.id, exercise.id, trainerUserId, {
       value: 110,
       unit: PerformanceUnit.kg,
       date: '2026-06-02',
     });
 
-    const currentMarks = await getCurrentMarks(TEST_TENANT_ID, client.id);
+    const currentMarks = await container.performances.getCurrentMarks.execute(TEST_TENANT_ID, client.id);
     const current = currentMarks.find((mark) => mark.exerciseId === exercise.id);
     expect(current?.record?.value).toBe('110');
 
-    const history = await getHistory(TEST_TENANT_ID, client.id, exercise.id);
+    const history = await container.performances.getHistory.execute(TEST_TENANT_ID, client.id, exercise.id);
     expect(history.map((record) => record.value)).toEqual(['110', '100']);
   });
 });

@@ -2,9 +2,9 @@ import 'dotenv/config';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { beforeAll, describe, expect, it } from 'vitest';
-import prisma from '../../prisma/client';
+import prisma from '../../infrastructure/prisma/prisma-client';
 import { Role } from '../../types/domain';
-import { login } from './auth.service';
+import { createContainer } from '../../main/container';
 import { ensureTenantMembership, TEST_ORGANIZATION_ID, TEST_TENANT_ID } from '../../test/tenant';
 
 const email = 'auth-test@gym.com';
@@ -34,7 +34,7 @@ beforeAll(async () => {
 
 describe('auth.service login', () => {
   it('returns a JWT with the user role for valid credentials', async () => {
-    const response = await login(email, password);
+    const response = await createContainer().auth.login.execute(email, password);
     if ('tenantSelectionRequired' in response) {
       throw new Error('Expected direct login for single tenant user');
     }
@@ -49,13 +49,13 @@ describe('auth.service login', () => {
   });
 
   it('returns the same generic error for wrong password and unknown email', async () => {
-    await expect(login(email, 'wrong-password')).rejects.toMatchObject({
-      statusCode: 401,
+    await expect(createContainer().auth.login.execute(email, 'wrong-password')).rejects.toMatchObject({
+      code: 'UNAUTHENTICATED',
       message: 'Credenciales incorrectas',
     });
 
-    await expect(login('missing-auth-test@gym.com', password)).rejects.toMatchObject({
-      statusCode: 401,
+    await expect(createContainer().auth.login.execute('missing-auth-test@gym.com', password)).rejects.toMatchObject({
+      code: 'UNAUTHENTICATED',
       message: 'Credenciales incorrectas',
     });
   });

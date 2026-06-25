@@ -1,9 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import bcrypt from 'bcrypt';
-import prisma from '../../prisma/client';
+import prisma from '../../infrastructure/prisma/prisma-client';
 import { PerformanceUnit, Role, Status } from '../../types/domain';
-import { listExercises } from '../exercises/exercises.service';
-import { createPerformance, getCurrentMarks, getHistory } from './performances.service';
+import { createContainer } from '../../main/container';
 import { ensureTenantMembership, TEST_TENANT_ID } from '../../test/tenant';
 
 let clientId: string;
@@ -54,24 +53,25 @@ beforeAll(async () => {
 
 describe('performances.service integration', () => {
   it('preserves history and orders it newest first', async () => {
+    const performancesUseCases = createContainer().performances;
     // Feature: control-marcas-entrenamiento, Property 3: Creación de marca preserva el histórico
-    await createPerformance(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
+    await performancesUseCases.create.execute(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
       value: 80,
       unit: PerformanceUnit.kg,
       date: '2026-06-01',
     });
-    await createPerformance(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
+    await performancesUseCases.create.execute(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
       value: 90,
       unit: PerformanceUnit.kg,
       date: '2026-06-03',
     });
-    await createPerformance(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
+    await performancesUseCases.create.execute(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
       value: 85,
       unit: PerformanceUnit.kg,
       date: '2026-06-02',
     });
 
-    const history = await getHistory(TEST_TENANT_ID, clientId, exerciseId);
+    const history = await performancesUseCases.getHistory.execute(TEST_TENANT_ID, clientId, exerciseId);
 
     // Feature: control-marcas-entrenamiento, Property 4: Histórico ordenado de más reciente a más antiguo
     expect(history).toHaveLength(3);
@@ -85,12 +85,12 @@ describe('performances.service integration', () => {
 
     // Feature: control-marcas-entrenamiento, Property 5: Marca rechazada sin campos obligatorios
     await expect(
-      createPerformance(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
+      createContainer().performances.create.execute(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
         value: '',
         unit: undefined as unknown as PerformanceUnit,
       }),
     ).rejects.toMatchObject({
-      statusCode: 400,
+      code: 'BAD_REQUEST',
       fields: ['value', 'unit'],
     });
 
@@ -102,7 +102,7 @@ describe('performances.service integration', () => {
 
   it('always stores the authenticated trainerId', async () => {
     // Feature: control-marcas-entrenamiento, Property 7: El trainerId coincide con el usuario autenticado
-    const record = await createPerformance(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
+    const record = await createContainer().performances.create.execute(TEST_TENANT_ID, clientId, exerciseId, trainerId, {
       value: 100,
       unit: PerformanceUnit.kg,
       date: '2026-06-04',
@@ -139,8 +139,9 @@ describe('performances.service integration', () => {
       },
     });
 
-    const exercises = await listExercises(TEST_TENANT_ID);
-    const currentMarks = await getCurrentMarks(TEST_TENANT_ID, clientId);
+    const container = createContainer();
+    const exercises = await container.exercises.list.execute(TEST_TENANT_ID);
+    const currentMarks = await container.performances.getCurrentMarks.execute(TEST_TENANT_ID, clientId);
 
     expect(exercises.some((exercise) => exercise.id === inactiveExercise.id)).toBe(false);
     expect(currentMarks.some((mark) => mark.exerciseId === inactiveExercise.id)).toBe(false);
