@@ -8,7 +8,7 @@ const router = Router();
 
 // GET /exercises — any authenticated user
 // ADMIN can pass ?includeInactive=true to include inactive exercises
-router.get('/', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
+router.get('/', authenticate, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const includeInactive =
       req.user?.role === Role.ADMIN && req.query.includeInactive === 'true';

@@ -11,7 +11,7 @@ interface JwtPayload {
   exp: number;
 }
 
-export function authenticate(req: any, res: Response, next: NextFunction): void {
+export function authenticate(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

@@ -6,6 +6,8 @@ echo "npm: $(npm --version 2>/dev/null || echo 'missing')"
 echo "git: $(git --version 2>/dev/null || echo 'missing')"
 echo "systemctl: $(systemctl --version 2>/dev/null | head -n 1 || echo 'missing')"
 echo "rsync: $(rsync --version 2>/dev/null | head -n 1 || echo 'missing')"
+echo "mysql: $(mysql --version 2>/dev/null || echo 'missing')"
+echo "mysqldump: $(mysqldump --version 2>/dev/null || echo 'missing')"
 
 if [[ -n "${APP_PATH:-}" ]]; then
   echo "APP_PATH: $APP_PATH"

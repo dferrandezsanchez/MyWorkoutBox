@@ -5,16 +5,16 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         String
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  name         String   @db.VarChar(191)
+  email        String   @unique @db.VarChar(191)
+  passwordHash String   @db.VarChar(191)
+  role         String   @db.VarChar(32)
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -27,9 +27,9 @@ model User {
 }
 
 model Organization {
-  id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  name      String   @db.VarChar(191)
+  slug      String   @unique @db.VarChar(191)
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -40,18 +40,18 @@ model Organization {
 }
 
 model Tenant {
-  id             String   @id @default(uuid())
-  organizationId String
-  name           String
-  slug           String   @unique
-  appName        String
-  shortName      String
-  mark           String
-  claim          String
-  description    String
-  primary        String
-  primaryHover   String
-  primarySoft    String
+  id             String   @id @default(uuid()) @db.VarChar(36)
+  organizationId String   @db.VarChar(36)
+  name           String   @db.VarChar(191)
+  slug           String   @unique @db.VarChar(191)
+  appName        String   @db.VarChar(191)
+  shortName      String   @db.VarChar(191)
+  mark           String   @db.VarChar(16)
+  claim          String   @db.VarChar(191)
+  description    String   @db.Text
+  primary        String   @db.VarChar(7)
+  primaryHover   String   @db.VarChar(7)
+  primarySoft    String   @db.VarChar(7)
   active         Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -68,10 +68,10 @@ model Tenant {
 }
 
 model UserTenantMembership {
-  id        String   @id @default(uuid())
-  userId    String
-  tenantId  String
-  role      String
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String   @db.VarChar(36)
+  tenantId  String   @db.VarChar(36)
+  role      String   @db.VarChar(32)
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -85,17 +85,17 @@ model UserTenantMembership {
 }
 
 model Client {
-  id                String    @id @default(uuid())
-  tenantId          String
-  firstName         String
-  lastName          String
+  id                String    @id @default(uuid()) @db.VarChar(36)
+  tenantId          String    @db.VarChar(36)
+  firstName         String    @db.VarChar(191)
+  lastName          String    @db.VarChar(191)
   birthDate         DateTime
   height            Float?
   weight            Float?
   bodyFatPercentage Float?
-  photoUrl          String?
-  notes             String?
-  status            String    @default("ACTIVE")
+  photoUrl          String?   @db.VarChar(512)
+  notes             String?   @db.Text
+  status            String    @default("ACTIVE") @db.VarChar(32)
   anonymizedAt      DateTime?
   photoConsentAt    DateTime?
   createdAt         DateTime  @default(now())
@@ -109,18 +109,18 @@ model Client {
 }
 
 model Exercise {
-  id                   String          @id @default(uuid())
-  tenantId             String
-  name                 String
-  category             String
-  movementPattern      String          @default("general")
-  evaluationType       String          @default("repetitions")
-  improvementDirection String          @default("higher")
-  defaultUnit          String
-  measurementFields    String          @default("[]")
-  variantGroups        String          @default("[]")
-  description          String?
-  status               String          @default("ACTIVE")
+  id                   String          @id @default(uuid()) @db.VarChar(36)
+  tenantId             String          @db.VarChar(36)
+  name                 String          @db.VarChar(191)
+  category             String          @db.VarChar(64)
+  movementPattern      String          @default("general") @db.VarChar(64)
+  evaluationType       String          @default("repetitions") @db.VarChar(64)
+  improvementDirection String          @default("higher") @db.VarChar(32)
+  defaultUnit          String          @db.VarChar(32)
+  measurementFields    String          @db.Text
+  variantGroups        String          @db.Text
+  description          String?         @db.Text
+  status               String          @default("ACTIVE") @db.VarChar(32)
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
 
@@ -132,19 +132,19 @@ model Exercise {
 }
 
 model PerformanceRecord {
-  id          String          @id @default(uuid())
-  tenantId    String
-  clientId    String
-  exerciseId  String
-  trainerId   String
-  value       String
-  unit        String
+  id          String          @id @default(uuid()) @db.VarChar(36)
+  tenantId    String          @db.VarChar(36)
+  clientId    String          @db.VarChar(36)
+  exerciseId  String          @db.VarChar(36)
+  trainerId   String          @db.VarChar(36)
+  value       String          @db.VarChar(191)
+  unit        String          @db.VarChar(32)
   weight      Float?
   repetitions Int?
   duration    Float?
   distance    Float?
   date        DateTime
-  notes       String?
+  notes       String?         @db.Text
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
@@ -159,13 +159,13 @@ model PerformanceRecord {
 }
 
 model AuditLog {
-  id         String   @id @default(uuid())
-  tenantId   String
-  userId     String
-  action     String
-  entityType String
-  entityId   String
-  metadata   String?
+  id         String   @id @default(uuid()) @db.VarChar(36)
+  tenantId   String   @db.VarChar(36)
+  userId     String   @db.VarChar(36)
+  action     String   @db.VarChar(64)
+  entityType String   @db.VarChar(64)
+  entityId   String   @db.VarChar(36)
+  metadata   String?  @db.Text
   createdAt  DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id])

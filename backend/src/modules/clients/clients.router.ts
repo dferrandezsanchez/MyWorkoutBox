@@ -27,11 +27,11 @@ const upload = multer({
 const router = Router();
 
 // GET /clients — any authenticated user
-router.get('/', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
+router.get('/', authenticate, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const q = typeof req.query.q === 'string' ? req.query.q : undefined;
     const includeInactive =
-      (req as any).user?.role === Role.ADMIN && req.query.includeInactive === 'true';
+      req.user?.role === Role.ADMIN && req.query.includeInactive === 'true';
     const clients = await clientsService.listClients(req.user!.tenantId, q, includeInactive);
     res.status(200).json(clients);
   } catch (err) {
@@ -44,7 +44,7 @@ router.post(
   '/',
   authenticate,
   authorize(Role.ADMIN),
-  async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const client = await clientsService.createClient(req.user!.tenantId, req.body, req.user!.userId);
       res.status(201).json(client);
@@ -55,7 +55,7 @@ router.post(
 );
 
 // GET /clients/:id — any authenticated user
-router.get('/:id', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
+router.get('/:id', authenticate, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const client = await clientsService.getClient(req.user!.tenantId, req.params.id);
     res.status(200).json(client);
@@ -69,7 +69,7 @@ router.put(
   '/:id',
   authenticate,
   authorize(Role.ADMIN),
-  async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const client = await clientsService.updateClient(req.user!.tenantId, req.params.id, req.body, req.user!.userId);
       res.status(200).json(client);
@@ -84,7 +84,7 @@ router.patch(
   '/:id/status',
   authenticate,
   authorize(Role.ADMIN),
-  async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { status } = req.body as { status: Status };
       const client = await clientsService.setClientStatus(req.user!.tenantId, req.params.id, status, req.user!.userId);
@@ -101,7 +101,7 @@ router.post(
   authenticate,
   authorize(Role.ADMIN),
   upload.single('photo'),
-  async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.file) {
         res.status(400).json({ error: 'Se requiere un archivo de imagen' });
@@ -130,7 +130,7 @@ router.get(
   '/:id/export',
   authenticate,
   authorize(Role.ADMIN),
-  async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await clientsService.exportClient(req.user!.tenantId, req.params.id, req.user!.userId);
       res.status(200).json(result);
@@ -145,7 +145,7 @@ router.post(
   '/:id/anonymize',
   authenticate,
   authorize(Role.ADMIN),
-  async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const client = await clientsService.anonymizeClient(req.user!.tenantId, req.params.id, req.user!.userId);
       res.status(200).json(client);
@@ -160,7 +160,7 @@ router.delete(
   '/:id/photo',
   authenticate,
   authorize(Role.ADMIN),
-  async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const client = await clientsService.deletePhoto(req.user!.tenantId, req.params.id, req.user!.userId);
       res.status(200).json(client);

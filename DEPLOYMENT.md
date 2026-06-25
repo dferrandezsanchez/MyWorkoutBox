@@ -28,10 +28,9 @@ Recommended layout for the Plesk server:
 ```txt
 /var/www/vhosts/danielferrandez.dev/myworkoutbox/
   repo/       # git clone of this repository
-  data/       # SQLite database, outside git
   public/     # frontend dist published here
-  backups/    # SQLite backups before deploy migrations
-  uploads/    # future persistent uploads if needed
+  backups/    # database export/backups outside git
+  uploads/    # persistent uploads outside git
 ```
 
 Example secrets:
@@ -40,8 +39,9 @@ Example secrets:
 APP_PATH=/var/www/vhosts/danielferrandez.dev/myworkoutbox
 FRONTEND_PUBLIC_PATH=/var/www/vhosts/danielferrandez.dev/myworkoutbox/public
 SYSTEMD_SERVICE_NAME=myworkoutbox-api
-DATABASE_URL=file:/var/www/vhosts/danielferrandez.dev/myworkoutbox/data/production.sqlite
+DATABASE_URL=mysql://myworkoutbox_user:password@localhost:3306/myworkoutbox_prod
 JWT_EXPIRES_IN=7d
+CORS_ORIGIN=https://tumeta.danielferrandez.dev
 PORT=3000
 VITE_API_URL=https://tumeta.danielferrandez.dev/api
 ```
@@ -53,7 +53,7 @@ Tenant branding is resolved after login from the authenticated tenant. `VITE_TEN
 Create the folders:
 
 ```bash
-mkdir -p /var/www/vhosts/danielferrandez.dev/myworkoutbox/{repo,data,public,backups,uploads}
+mkdir -p /var/www/vhosts/danielferrandez.dev/myworkoutbox/{repo,public,backups,uploads}
 ```
 
 Clone the repo:
@@ -123,11 +123,40 @@ SYSTEMD_SERVICE_NAME
 DATABASE_URL
 JWT_SECRET
 JWT_EXPIRES_IN
+CORS_ORIGIN
 PORT
 VITE_API_URL
 ```
 
 `VPS_SSH_KEY` should be a private key that can SSH into the VPS user and access the repo folder.
+
+## Plesk MySQL / MariaDB
+
+Create a production database from Plesk:
+
+```txt
+Database: myworkoutbox_prod
+User: myworkoutbox_user
+Host: usually localhost when the API runs on the same VPS
+```
+
+Set `DATABASE_URL` in GitHub secrets using this format:
+
+```txt
+mysql://myworkoutbox_user:PASSWORD@localhost:3306/myworkoutbox_prod
+```
+
+Local development must use MySQL/MariaDB too. A typical local setup is:
+
+```txt
+DATABASE_URL=mysql://myworkoutbox_user:password@localhost:3306/myworkoutbox_dev
+```
+
+Use a separate test database:
+
+```txt
+DATABASE_URL=mysql://myworkoutbox_user:password@localhost:3306/myworkoutbox_test
+```
 
 ## Plesk / Nginx
 
@@ -212,18 +241,46 @@ https://tumeta.danielferrandez.dev
 https://tumeta.danielferrandez.dev/api/health
 ```
 
-## SQLite Notes
+## Backups
 
-For the MVP, SQLite is acceptable if the database file lives outside the repo.
+The deploy script applies Prisma migrations but does not perform destructive data imports.
+Take a MySQL backup before production migrations or manual data imports:
 
-The deploy script creates a backup before migrations when `DATABASE_URL` starts with `file:`.
+```bash
+mysqldump -u myworkoutbox_user -p myworkoutbox_prod > "$APP_PATH/backups/myworkoutbox-$(date +%Y%m%d%H%M%S).sql"
+```
 
-Do not store the production SQLite file inside the repository.
-
-Uploads are kept outside the repository as well. The deploy script links `backend/uploads` to:
+Uploads are kept outside the repository. The deploy script links `backend/uploads` to:
 
 ```txt
 /var/www/vhosts/danielferrandez.dev/myworkoutbox/uploads
 ```
 
-For real multitenant production usage, PostgreSQL should be planned before onboarding multiple paying tenants.
+## Pilot Data Migration From SQLite
+
+If the TuMeta pilot data still lives in SQLite, migrate it manually before switching production traffic.
+
+1. Freeze writes in the current app.
+2. Export the SQLite source:
+
+```bash
+cd backend
+npm run migration:export-sqlite -- /path/to/production.sqlite "$APP_PATH/backups/tumeta-sqlite-export.json"
+```
+
+3. Apply MySQL migrations:
+
+```bash
+cd backend
+npm run prisma:generate
+npx prisma migrate deploy
+```
+
+4. Import into the empty MySQL database:
+
+```bash
+cd backend
+npm run migration:import-sqlite-export -- "$APP_PATH/backups/tumeta-sqlite-export.json"
+```
+
+5. Verify row counts, login, clients, exercises, performance history, audit logs, and RGPD endpoints.

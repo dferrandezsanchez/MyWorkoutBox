@@ -4,6 +4,10 @@ import { PerformanceUnit, Status } from '../../types/domain';
 import { listExercises } from './exercises.service';
 import { ensureTestTenant, TEST_TENANT_ID } from '../../test/tenant';
 
+const measurementFields = JSON.stringify([
+  { key: 'value', label: 'Peso', unit: PerformanceUnit.kg, required: true, primary: true },
+]);
+
 beforeAll(async () => {
   await ensureTestTenant();
   await prisma.exercise.createMany({
@@ -13,6 +17,8 @@ beforeAll(async () => {
         name: `Activo Test ${Date.now()}`,
         category: 'Test',
         defaultUnit: PerformanceUnit.kg,
+        measurementFields,
+        variantGroups: '[]',
         status: Status.ACTIVE,
       },
       {
@@ -20,6 +26,8 @@ beforeAll(async () => {
         name: `Inactivo Test ${Date.now()}`,
         category: 'Test',
         defaultUnit: PerformanceUnit.kg,
+        measurementFields,
+        variantGroups: '[]',
         status: Status.INACTIVE,
       },
     ],

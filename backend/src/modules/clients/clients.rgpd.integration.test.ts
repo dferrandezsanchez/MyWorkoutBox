@@ -44,6 +44,10 @@ beforeAll(async () => {
       name: `RGPD Exercise ${Date.now()}`,
       category: 'Test',
       defaultUnit: PerformanceUnit.kg,
+      measurementFields: JSON.stringify([
+        { key: 'value', label: 'Peso', unit: PerformanceUnit.kg, required: true, primary: true },
+      ]),
+      variantGroups: '[]',
       status: Status.ACTIVE,
     },
   });

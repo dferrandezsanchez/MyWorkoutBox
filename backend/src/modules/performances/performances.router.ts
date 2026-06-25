@@ -42,7 +42,7 @@ router.get(
 router.post(
   '/clients/:clientId/exercises/:exerciseId/performances',
   authenticate,
-  async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { clientId, exerciseId } = req.params;
       // trainerId is injected from the authenticated user — req.body.trainerId is ignored

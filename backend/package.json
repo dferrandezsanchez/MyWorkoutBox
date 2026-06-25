@@ -11,6 +11,8 @@
     "test:watch": "vitest",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "migration:export-sqlite": "python3 prisma/export-sqlite-data.py",
+    "migration:import-sqlite-export": "ts-node prisma/import-sqlite-export.ts",
     "prisma:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {

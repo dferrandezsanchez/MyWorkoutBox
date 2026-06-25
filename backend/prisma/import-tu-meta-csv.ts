@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 const DEFAULT_BIRTH_DATE = new Date('1900-01-01T00:00:00.000Z');
 const IMPORT_DATE = new Date('2025-04-01T00:00:00.000Z');
 const TRAINER_EMAIL = process.env.IMPORT_TRAINER_EMAIL ?? 'admin@gym.com';
+const IMPORT_TENANT_ID = process.env.IMPORT_TENANT_ID ?? 'tenant_tumeta';
 
 const EXERCISE_GROUPS = [
   { name: 'SENTADILLA', intensityCol: 1, volumeCol: 2, observationCol: 9 },
@@ -89,12 +90,24 @@ function parseRepetitions(volume: string): number | undefined {
   return undefined;
 }
 
-async function getImportTrainer() {
+async function getImportContext() {
   const trainer = await prisma.user.findUnique({ where: { email: TRAINER_EMAIL } });
   if (!trainer) {
     throw new Error(`No existe el trainer/import user ${TRAINER_EMAIL}. Ejecuta primero prisma:seed.`);
   }
-  return trainer;
+
+  const membership = await prisma.userTenantMembership.findFirst({
+    where: {
+      userId: trainer.id,
+      tenantId: IMPORT_TENANT_ID,
+      active: true,
+    },
+  });
+  if (!membership) {
+    throw new Error(`El usuario importador ${TRAINER_EMAIL} no pertenece al tenant ${IMPORT_TENANT_ID}.`);
+  }
+
+  return { trainer, tenantId: IMPORT_TENANT_ID };
 }
 
 async function cleanupGeneratedValidationData() {
@@ -153,15 +166,16 @@ async function cleanupGeneratedValidationData() {
   await prisma.user.deleteMany({ where: { id: { in: generatedUserIds } } });
 }
 
-async function upsertClient(fullName: string, actorUserId: string) {
+async function upsertClient(tenantId: string, fullName: string, actorUserId: string) {
   const { firstName, lastName } = splitClientName(fullName);
   const existing = await prisma.client.findFirst({
-    where: { firstName, lastName },
+    where: { tenantId, firstName, lastName },
   });
   if (existing) return { client: existing, created: false };
 
   const client = await prisma.client.create({
     data: {
+      tenantId,
       firstName,
       lastName,
       birthDate: DEFAULT_BIRTH_DATE,
@@ -172,6 +186,7 @@ async function upsertClient(fullName: string, actorUserId: string) {
 
   await prisma.auditLog.create({
     data: {
+      tenantId,
       userId: actorUserId,
       action: 'CREATE',
       entityType: 'Client',
@@ -183,17 +198,25 @@ async function upsertClient(fullName: string, actorUserId: string) {
   return { client, created: true };
 }
 
-async function upsertExercise(name: string) {
-  const existing = await prisma.exercise.findFirst({ where: { name } });
+async function upsertExercise(tenantId: string, name: string) {
+  const existing = await prisma.exercise.findFirst({ where: { tenantId, name } });
   if (existing) return { exercise: existing, created: false };
 
   const exercise = await prisma.exercise.create({
     data: {
+      tenantId,
       name,
       category: name === 'FLEXIONES' || name === 'REMOS' || name === 'PRESS MILITAR' || name === 'DOMINADAS'
         ? 'Tren superior'
         : 'Tren inferior',
+      movementPattern: 'general',
+      evaluationType: 'qualitative',
+      improvementDirection: 'qualitative',
       defaultUnit: PerformanceUnit.text,
+      measurementFields: JSON.stringify([
+        { key: 'value', label: 'Marca', unit: PerformanceUnit.text, required: true, primary: true },
+      ]),
+      variantGroups: JSON.stringify([]),
       status: Status.ACTIVE,
       description: 'Importado desde hoja de carga TuMeta',
     },
@@ -203,6 +226,7 @@ async function upsertExercise(name: string) {
 }
 
 async function createPerformanceIfMissing(input: {
+  tenantId: string;
   clientId: string;
   exerciseId: string;
   trainerId: string;
@@ -222,6 +246,7 @@ async function createPerformanceIfMissing(input: {
 
   const existing = await prisma.performanceRecord.findFirst({
     where: {
+      tenantId: input.tenantId,
       clientId: input.clientId,
       exerciseId: input.exerciseId,
       trainerId: input.trainerId,
@@ -235,6 +260,7 @@ async function createPerformanceIfMissing(input: {
 
   const record = await prisma.performanceRecord.create({
     data: {
+      tenantId: input.tenantId,
       clientId: input.clientId,
       exerciseId: input.exerciseId,
       trainerId: input.trainerId,
@@ -248,6 +274,7 @@ async function createPerformanceIfMissing(input: {
 
   await prisma.auditLog.create({
     data: {
+      tenantId: input.tenantId,
       userId: input.trainerId,
       action: 'CREATE',
       entityType: 'PerformanceRecord',
@@ -265,7 +292,7 @@ async function main() {
     throw new Error('Uso: ts-node prisma/import-tu-meta-csv.ts <ruta-csv>');
   }
 
-  const trainer = await getImportTrainer();
+  const { trainer, tenantId } = await getImportContext();
   await cleanupGeneratedValidationData();
 
   const rows = parseCsv(fs.readFileSync(csvPath, 'utf8'));
@@ -281,7 +308,7 @@ async function main() {
 
   const exerciseByName = new Map<string, string>();
   for (const group of EXERCISE_GROUPS) {
-    const { exercise, created } = await upsertExercise(group.name);
+    const { exercise, created } = await upsertExercise(tenantId, group.name);
     exerciseByName.set(group.name, exercise.id);
     if (created) exercisesCreated += 1;
     else exercisesReused += 1;
@@ -293,7 +320,7 @@ async function main() {
       hasMeaningfulValue(clean(row[group.intensityCol])) || hasMeaningfulValue(clean(row[group.volumeCol])),
     );
 
-    const { client, created } = await upsertClient(fullName, trainer.id);
+    const { client, created } = await upsertClient(tenantId, fullName, trainer.id);
     if (created) clientsCreated += 1;
     else clientsReused += 1;
 
@@ -309,6 +336,7 @@ async function main() {
       if (!hasMeaningfulValue(intensity) && !hasMeaningfulValue(volume)) continue;
 
       const createdPerformance = await createPerformanceIfMissing({
+        tenantId,
         clientId: client.id,
         exerciseId: exerciseByName.get(group.name)!,
         trainerId: trainer.id,
@@ -334,6 +362,7 @@ async function main() {
         performancesCreated,
         performancesSkipped,
         trainerEmail: trainer.email,
+        tenantId,
         importDate: IMPORT_DATE.toISOString(),
       },
       null,
