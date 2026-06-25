@@ -1,4 +1,4 @@
-import prisma from '../prisma/client';
+import prisma from '../infrastructure/prisma/prisma-client';
 import { Role } from '../types/domain';
 
 export const TEST_ORGANIZATION_ID = 'org_tumeta';

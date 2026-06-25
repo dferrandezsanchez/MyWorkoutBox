@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import bcrypt from 'bcrypt';
-import prisma from '../../prisma/client';
+import prisma from '../../infrastructure/prisma/prisma-client';
 import { PerformanceUnit, Role, Status } from '../../types/domain';
-import { anonymizeClient, deletePhoto, exportClient } from './clients.service';
+import { createContainer } from '../../main/container';
 import { ensureTenantMembership, TEST_TENANT_ID } from '../../test/tenant';
 
 let adminUserId: string;
@@ -68,14 +68,14 @@ beforeAll(async () => {
 
 describe('RGPD client service', () => {
   it('exports personal data and performances', async () => {
-    const exported = await exportClient(TEST_TENANT_ID, clientId, adminUserId);
+    const exported = await createContainer().clients.exportData.execute(TEST_TENANT_ID, clientId, adminUserId);
 
     expect(exported.client.id).toBe(clientId);
     expect(exported.performances).toHaveLength(1);
   });
 
   it('deletes only the client photo fields', async () => {
-    const updated = await deletePhoto(TEST_TENANT_ID, clientId, adminUserId);
+    const updated = await createContainer().clients.deletePhoto.execute(TEST_TENANT_ID, clientId, adminUserId);
 
     expect(updated.photoUrl).toBeNull();
     expect(updated.photoConsentAt).toBeNull();
@@ -84,7 +84,7 @@ describe('RGPD client service', () => {
   it('anonymizes personal fields and preserves performances', async () => {
     const countBefore = await prisma.performanceRecord.count({ where: { clientId } });
 
-    const updated = await anonymizeClient(TEST_TENANT_ID, clientId, adminUserId);
+    const updated = await createContainer().clients.anonymize.execute(TEST_TENANT_ID, clientId, adminUserId);
     const countAfter = await prisma.performanceRecord.count({ where: { clientId } });
     const auditLog = await prisma.auditLog.findFirst({
       where: { entityId: clientId, action: 'ANONYMIZE' },

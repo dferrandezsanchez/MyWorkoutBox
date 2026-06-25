@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import bcrypt from 'bcrypt';
 import app from '../index';
-import prisma from '../prisma/client';
+import prisma from '../infrastructure/prisma/prisma-client';
 import { PerformanceUnit, Role, Status } from '../types/domain';
 import { ensureTenantMembership, TEST_TENANT_ID } from '../test/tenant';
 

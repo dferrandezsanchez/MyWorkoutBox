@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import bcrypt from 'bcrypt';
-import prisma from '../../prisma/client';
+import prisma from '../../infrastructure/prisma/prisma-client';
 import { Role, Status } from '../../types/domain';
-import { listClients } from './clients.service';
+import { createContainer } from '../../main/container';
 import { ensureTenantMembership, TEST_TENANT_ID } from '../../test/tenant';
 
 const actorEmail = 'clients-service-test@gym.com';
@@ -55,7 +55,7 @@ beforeAll(async () => {
 describe('clients.service listClients', () => {
   it('filters active clients by name or surname', async () => {
     // Feature: control-marcas-entrenamiento, Property 1: Filtro de búsqueda de clientes es inclusivo y case-insensitive
-    const clients = await listClients(TEST_TENANT_ID, 'Filtro');
+    const clients = await createContainer().clients.list.execute(TEST_TENANT_ID, 'Filtro');
 
     expect(clients.length).toBeGreaterThan(0);
     expect(clients.every((client) => client.status === Status.ACTIVE)).toBe(true);
@@ -67,7 +67,7 @@ describe('clients.service listClients', () => {
   });
 
   it('can include inactive clients for admin views', async () => {
-    const clients = await listClients(TEST_TENANT_ID, 'Inactivo', true);
+    const clients = await createContainer().clients.list.execute(TEST_TENANT_ID, 'Inactivo', true);
 
     expect(clients.some((client) => client.status === Status.INACTIVE)).toBe(true);
   });

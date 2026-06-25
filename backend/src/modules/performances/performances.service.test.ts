@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { PerformanceRecord } from '@prisma/client';
-import { getCurrentMark } from './performances.service';
+import type { PerformanceRecord } from '../../domain/shared/entities';
+import { getCurrentMark } from '../../application/performances';
 
 function record(id: string, date: string): PerformanceRecord {
   return {
@@ -8,6 +8,7 @@ function record(id: string, date: string): PerformanceRecord {
     clientId: 'client-1',
     exerciseId: 'exercise-1',
     trainerId: 'trainer-1',
+    tenantId: 'tenant-1',
     value: '10',
     unit: 'kg',
     weight: null,
