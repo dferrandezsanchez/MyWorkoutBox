@@ -38,7 +38,7 @@ router.post('/logout', authenticate, (_req: Request, res: Response, next: NextFu
 });
 
 // GET /auth/me — requires authentication
-router.get('/me', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
+router.get('/me', authenticate, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const user = await authService.getMe(
       req.user!.userId,
@@ -52,7 +52,7 @@ router.get('/me', authenticate, async (req: any, res: Response, next: NextFuncti
 });
 
 // PUT /auth/me — update current user's contact info
-router.put('/me', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
+router.put('/me', authenticate, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const user = await authService.updateMe(
       req.user!.userId,
@@ -67,7 +67,7 @@ router.put('/me', authenticate, async (req: any, res: Response, next: NextFuncti
 });
 
 // GET /auth/tenant — current tenant branding/context
-router.get('/tenant', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
+router.get('/tenant', authenticate, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenant = await authService.getCurrentTenant(req.user!.tenantId);
     res.status(200).json(tenant);
@@ -77,7 +77,7 @@ router.get('/tenant', authenticate, async (req: any, res: Response, next: NextFu
 });
 
 // PUT /auth/tenant — update current tenant branding/context, ADMIN only
-router.put('/tenant', authenticate, authorize(Role.ADMIN), async (req: any, res: Response, next: NextFunction): Promise<void> => {
+router.put('/tenant', authenticate, authorize(Role.ADMIN), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenant = await authService.updateCurrentTenant(req.user!.tenantId, req.body);
     res.status(200).json(tenant);
@@ -87,7 +87,7 @@ router.put('/tenant', authenticate, authorize(Role.ADMIN), async (req: any, res:
 });
 
 // PUT /auth/me/password — update current user's password
-router.put('/me/password', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
+router.put('/me/password', authenticate, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     await authService.changePassword(req.user!.userId, req.body);
     res.status(200).json({ message: 'Contraseña actualizada correctamente' });

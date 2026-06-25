@@ -401,7 +401,11 @@ def get_database_path() -> Path:
                 value = line.split("=", 1)[1].strip().strip('"')
                 if value.startswith("file:"):
                     return Path(value[5:])
-    return Path("backend/prisma/dev.db")
+                raise SystemExit(
+                    "import-tu-meta-xlsx.py is a legacy SQLite-only importer. "
+                    "Use a SQLite DATABASE_URL only for pre-migration exports, or migrate/import through Prisma for MySQL."
+                )
+    raise SystemExit("DATABASE_URL with file: SQLite protocol is required for this legacy importer.")
 
 
 def now_iso() -> str:

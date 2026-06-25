@@ -6,6 +6,7 @@ required_vars=(
   FRONTEND_PUBLIC_PATH
   DATABASE_URL
   JWT_SECRET
+  CORS_ORIGIN
   VITE_API_URL
 )
 
@@ -31,6 +32,7 @@ DATABASE_URL="${DATABASE_URL}"
 JWT_SECRET="${JWT_SECRET}"
 JWT_EXPIRES_IN="${JWT_EXPIRES_IN:-7d}"
 PORT=${PORT:-3000}
+CORS_ORIGIN="${CORS_ORIGIN}"
 EOF
 }
 
@@ -40,21 +42,6 @@ VITE_API_URL=${VITE_API_URL}
 EOF
   if [[ -n "${VITE_TENANT_ID:-}" ]]; then
     printf 'VITE_TENANT_ID=%s\n' "$VITE_TENANT_ID" >> "$FRONTEND_DIR/.env.production"
-  fi
-}
-
-backup_sqlite_if_needed() {
-  if [[ "$DATABASE_URL" != file:* ]]; then
-    return 0
-  fi
-
-  local db_path="${DATABASE_URL#file:}"
-  mkdir -p "$(dirname "$db_path")"
-  if [[ -f "$db_path" ]]; then
-    local timestamp
-    timestamp="$(date +%Y%m%d%H%M%S)"
-    cp "$db_path" "$BACKUP_DIR/production-${timestamp}.sqlite.bak"
-    echo "SQLite backup created: $BACKUP_DIR/production-${timestamp}.sqlite.bak"
   fi
 }
 
@@ -88,7 +75,6 @@ restart_backend() {
 
 write_backend_env
 write_frontend_env
-backup_sqlite_if_needed
 install_and_build_backend
 install_and_build_frontend
 publish_frontend

@@ -10,9 +10,13 @@ import trainersRouter from './modules/trainers/trainers.router';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const corsOrigins = process.env.CORS_ORIGIN
+  ?.split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOrigins?.length ? { origin: corsOrigins } : undefined));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

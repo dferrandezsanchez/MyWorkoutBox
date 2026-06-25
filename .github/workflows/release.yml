@@ -13,11 +13,25 @@ jobs:
   verify:
     name: Build and test
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci-root-password
+          MYSQL_DATABASE: myworkoutbox_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-root-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     env:
-      DATABASE_URL: file:./prisma/ci.db
+      DATABASE_URL: mysql://root:ci-root-password@127.0.0.1:3306/myworkoutbox_test
       JWT_SECRET: ci-only-secret
       JWT_EXPIRES_IN: 7d
       PORT: 3000
+      CORS_ORIGIN: http://localhost:5173
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -82,13 +96,14 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+          CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
           PORT: ${{ secrets.PORT }}
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          envs: RELEASE_REF,APP_PATH,FRONTEND_PUBLIC_PATH,SYSTEMD_SERVICE_NAME,DATABASE_URL,JWT_SECRET,JWT_EXPIRES_IN,PORT,VITE_API_URL
+          envs: RELEASE_REF,APP_PATH,FRONTEND_PUBLIC_PATH,SYSTEMD_SERVICE_NAME,DATABASE_URL,JWT_SECRET,JWT_EXPIRES_IN,CORS_ORIGIN,PORT,VITE_API_URL
           script_stop: true
           script: |
             cd "$APP_PATH/repo"
