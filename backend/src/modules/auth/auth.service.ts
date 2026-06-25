@@ -58,7 +58,32 @@ export interface ChangePasswordInput {
   newPassword?: string;
 }
 
+export interface UpdateTenantInput {
+  name?: string;
+  appName?: string;
+  shortName?: string;
+  mark?: string;
+  claim?: string;
+  description?: string;
+  primary?: string;
+  primaryHover?: string;
+  primarySoft?: string;
+}
+
 type LoginResult = LoginResponse | TenantSelectionResponse;
+const HEX_COLOR_RE = /^#[0-9A-Fa-f]{6}$/;
+const DEFAULT_TENANT_BRAND = {
+  claim: 'Training Intelligence',
+  description: 'Gestión de clientes, entrenadores, ejercicios y marcas.',
+  primary: '#2563EB',
+  primaryHover: '#1D4ED8',
+  primarySoft: '#93C5FD',
+};
+
+function normalizeHexColor(value: string | undefined, fallback: string): string {
+  const normalized = value?.trim();
+  return normalized && HEX_COLOR_RE.test(normalized) ? normalized : fallback;
+}
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -305,4 +330,44 @@ export async function getCurrentTenant(tenantId: string): Promise<PublicTenant> 
     primaryHover: tenant.primaryHover,
     primarySoft: tenant.primarySoft,
   };
+}
+
+export async function updateCurrentTenant(tenantId: string, data: UpdateTenantInput): Promise<PublicTenant> {
+  const name = data.name?.trim();
+  const shortName = data.shortName?.trim();
+  const mark = data.mark?.trim();
+  const claim = data.claim?.trim();
+  const description = data.description?.trim();
+  const primary = normalizeHexColor(data.primary, DEFAULT_TENANT_BRAND.primary);
+  const primaryHover = normalizeHexColor(data.primaryHover, DEFAULT_TENANT_BRAND.primaryHover);
+  const primarySoft = normalizeHexColor(data.primarySoft, DEFAULT_TENANT_BRAND.primarySoft);
+
+  if (!name) {
+    throw new AppError('El nombre del centro es obligatorio', 400, ['name']);
+  }
+
+  if (!shortName) {
+    throw new AppError('El nombre corto es obligatorio', 400, ['shortName']);
+  }
+
+  if (!mark) {
+    throw new AppError('La marca es obligatoria', 400, ['mark']);
+  }
+
+  await prisma.tenant.update({
+    where: { id: tenantId },
+    data: {
+      name,
+      appName: data.appName?.trim() || name,
+      shortName,
+      mark: mark.slice(0, 4),
+      claim: claim || DEFAULT_TENANT_BRAND.claim,
+      description: description || DEFAULT_TENANT_BRAND.description,
+      primary,
+      primaryHover,
+      primarySoft,
+    },
+  });
+
+  return getCurrentTenant(tenantId);
 }

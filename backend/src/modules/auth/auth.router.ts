@@ -1,5 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../../middleware/authenticate';
+import { authorize } from '../../middleware/authorize';
+import { Role } from '../../types/domain';
 import * as authService from './auth.service';
 
 const router = Router();
@@ -68,6 +70,16 @@ router.put('/me', authenticate, async (req: any, res: Response, next: NextFuncti
 router.get('/tenant', authenticate, async (req: any, res: Response, next: NextFunction): Promise<void> => {
   try {
     const tenant = await authService.getCurrentTenant(req.user!.tenantId);
+    res.status(200).json(tenant);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /auth/tenant — update current tenant branding/context, ADMIN only
+router.put('/tenant', authenticate, authorize(Role.ADMIN), async (req: any, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const tenant = await authService.updateCurrentTenant(req.user!.tenantId, req.body);
     res.status(200).json(tenant);
   } catch (err) {
     next(err);

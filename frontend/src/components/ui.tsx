@@ -262,6 +262,7 @@ export function AppShell({
         { label: 'Clientes', path: '/admin/clients', icon: Users, active: location.pathname.startsWith('/admin/clients') },
         { label: 'Entrenadores', path: '/admin/trainers', icon: User, active: location.pathname.startsWith('/admin/trainers') },
         { label: 'Ejercicios', path: '/admin/exercises', icon: Dumbbell, active: location.pathname.startsWith('/admin/exercises') },
+        { label: 'Ajustes', path: '/admin/settings', icon: Settings, active: location.pathname.startsWith('/admin/settings') },
       ]
     : [
         {
@@ -421,7 +422,7 @@ export function AppShell({
       <nav
         aria-label="Navegación móvil"
         className={`fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-elevated/95 px-2 pb-[max(env(safe-area-inset-bottom),0.6rem)] pt-2 shadow-[0_-16px_42px_rgba(0,0,0,0.22)] backdrop-blur-xl lg:hidden ${
-          isAdmin ? 'grid grid-cols-4 gap-1' : 'grid grid-cols-[1fr_72px_1fr] gap-1'
+          isAdmin ? 'grid grid-cols-5 gap-1' : 'grid grid-cols-[1fr_72px_1fr] gap-1'
         }`}
       >
         {isAdmin ? (
