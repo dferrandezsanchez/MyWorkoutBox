@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Building2, LogIn, ShieldCheck } from 'lucide-react';
+import { Building2, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react';
 import { login, selectTenant } from '@features/auth/api/auth.api';
 import { setStoredTenantBrand, setToken } from '@features/auth/model/auth-store';
 import { queryClient } from '@shared/state/query-client';
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectionToken, setSelectionToken] = useState<string | null>(null);
@@ -183,17 +184,28 @@ export default function LoginPage() {
                 <label htmlFor="password" className={labelClass}>
                   Contraseña
                 </label>
-                <TextInput
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  autoComplete="current-password"
-                  className="w-full"
-                  aria-required="true"
-                />
+                <div className="relative">
+                  <TextInput
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    autoComplete="current-password"
+                    className="w-full pr-12"
+                    aria-required="true"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    className="absolute inset-y-0 right-0 flex min-h-[44px] w-12 items-center justify-center rounded-r-lg text-text-muted transition-colors hover:text-text-primary focus-ring"
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    aria-pressed={showPassword}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               {error && (
