@@ -18,6 +18,7 @@ El proyecto nace como un producto real orientado a entrenadores personales y cen
 - RGPD básico: exportación de datos, anonimización y gestión de foto de cliente.
 - Auditoría de acciones relevantes.
 - Preparación para producción con MySQL/MariaDB, CORS configurable y despliegue por tags.
+- Documentación OpenAPI/Swagger para consumir la API desde otros clientes.
 
 ## 🧱 Stack Tecnológico
 
@@ -44,6 +45,7 @@ El proyecto nace como un producto real orientado a entrenadores personales y cen
 - bcrypt
 - Multer
 - Vitest + Supertest
+- OpenAPI 3.0
 
 ### 🚀 Infraestructura
 
@@ -206,6 +208,8 @@ Por defecto:
 - API: `http://localhost:3000`
 - Frontend: `http://localhost:5173`
 - Health check: `http://localhost:3000/health`
+- OpenAPI JSON: `http://localhost:3000/openapi.json`
+- Swagger UI: `http://localhost:3000/docs`
 
 ## 🧰 Comandos Útiles
 

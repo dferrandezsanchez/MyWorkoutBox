@@ -116,7 +116,8 @@ MyWorkoutBox debe estar preparado para producción y consumo futuro desde móvil
 Directrices:
 
 - Diseña endpoints con contratos claros y estables.
-- Documenta o prepara DTOs, errores, auth JWT, roles y tenant context pensando en OpenAPI.
+- Mantén actualizada la especificación OpenAPI servida en `/openapi.json` y la UI de `/docs`.
+- Documenta DTOs, errores, auth JWT, roles y tenant context cuando cambien endpoints.
 - No acoples endpoints a necesidades puntuales de una pantalla si puede evitarse.
 - Mantén MariaDB/MySQL como base de datos real del proyecto.
 - No recuperes dependencias de SQLite salvo para scripts explícitos de migración.
@@ -162,7 +163,7 @@ Usar al crear o modificar endpoints.
 - Identificar ruta, método, auth, roles y tenant context.
 - Definir request, response y errores.
 - Revisar compatibilidad con frontend actual.
-- Preparar el contrato para OpenAPI futura.
+- Actualizar OpenAPI y validar que `/openapi.json` cubre la ruta.
 
 ### `quality-audit`
 
