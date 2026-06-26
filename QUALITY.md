@@ -6,8 +6,8 @@ Last local audit: 2026-06-26.
 
 | Area | Status |
 | --- | --- |
-| Backend tests | 12 files, 37 tests passing |
-| Frontend tests | 4 files, 9 tests passing |
+| Backend tests | 15 files, 51 tests passing |
+| Frontend tests | 7 files, 19 tests passing |
 | Backend build | Passing |
 | Frontend build | Passing |
 | Backend audit | 0 vulnerabilities |
@@ -17,8 +17,8 @@ Last local audit: 2026-06-26.
 
 | Package | Statements | Branches | Functions | Lines |
 | --- | ---: | ---: | ---: | ---: |
-| Backend | 66.41% | 51.44% | 76.08% | 68.88% |
-| Frontend | 27.49% | 24.56% | 28.57% | 28.40% |
+| Backend | 75.61% | 69.56% | 80.43% | 78.11% |
+| Frontend | 50.82% | 36.15% | 48.03% | 52.59% |
 
 ## Commands
 
@@ -39,16 +39,16 @@ Backend coverage needs a local MariaDB/MySQL database configured through `backen
 ## Main Gaps
 
 - Backend route handlers have lower coverage than application use cases.
-- Backend error handling and authentication middleware need more negative-path tests.
-- Auth use cases need stronger tests around tenant selection, invalid tokens and profile/password updates.
-- Frontend coverage is low because layout, theme, session store and shared UI components are lightly tested.
+- Backend storage/time adapters still have low direct unit coverage.
+- Auth use cases are covered for critical paths, but more profile and tenant edge cases can be added.
+- Frontend coverage is still low in theme provider, shared UI components and performance form branches.
 - Product-level frontend flows are not covered end-to-end yet.
 
 ## Recommended Next Tests
 
-- Login page: show/hide password, invalid credentials, tenant selection and redirect.
 - Protected route: missing token, expired token and role-based redirects.
 - Theme provider: stored preference, system preference and tenant branding persistence.
-- HTTP client: bearer token injection and unauthorized callback behavior.
-- Backend `authenticate` middleware: missing header, malformed token, invalid token and inactive membership.
-- Backend `errorHandler`: domain errors mapped to expected HTTP status codes.
+- Shared UI components: status badges, action tiles, theme toggle and empty states.
+- Performance form: dynamic fields, validation errors and variant payloads.
+- Backend route handlers: auth, clients, trainers and exercises controller-level error paths.
+- Backend storage adapter: photo persistence and delete behavior.
