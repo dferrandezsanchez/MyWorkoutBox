@@ -1,18 +1,21 @@
-# MVP Release Deployment
+# 🚢 Despliegue de MyWorkoutBox
 
-This project is designed to deploy manually controlled releases from GitHub tags.
+Esta guía describe un despliegue de producción para MyWorkoutBox en una VPS con Plesk, MariaDB/MySQL, proxy web y `systemd`.
 
-## Target Flow
+El flujo está pensado para releases controladas desde GitHub tags: se mergea a `main`, se crea un tag, GitHub Actions valida el proyecto y publica la versión en el servidor por SSH.
+
+## 🧭 Flujo de release
 
 ```txt
-local branch -> merge to main -> create tag -> push tag
-  -> GitHub Actions builds/tests
-  -> GitHub Actions deploys over SSH to the VPS
-  -> systemd restarts the backend
-  -> Plesk/Nginx serves the frontend
+rama local -> merge a main -> tag de release -> push del tag
+  -> GitHub Actions ejecuta tests y builds
+  -> GitHub Actions despliega por SSH al VPS
+  -> Prisma aplica migraciones
+  -> systemd reinicia la API
+  -> Plesk/Nginx sirve el frontend
 ```
 
-Example:
+Ejemplo:
 
 ```bash
 git checkout main
@@ -21,49 +24,52 @@ git tag v0.1.0-alpha
 git push origin v0.1.0-alpha
 ```
 
-## VPS Layout
+## 📁 Estructura recomendada en el VPS
 
-Recommended layout for the Plesk server:
+Usa rutas fuera del repositorio para assets persistentes, backups y build público del frontend.
 
 ```txt
-/var/www/vhosts/danielferrandez.dev/myworkoutbox/
-  repo/       # git clone of this repository
-  public/     # frontend dist published here
-  backups/    # database export/backups outside git
-  uploads/    # persistent uploads outside git
+/var/www/vhosts/your-domain.com/myworkoutbox/
+  repo/       # Clon del repositorio
+  public/     # Build del frontend publicado por el despliegue
+  backups/    # Backups y exports fuera de Git
+  uploads/    # Ficheros persistentes fuera de Git
 ```
 
-Example secrets:
+Variables de ejemplo:
 
 ```txt
-APP_PATH=/var/www/vhosts/danielferrandez.dev/myworkoutbox
-FRONTEND_PUBLIC_PATH=/var/www/vhosts/danielferrandez.dev/myworkoutbox/public
+APP_PATH=/var/www/vhosts/your-domain.com/myworkoutbox
+FRONTEND_PUBLIC_PATH=/var/www/vhosts/your-domain.com/myworkoutbox/public
 SYSTEMD_SERVICE_NAME=myworkoutbox-api
-DATABASE_URL=mysql://myworkoutbox_user:password@localhost:3306/myworkoutbox_prod
+DATABASE_URL=mysql://myworkoutbox_user:CHANGE_ME@localhost:3306/myworkoutbox_prod
+JWT_SECRET=CHANGE_ME
 JWT_EXPIRES_IN=7d
-CORS_ORIGIN=https://tumeta.danielferrandez.dev
+CORS_ORIGIN=https://app.example.com
 PORT=3000
-VITE_API_URL=https://tumeta.danielferrandez.dev/api
+VITE_API_URL=https://app.example.com/api
 ```
 
-Tenant branding is resolved after login from the authenticated tenant. `VITE_TENANT_ID` is only an optional local/demo fallback before authentication.
+El branding del tenant se resuelve tras el login desde el tenant autenticado. `VITE_TENANT_ID` queda como fallback local o demo antes de la autenticación.
 
-## One-Time Server Setup
+## 🛠️ Preparación inicial del servidor
 
-Create the folders:
+### 1. Crear carpetas
 
 ```bash
-mkdir -p /var/www/vhosts/danielferrandez.dev/myworkoutbox/{repo,public,backups,uploads}
+mkdir -p /var/www/vhosts/your-domain.com/myworkoutbox/{repo,public,backups,uploads}
 ```
 
-Clone the repo:
+### 2. Clonar el repositorio
 
 ```bash
-cd /var/www/vhosts/danielferrandez.dev/myworkoutbox/repo
+cd /var/www/vhosts/your-domain.com/myworkoutbox/repo
 git clone git@github.com:YOUR_ORG/YOUR_REPO.git .
 ```
 
-Create the systemd service as root:
+### 3. Configurar systemd
+
+Crea el servicio como `root`:
 
 ```bash
 cat > /etc/systemd/system/myworkoutbox-api.service <<'EOF'
@@ -75,9 +81,9 @@ After=network.target
 Type=simple
 User=deploy-myworkoutbox
 Group=deploy-myworkoutbox
-WorkingDirectory=/var/www/vhosts/danielferrandez.dev/myworkoutbox/repo/backend
+WorkingDirectory=/var/www/vhosts/your-domain.com/myworkoutbox/repo/backend
 Environment=NODE_ENV=production
-ExecStart=/usr/bin/node /var/www/vhosts/danielferrandez.dev/myworkoutbox/repo/backend/dist/index.js
+ExecStart=/usr/bin/node /var/www/vhosts/your-domain.com/myworkoutbox/repo/backend/dist/index.js
 Restart=always
 RestartSec=5
 
@@ -89,7 +95,9 @@ systemctl daemon-reload
 systemctl enable myworkoutbox-api
 ```
 
-Allow the deploy user to restart only this service without a password:
+### 4. Permitir reinicio controlado del servicio
+
+El usuario de despliegue debe poder reiniciar solo este servicio sin contraseña.
 
 ```bash
 cat > /etc/sudoers.d/myworkoutbox-deploy <<'EOF'
@@ -101,17 +109,17 @@ chmod 440 /etc/sudoers.d/myworkoutbox-deploy
 visudo -cf /etc/sudoers.d/myworkoutbox-deploy
 ```
 
-Check server dependencies:
+### 5. Comprobar dependencias del servidor
 
 ```bash
-APP_PATH=/var/www/vhosts/danielferrandez.dev/myworkoutbox \
-FRONTEND_PUBLIC_PATH=/var/www/vhosts/danielferrandez.dev/myworkoutbox/public \
+APP_PATH=/var/www/vhosts/your-domain.com/myworkoutbox \
+FRONTEND_PUBLIC_PATH=/var/www/vhosts/your-domain.com/myworkoutbox/public \
 bash scripts/check-server.sh
 ```
 
-## GitHub Secrets
+## 🔐 GitHub Secrets
 
-Configure these in GitHub repository secrets:
+Configura estos secrets en el repositorio de GitHub:
 
 ```txt
 VPS_HOST
@@ -128,51 +136,63 @@ PORT
 VITE_API_URL
 ```
 
-`VPS_SSH_KEY` should be a private key that can SSH into the VPS user and access the repo folder.
+`VPS_SSH_KEY` debe ser una clave privada con permisos para acceder al VPS y al directorio del repositorio.
 
-## Plesk MySQL / MariaDB
+## 🗄️ MariaDB/MySQL en Plesk
 
-Create a production database from Plesk:
+Crea la base de datos de producción desde Plesk:
 
 ```txt
 Database: myworkoutbox_prod
 User: myworkoutbox_user
-Host: usually localhost when the API runs on the same VPS
+Host: localhost si la API corre en el mismo VPS
 ```
 
-Set `DATABASE_URL` in GitHub secrets using this format:
+Formato de `DATABASE_URL`:
 
 ```txt
-mysql://myworkoutbox_user:PASSWORD@localhost:3306/myworkoutbox_prod
+mysql://USER:PASSWORD@HOST:3306/DATABASE
 ```
 
-Local development must use MySQL/MariaDB too. A typical local setup is:
+Ejemplo genérico:
 
 ```txt
-DATABASE_URL=mysql://myworkoutbox_user:password@localhost:3306/myworkoutbox_dev
+DATABASE_URL=mysql://myworkoutbox_user:CHANGE_ME@localhost:3306/myworkoutbox_prod
 ```
 
-Use a separate test database:
+En local también se usa MySQL/MariaDB:
 
 ```txt
-DATABASE_URL=mysql://myworkoutbox_user:password@localhost:3306/myworkoutbox_test
+DATABASE_URL=mysql://myworkoutbox_user:CHANGE_ME@localhost:3306/myworkoutbox_dev
 ```
 
-## Plesk / Nginx
-
-Create the subdomain in Plesk:
+Para tests usa una base separada:
 
 ```txt
-tumeta.danielferrandez.dev
+DATABASE_URL=mysql://myworkoutbox_user:CHANGE_ME@localhost:3306/myworkoutbox_test
 ```
 
-Set the document root to:
+## 🌐 Plesk, Nginx y Apache
+
+### 1. Crear dominio o subdominio
+
+Ejemplo:
 
 ```txt
-/var/www/vhosts/danielferrandez.dev/myworkoutbox/public
+app.example.com
 ```
 
-Add an Nginx proxy rule for the API. In Plesk this usually goes into "Additional nginx directives":
+### 2. Configurar document root
+
+El document root debe apuntar al build público del frontend:
+
+```txt
+/var/www/vhosts/your-domain.com/myworkoutbox/public
+```
+
+### 3. Configurar proxy para la API
+
+En Plesk, normalmente se añade en **Additional nginx directives**:
 
 ```nginx
 location /api/ {
@@ -194,17 +214,17 @@ location /uploads/ {
 }
 ```
 
-React Router uses client-side routes such as `/trainer`, `/admin`, and `/clients/:id`.
-On mobile, an inactive browser tab can be reloaded directly on one of those paths. The web
-server must then return `index.html` instead of Plesk's 404 page.
+### 4. Configurar fallback de React Router
 
-In Plesk, add this under the subdomain's **Additional Apache directives**:
+React Router usa rutas cliente como `/trainer`, `/admin` o `/clients/:id`. Si el usuario recarga una de esas rutas, el servidor debe devolver `index.html`.
+
+En Plesk, añade esto en **Additional Apache directives**:
 
 ```apache
 FallbackResource /index.html
 ```
 
-If `FallbackResource` is not available, use the rewrite fallback:
+Si `FallbackResource` no está disponible, usa esta alternativa:
 
 ```apache
 <IfModule mod_rewrite.c>
@@ -215,7 +235,7 @@ If `FallbackResource` is not available, use the rewrite fallback:
 </IfModule>
 ```
 
-If the domain is served directly by Nginx instead of Apache behind Plesk, the equivalent is:
+Si el dominio sirve directamente con Nginx:
 
 ```nginx
 location / {
@@ -223,52 +243,53 @@ location / {
 }
 ```
 
-Do not apply this fallback to `/api/` or `/uploads/`; those paths must keep the proxy rules above.
+No apliques este fallback a `/api/` ni a `/uploads/`; esas rutas deben mantener sus reglas de proxy.
 
-## First Release
+## ✅ Primera release
 
-Push a tag:
+Publica un tag:
 
 ```bash
 git tag v0.1.0-alpha
 git push origin v0.1.0-alpha
 ```
 
-Then verify:
+Verifica:
 
 ```txt
-https://tumeta.danielferrandez.dev
-https://tumeta.danielferrandez.dev/api/health
+https://app.example.com
+https://app.example.com/api/health
 ```
 
-## Backups
+## 💾 Backups
 
-The deploy script applies Prisma migrations but does not perform destructive data imports.
-Take a MySQL backup before production migrations or manual data imports:
+El script de despliegue aplica migraciones de Prisma, pero no realiza importaciones destructivas automáticas.
+
+Antes de migraciones de producción o importaciones manuales, genera un backup:
 
 ```bash
 mysqldump -u myworkoutbox_user -p myworkoutbox_prod > "$APP_PATH/backups/myworkoutbox-$(date +%Y%m%d%H%M%S).sql"
 ```
 
-Uploads are kept outside the repository. The deploy script links `backend/uploads` to:
+Los uploads deben permanecer fuera del repositorio. El despliegue enlaza `backend/uploads` con:
 
 ```txt
-/var/www/vhosts/danielferrandez.dev/myworkoutbox/uploads
+/var/www/vhosts/your-domain.com/myworkoutbox/uploads
 ```
 
-## Pilot Data Migration From SQLite
+## 🔁 Migración manual desde SQLite
 
-If the TuMeta pilot data still lives in SQLite, migrate it manually before switching production traffic.
+Si existen datos piloto en una base SQLite antigua, mígralos manualmente antes de cambiar tráfico a producción.
 
-1. Freeze writes in the current app.
-2. Export the SQLite source:
+1. Congela escrituras en la aplicación actual.
+2. Exporta la base SQLite:
 
 ```bash
 cd backend
-npm run migration:export-sqlite -- /path/to/production.sqlite "$APP_PATH/backups/tumeta-sqlite-export.json"
+npm run migration:export-sqlite -- /path/to/source.sqlite "$APP_PATH/backups/sqlite-export.json"
 ```
 
-3. Apply MySQL migrations:
+3. Aplica migraciones MySQL/MariaDB:
 
 ```bash
 cd backend
@@ -276,11 +297,22 @@ npm run prisma:generate
 npx prisma migrate deploy
 ```
 
-4. Import into the empty MySQL database:
+4. Importa el JSON en la base vacía:
 
 ```bash
 cd backend
-npm run migration:import-sqlite-export -- "$APP_PATH/backups/tumeta-sqlite-export.json"
+npm run migration:import-sqlite-export -- "$APP_PATH/backups/sqlite-export.json"
 ```
 
-5. Verify row counts, login, clients, exercises, performance history, audit logs, and RGPD endpoints.
+5. Verifica conteos, login, clientes, ejercicios, histórico de marcas, auditoría y endpoints RGPD.
+
+## 🧪 Checklist post-despliegue
+
+- `/api/health` responde correctamente.
+- El login funciona con usuarios reales configurados.
+- El panel admin carga sin errores.
+- La vista trainer carga clientes y permite registrar marcas.
+- Las imágenes subidas se conservan tras reiniciar la API.
+- Las rutas frontend funcionan al recargar la página.
+- No hay escrituras contra SQLite.
+- `systemd` deja la API en estado `active`.
