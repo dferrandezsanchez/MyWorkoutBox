@@ -1,6 +1,6 @@
 # 🚢 Despliegue de MyWorkoutBox
 
-Esta guía describe un despliegue de producción para MyWorkoutBox en una VPS con Plesk, MariaDB/MySQL, proxy web y `systemd`.
+Esta guía describe un despliegue de producción para MyWorkoutBox en un servidor Linux/VPS con MariaDB/MySQL, reverse proxy web y `systemd`.
 
 El flujo está pensado para releases controladas desde GitHub tags: se mergea a `main`, se crea un tag, GitHub Actions valida el proyecto y publica la versión en el servidor por SSH.
 
@@ -12,7 +12,7 @@ rama local -> merge a main -> tag de release -> push del tag
   -> GitHub Actions despliega por SSH al VPS
   -> Prisma aplica migraciones
   -> systemd reinicia la API
-  -> Plesk/Nginx sirve el frontend
+  -> el reverse proxy sirve el frontend
 ```
 
 Ejemplo:
@@ -29,7 +29,7 @@ git push origin v0.1.0-alpha
 Usa rutas fuera del repositorio para assets persistentes, backups y build público del frontend.
 
 ```txt
-/var/www/vhosts/your-domain.com/myworkoutbox/
+/var/www/myworkoutbox/
   repo/       # Clon del repositorio
   public/     # Build del frontend publicado por el despliegue
   backups/    # Backups y exports fuera de Git
@@ -39,8 +39,8 @@ Usa rutas fuera del repositorio para assets persistentes, backups y build públi
 Variables de ejemplo:
 
 ```txt
-APP_PATH=/var/www/vhosts/your-domain.com/myworkoutbox
-FRONTEND_PUBLIC_PATH=/var/www/vhosts/your-domain.com/myworkoutbox/public
+APP_PATH=/var/www/myworkoutbox
+FRONTEND_PUBLIC_PATH=/var/www/myworkoutbox/public
 SYSTEMD_SERVICE_NAME=myworkoutbox-api
 DATABASE_URL=mysql://myworkoutbox_user:CHANGE_ME@localhost:3306/myworkoutbox_prod
 JWT_SECRET=CHANGE_ME
@@ -57,13 +57,13 @@ El branding del tenant se resuelve tras el login desde el tenant autenticado. `V
 ### 1. Crear carpetas
 
 ```bash
-mkdir -p /var/www/vhosts/your-domain.com/myworkoutbox/{repo,public,backups,uploads}
+mkdir -p /var/www/myworkoutbox/{repo,public,backups,uploads}
 ```
 
 ### 2. Clonar el repositorio
 
 ```bash
-cd /var/www/vhosts/your-domain.com/myworkoutbox/repo
+cd /var/www/myworkoutbox/repo
 git clone git@github.com:YOUR_ORG/YOUR_REPO.git .
 ```
 
@@ -81,9 +81,9 @@ After=network.target
 Type=simple
 User=deploy-myworkoutbox
 Group=deploy-myworkoutbox
-WorkingDirectory=/var/www/vhosts/your-domain.com/myworkoutbox/repo/backend
+WorkingDirectory=/var/www/myworkoutbox/repo/backend
 Environment=NODE_ENV=production
-ExecStart=/usr/bin/node /var/www/vhosts/your-domain.com/myworkoutbox/repo/backend/dist/index.js
+ExecStart=/usr/bin/node /var/www/myworkoutbox/repo/backend/dist/index.js
 Restart=always
 RestartSec=5
 
@@ -112,8 +112,8 @@ visudo -cf /etc/sudoers.d/myworkoutbox-deploy
 ### 5. Comprobar dependencias del servidor
 
 ```bash
-APP_PATH=/var/www/vhosts/your-domain.com/myworkoutbox \
-FRONTEND_PUBLIC_PATH=/var/www/vhosts/your-domain.com/myworkoutbox/public \
+APP_PATH=/var/www/myworkoutbox \
+FRONTEND_PUBLIC_PATH=/var/www/myworkoutbox/public \
 bash scripts/check-server.sh
 ```
 
@@ -138,9 +138,9 @@ VITE_API_URL
 
 `VPS_SSH_KEY` debe ser una clave privada con permisos para acceder al VPS y al directorio del repositorio.
 
-## 🗄️ MariaDB/MySQL en Plesk
+## 🗄️ MariaDB/MySQL
 
-Crea la base de datos de producción desde Plesk:
+Crea la base de datos de producción en el servidor o en tu proveedor de base de datos:
 
 ```txt
 Database: myworkoutbox_prod
@@ -172,7 +172,7 @@ Para tests usa una base separada:
 DATABASE_URL=mysql://myworkoutbox_user:CHANGE_ME@localhost:3306/myworkoutbox_test
 ```
 
-## 🌐 Plesk, Nginx y Apache
+## 🌐 Reverse proxy y frontend estático
 
 ### 1. Crear dominio o subdominio
 
@@ -187,12 +187,12 @@ app.example.com
 El document root debe apuntar al build público del frontend:
 
 ```txt
-/var/www/vhosts/your-domain.com/myworkoutbox/public
+/var/www/myworkoutbox/public
 ```
 
 ### 3. Configurar proxy para la API
 
-En Plesk, normalmente se añade en **Additional nginx directives**:
+Ejemplo de configuración Nginx para exponer la API bajo `/api/`:
 
 ```nginx
 location /api/ {
@@ -214,36 +214,20 @@ location /uploads/ {
 }
 ```
 
-### 4. Configurar fallback de React Router
+### 4. Servir frontend y configurar fallback de React Router
 
 React Router usa rutas cliente como `/trainer`, `/admin` o `/clients/:id`. Si el usuario recarga una de esas rutas, el servidor debe devolver `index.html`.
 
-En Plesk, añade esto en **Additional Apache directives**:
-
-```apache
-FallbackResource /index.html
-```
-
-Si `FallbackResource` no está disponible, usa esta alternativa:
-
-```apache
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ /index.html [L]
-</IfModule>
-```
-
-Si el dominio sirve directamente con Nginx:
+Ejemplo Nginx:
 
 ```nginx
 location / {
+  root /var/www/myworkoutbox/public;
   try_files $uri $uri/ /index.html;
 }
 ```
 
-No apliques este fallback a `/api/` ni a `/uploads/`; esas rutas deben mantener sus reglas de proxy.
+Si usas otro servidor web, configura el equivalente: servir el build estático y devolver `index.html` cuando la ruta no sea un fichero real. No apliques este fallback a `/api/` ni a `/uploads/`; esas rutas deben mantener sus reglas de proxy.
 
 ## ✅ Primera release
 
@@ -274,7 +258,7 @@ mysqldump -u myworkoutbox_user -p myworkoutbox_prod > "$APP_PATH/backups/myworko
 Los uploads deben permanecer fuera del repositorio. El despliegue enlaza `backend/uploads` con:
 
 ```txt
-/var/www/vhosts/your-domain.com/myworkoutbox/uploads
+/var/www/myworkoutbox/uploads
 ```
 
 ## 🔁 Migración manual desde SQLite

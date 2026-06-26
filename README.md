@@ -48,9 +48,9 @@ El proyecto nace como un producto real orientado a entrenadores personales y cen
 ### 🚀 Infraestructura
 
 - GitHub Actions
-- Plesk/VPS
-- MariaDB en producción
-- Nginx/Apache como proxy y servidor del frontend
+- Servidor Linux/VPS
+- MariaDB/MySQL en producción
+- Reverse proxy para API, uploads y frontend
 - systemd para mantener viva la API
 
 ## 🏛️ Arquitectura
@@ -264,7 +264,7 @@ La cobertura actual combina:
 
 ## 🚢 Despliegue
 
-El despliegue está pensado para una VPS con Plesk, MariaDB, proxy web y `systemd`.
+El despliegue está pensado para un servidor Linux/VPS con MariaDB/MySQL, reverse proxy web y `systemd`.
 
 Flujo recomendado:
 
@@ -288,4 +288,4 @@ PORT=3000
 VITE_API_URL=https://tu-dominio.com/api
 ```
 
-Para el detalle completo de Plesk, systemd, GitHub Secrets, backups y proxy, consulta [DEPLOYMENT.md](./DEPLOYMENT.md).
+Para el detalle completo de servidor, systemd, GitHub Secrets, backups y reverse proxy, consulta [DEPLOYMENT.md](./DEPLOYMENT.md).
