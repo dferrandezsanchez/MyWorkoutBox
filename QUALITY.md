@@ -8,6 +8,8 @@ Last local audit: 2026-06-26.
 | --- | --- |
 | Backend tests | 18 files, 61 tests passing |
 | Frontend tests | 11 files, 35 tests passing |
+| Backend lint | Passing |
+| Frontend lint | Passing with 2 non-blocking warnings |
 | Backend build | Passing |
 | Frontend build | Passing |
 | Backend audit | 0 vulnerabilities |
@@ -23,11 +25,22 @@ Last local audit: 2026-06-26.
 ## Commands
 
 ```bash
+npm --prefix backend run quality
+npm --prefix frontend run quality
+```
+
+`quality` runs ESLint, coverage, build and `npm audit --audit-level=moderate`.
+
+Individual commands:
+
+```bash
+npm --prefix backend run lint
 npm --prefix backend test
 npm --prefix backend run test:coverage
 npm --prefix backend run build
 npm --prefix backend audit --audit-level=moderate
 
+npm --prefix frontend run lint
 npm --prefix frontend test
 npm --prefix frontend run test:coverage
 npm --prefix frontend run build
@@ -37,6 +50,7 @@ npm --prefix frontend audit --audit-level=moderate
 Backend coverage needs a local MariaDB/MySQL database configured through `backend/.env`.
 
 The coverage scripts enforce a minimum global function coverage of 95% for both backend and frontend.
+ESLint with SonarJS is enforced in CI. Errors block the gate; warnings are allowed initially to avoid blocking on low-risk style improvements.
 
 ## Main Gaps
 

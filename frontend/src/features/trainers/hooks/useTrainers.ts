@@ -20,7 +20,7 @@ export function useCreateTrainer() {
   return useMutation({
     mutationFn: (data: CreateTrainerData) => createTrainer(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trainers'] });
+      void queryClient.invalidateQueries({ queryKey: ['trainers'] });
     },
   });
 }
@@ -31,7 +31,7 @@ export function useUpdateTrainer() {
     mutationFn: ({ id, data }: { id: string; data: UpdateTrainerData }) =>
       updateTrainer(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trainers'] });
+      void queryClient.invalidateQueries({ queryKey: ['trainers'] });
     },
   });
 }
@@ -42,7 +42,7 @@ export function useSetTrainerActive() {
     mutationFn: ({ id, active }: { id: string; active: boolean }) =>
       setTrainerActive(id, active),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trainers'] });
+      void queryClient.invalidateQueries({ queryKey: ['trainers'] });
     },
   });
 }

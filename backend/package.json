@@ -14,7 +14,9 @@
     "migration:export-sqlite": "python3 prisma/export-sqlite-data.py",
     "migration:import-sqlite-export": "ts-node prisma/import-sqlite-export.ts",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "test:coverage": "vitest --run --coverage --coverage.thresholds.functions 95"
+    "test:coverage": "vitest --run --coverage --coverage.thresholds.functions 95",
+    "lint": "eslint .",
+    "quality": "npm run lint && npm run test:coverage && npm run build && npm audit --audit-level=moderate"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
@@ -30,6 +32,7 @@
     "seed": "ts-node prisma/seed.ts"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bcrypt": "5.0.2",
     "@types/cors": "2.8.17",
     "@types/express": "4.17.21",
@@ -38,10 +41,14 @@
     "@types/node": "^22.20.0",
     "@types/supertest": "6.0.2",
     "@vitest/coverage-v8": "^4.1.9",
+    "eslint": "^10.5.0",
+    "eslint-plugin-sonarjs": "^4.1.0",
     "fast-check": "3.22.0",
+    "globals": "^16.5.0",
     "supertest": "^7.2.2",
     "ts-node": "10.9.2",
     "typescript": "5.6.3",
+    "typescript-eslint": "^8.62.0",
     "vitest": "^4.1.9"
   }
 }

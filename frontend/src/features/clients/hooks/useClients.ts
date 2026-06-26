@@ -32,7 +32,7 @@ export function useCreateClient() {
   return useMutation({
     mutationFn: (data: CreateClientData) => createClient(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      void queryClient.invalidateQueries({ queryKey: ['clients'] });
     },
   });
 }
@@ -43,8 +43,8 @@ export function useUpdateClient() {
     mutationFn: ({ id, data }: { id: string; data: UpdateClientData }) =>
       updateClient(id, data),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      queryClient.invalidateQueries({ queryKey: ['client', variables.id] });
+      void queryClient.invalidateQueries({ queryKey: ['clients'] });
+      void queryClient.invalidateQueries({ queryKey: ['client', variables.id] });
     },
   });
 }
@@ -55,8 +55,8 @@ export function useSetClientStatus() {
     mutationFn: ({ id, status }: { id: string; status: 'ACTIVE' | 'INACTIVE' }) =>
       setClientStatus(id, status),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      queryClient.invalidateQueries({ queryKey: ['client', variables.id] });
+      void queryClient.invalidateQueries({ queryKey: ['clients'] });
+      void queryClient.invalidateQueries({ queryKey: ['client', variables.id] });
     },
   });
 }
@@ -74,7 +74,7 @@ export function useUploadClientPhoto() {
       consentAt: string;
     }) => uploadClientPhoto(id, file, consentAt),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['client', variables.id] });
+      void queryClient.invalidateQueries({ queryKey: ['client', variables.id] });
     },
   });
 }
@@ -90,8 +90,8 @@ export function useAnonymizeClient() {
   return useMutation({
     mutationFn: (id: string) => anonymizeClient(id),
     onSuccess: (_result, id) => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      queryClient.invalidateQueries({ queryKey: ['client', id] });
+      void queryClient.invalidateQueries({ queryKey: ['clients'] });
+      void queryClient.invalidateQueries({ queryKey: ['client', id] });
     },
   });
 }
@@ -101,7 +101,7 @@ export function useDeleteClientPhoto() {
   return useMutation({
     mutationFn: (id: string) => deleteClientPhoto(id),
     onSuccess: (_result, id) => {
-      queryClient.invalidateQueries({ queryKey: ['client', id] });
+      void queryClient.invalidateQueries({ queryKey: ['client', id] });
     },
   });
 }
