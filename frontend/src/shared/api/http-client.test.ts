@@ -69,4 +69,24 @@ describe('apiClient', () => {
 
     expect(onUnauthorized).not.toHaveBeenCalled();
   });
+
+  it('does not add authorization when no token is configured', async () => {
+    let capturedAuthorization: unknown = 'unset';
+    const adapter: AxiosAdapter = async (config) => {
+      capturedAuthorization = config.headers.Authorization;
+      return {
+        data: { ok: true },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      };
+    };
+
+    apiClient.defaults.adapter = adapter;
+
+    await apiClient.get('/health');
+
+    expect(capturedAuthorization).toBeUndefined();
+  });
 });

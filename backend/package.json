@@ -14,7 +14,7 @@
     "migration:export-sqlite": "python3 prisma/export-sqlite-data.py",
     "migration:import-sqlite-export": "ts-node prisma/import-sqlite-export.ts",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "test:coverage": "vitest --run --coverage"
+    "test:coverage": "vitest --run --coverage --coverage.thresholds.functions 95"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",

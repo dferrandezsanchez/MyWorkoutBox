@@ -10,7 +10,7 @@
     "test": "vitest --run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --run --coverage"
+    "test:coverage": "vitest --run --coverage --coverage.thresholds.functions 95"
   },
   "dependencies": {
     "@tanstack/react-query": "5.59.20",

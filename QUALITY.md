@@ -6,8 +6,8 @@ Last local audit: 2026-06-26.
 
 | Area | Status |
 | --- | --- |
-| Backend tests | 15 files, 51 tests passing |
-| Frontend tests | 7 files, 19 tests passing |
+| Backend tests | 18 files, 61 tests passing |
+| Frontend tests | 11 files, 35 tests passing |
 | Backend build | Passing |
 | Frontend build | Passing |
 | Backend audit | 0 vulnerabilities |
@@ -17,8 +17,8 @@ Last local audit: 2026-06-26.
 
 | Package | Statements | Branches | Functions | Lines |
 | --- | ---: | ---: | ---: | ---: |
-| Backend | 75.61% | 69.56% | 80.43% | 78.11% |
-| Frontend | 50.82% | 36.15% | 48.03% | 52.59% |
+| Backend | 87.11% | 74.63% | 96.19% | 89.95% |
+| Frontend | 93.68% | 76.09% | 95.09% | 95.41% |
 
 ## Commands
 
@@ -35,6 +35,8 @@ npm --prefix frontend audit --audit-level=moderate
 ```
 
 Backend coverage needs a local MariaDB/MySQL database configured through `backend/.env`.
+
+The coverage scripts enforce a minimum global function coverage of 95% for both backend and frontend.
 
 ## Main Gaps
 
