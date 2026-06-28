@@ -140,7 +140,7 @@ Directrices:
 - Haz commits pequeños y con mensaje claro.
 - No muevas tags publicados; crea un tag nuevo para relanzar releases.
 - Actualiza `README.md` si cambia instalación, stack, arquitectura o funcionalidad principal.
-- Actualiza `DEPLOYMENT.md` si cambia despliegue, variables, migraciones, backups o reverse proxy.
+- Actualiza `doc/DEPLOYMENT.md` si cambia despliegue, variables, migraciones, backups o reverse proxy.
 - Mantén documentación pública sin dominios reales, rutas personales ni credenciales.
 
 ## Workflows internos

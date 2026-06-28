@@ -120,7 +120,9 @@ También existen tests de arquitectura para evitar regresiones:
 │       └── test/                # Setup de tests frontend
 ├── .github/workflows/           # CI/CD
 ├── scripts/                     # Scripts de despliegue y comprobación de servidor
-└── DEPLOYMENT.md                # Guía detallada de despliegue
+└── doc/                         # Documentación técnica adicional
+    ├── DEPLOYMENT.md            # Guía detallada de despliegue
+    └── QUALITY.md               # Auditoría y quality gates
 ```
 
 ## 🛠️ Instalación Local
@@ -292,4 +294,4 @@ PORT=3000
 VITE_API_URL=https://tu-dominio.com/api
 ```
 
-Para el detalle completo de servidor, systemd, GitHub Secrets, backups y reverse proxy, consulta [DEPLOYMENT.md](./DEPLOYMENT.md).
+Para el detalle completo de servidor, systemd, GitHub Secrets, backups y reverse proxy, consulta [DEPLOYMENT.md](./doc/DEPLOYMENT.md).
