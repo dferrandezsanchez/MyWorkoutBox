@@ -1,7 +1,6 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 import {
   Moon,
-  Search,
   Settings,
   Sun,
   Zap,

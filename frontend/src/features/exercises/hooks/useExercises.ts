@@ -28,7 +28,7 @@ export function useCreateExercise() {
   return useMutation({
     mutationFn: (data: CreateExerciseData) => createExercise(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      void queryClient.invalidateQueries({ queryKey: ['exercises'] });
     },
   });
 }
@@ -39,8 +39,8 @@ export function useUpdateExercise() {
     mutationFn: ({ id, data }: { id: string; data: UpdateExerciseData }) =>
       updateExercise(id, data),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['exercises'] });
-      queryClient.invalidateQueries({ queryKey: ['exercise', variables.id] });
+      void queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      void queryClient.invalidateQueries({ queryKey: ['exercise', variables.id] });
     },
   });
 }
@@ -51,8 +51,8 @@ export function useSetExerciseStatus() {
     mutationFn: ({ id, status }: { id: string; status: 'ACTIVE' | 'INACTIVE' }) =>
       setExerciseStatus(id, status),
     onSuccess: (_result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['exercises'] });
-      queryClient.invalidateQueries({ queryKey: ['exercise', variables.id] });
+      void queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      void queryClient.invalidateQueries({ queryKey: ['exercise', variables.id] });
     },
   });
 }

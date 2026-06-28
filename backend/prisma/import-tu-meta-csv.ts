@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
-import { PerformanceUnit, Role, Status } from '../src/types/domain';
+import { PerformanceUnit, Status } from '../src/types/domain';
 
 const prisma = new PrismaClient();
 

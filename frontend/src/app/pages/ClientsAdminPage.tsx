@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
-import { useClients, useCreateClient, useSetClientStatus, useUploadClientPhoto, useExportClient, useAnonymizeClient, useDeleteClientPhoto } from '@features/clients/hooks/useClients';
+import { useClients, useCreateClient, useSetClientStatus, useExportClient, useAnonymizeClient } from '@features/clients/hooks/useClients';
 import ClientPhotoUploader from '@features/clients/components/ClientPhotoUploader';
 import ClientCard from '@features/clients/components/ClientCard';
 import ClientForm from '@features/clients/components/ClientForm';
@@ -14,10 +14,8 @@ export default function ClientsAdminPage() {
   const { data: clients, isLoading, isError } = useClients(undefined, true);
   const createMutation = useCreateClient();
   const statusMutation = useSetClientStatus();
-  const uploadMutation = useUploadClientPhoto();
   const exportMutation = useExportClient();
   const anonymizeMutation = useAnonymizeClient();
-  const deletePhotoMutation = useDeleteClientPhoto();
 
   const [showCreate, setShowCreate] = useState(false);
   const [uploadFor, setUploadFor] = useState<string | null>(null);

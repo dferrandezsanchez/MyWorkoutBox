@@ -15,7 +15,7 @@ export function useUpdateAuthUser() {
   return useMutation({
     mutationFn: updateMe,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['authUser'] });
+      void queryClient.invalidateQueries({ queryKey: ['authUser'] });
     },
   });
 }
@@ -42,7 +42,7 @@ export function useUpdateCurrentTenant() {
       setStoredTenantBrand(tenant);
       window.dispatchEvent(new Event(AUTH_CONTEXT_EVENT));
       queryClient.setQueryData(['currentTenant'], tenant);
-      queryClient.invalidateQueries({ queryKey: ['currentTenant'] });
+      void queryClient.invalidateQueries({ queryKey: ['currentTenant'] });
     },
   });
 }

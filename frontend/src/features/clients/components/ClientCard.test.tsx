@@ -35,4 +35,22 @@ describe('ClientCard', () => {
 
     expect(screen.getByTestId('location')).toHaveTextContent('/clients/client-1');
   });
+
+  it('navigates from keyboard activation', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <ClientCard client={client} />
+        <Routes>
+          <Route path="*" element={<LocationProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const card = screen.getByRole('button', { name: 'Ver perfil de Ana Lopez' });
+    card.focus();
+    await user.keyboard('{Enter}');
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/clients/client-1');
+  });
 });

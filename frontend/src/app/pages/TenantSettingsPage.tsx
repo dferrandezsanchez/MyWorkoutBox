@@ -36,8 +36,9 @@ function getApiError(error: unknown): { message: string; fields: string[] } {
     }
 
     const status = error.response?.status;
+    const statusSuffix = status ? ` (HTTP ${status})` : '';
     return {
-      message: data?.error ?? `No se pudieron guardar los ajustes${status ? ` (HTTP ${status})` : ''}.`,
+      message: data?.error ?? `No se pudieron guardar los ajustes${statusSuffix}.`,
       fields: data?.fields ?? [],
     };
   }

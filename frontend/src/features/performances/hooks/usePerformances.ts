@@ -28,8 +28,8 @@ export function useCreatePerformance(clientId: string, exerciseId: string) {
     mutationFn: (data: CreatePerformanceData) =>
       createPerformance(clientId, exerciseId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentPerformances', clientId] });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({ queryKey: ['currentPerformances', clientId] });
+      void queryClient.invalidateQueries({
         queryKey: ['performanceHistory', clientId, exerciseId],
       });
     },
