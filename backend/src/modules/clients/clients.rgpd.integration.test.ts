@@ -30,8 +30,6 @@ beforeAll(async () => {
       firstName: 'RGPD',
       lastName: 'Client',
       birthDate: new Date('1990-01-01T00:00:00.000Z'),
-      photoUrl: '/uploads/clients/missing-test-file.jpg',
-      photoConsentAt: new Date('2026-01-01T00:00:00.000Z'),
       notes: 'Sensitive note',
       status: Status.ACTIVE,
     },
@@ -72,13 +70,6 @@ describe('RGPD client service', () => {
 
     expect(exported.client.id).toBe(clientId);
     expect(exported.performances).toHaveLength(1);
-  });
-
-  it('deletes only the client photo fields', async () => {
-    const updated = await createContainer().clients.deletePhoto.execute(TEST_TENANT_ID, clientId, adminUserId);
-
-    expect(updated.photoUrl).toBeNull();
-    expect(updated.photoConsentAt).toBeNull();
   });
 
   it('anonymizes personal fields and preserves performances', async () => {

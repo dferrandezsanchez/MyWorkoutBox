@@ -20,11 +20,6 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return;
   }
 
-  if (err instanceof Error && (err.name === 'MulterError' || err.message.startsWith('Solo se permiten imágenes'))) {
-    res.status(400).json({ error: err.message });
-    return;
-  }
-
   if (err instanceof Error) {
     console.error(`[${new Date().toISOString()}] Internal Server Error:`, err.stack || err.message);
   }

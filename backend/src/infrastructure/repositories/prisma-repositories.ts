@@ -362,11 +362,9 @@ function toClient(client: {
   height: number | null;
   weight: number | null;
   bodyFatPercentage: number | null;
-  photoUrl: string | null;
   notes: string | null;
   status: string;
   anonymizedAt: Date | null;
-  photoConsentAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }): Client {

@@ -63,11 +63,9 @@ export interface Client {
   height: number | null;
   weight: number | null;
   bodyFatPercentage: number | null;
-  photoUrl: string | null;
   notes: string | null;
   status: Status;
   anonymizedAt: Date | null;
-  photoConsentAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

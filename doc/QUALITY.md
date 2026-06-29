@@ -2,12 +2,12 @@
 
 ## Current Status
 
-Last local audit: 2026-06-26.
+Last local audit: 2026-06-29.
 
 | Area | Status |
 | --- | --- |
-| Backend tests | 18 files, 61 tests passing |
-| Frontend tests | 11 files, 35 tests passing |
+| Backend tests | 18 files, 58 tests passing |
+| Frontend tests | 11 files, 34 tests passing |
 | Backend lint | Passing |
 | Frontend lint | Passing with 2 non-blocking warnings |
 | Backend build | Passing |
@@ -19,8 +19,8 @@ Last local audit: 2026-06-26.
 
 | Package | Statements | Branches | Functions | Lines |
 | --- | ---: | ---: | ---: | ---: |
-| Backend | 87.11% | 74.63% | 96.19% | 89.95% |
-| Frontend | 93.68% | 76.09% | 95.09% | 95.41% |
+| Backend | 88.14% | 75.38% | 97.12% | 91.31% |
+| Frontend | 93.64% | 75.95% | 95.09% | 95.38% |
 
 ## Commands
 
@@ -55,7 +55,7 @@ ESLint with SonarJS is enforced in CI. Errors block the gate; warnings are allow
 ## Main Gaps
 
 - Backend route handlers have lower coverage than application use cases.
-- Backend storage/time adapters still have low direct unit coverage.
+- Backend time adapters still have low direct unit coverage.
 - Auth use cases are covered for critical paths, but more profile and tenant edge cases can be added.
 - Frontend coverage is still low in theme provider, shared UI components and performance form branches.
 - Product-level frontend flows are not covered end-to-end yet.
@@ -67,4 +67,3 @@ ESLint with SonarJS is enforced in CI. Errors block the gate; warnings are allow
 - Shared UI components: status badges, action tiles, theme toggle and empty states.
 - Performance form: dynamic fields, validation errors and variant payloads.
 - Backend route handlers: auth, clients, trainers and exercises controller-level error paths.
-- Backend storage adapter: photo persistence and delete behavior.

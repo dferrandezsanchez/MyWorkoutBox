@@ -33,20 +33,6 @@ export async function setClientStatus(
   return response.data;
 }
 
-export async function uploadClientPhoto(
-  id: string,
-  file: File,
-  consentAt: string
-): Promise<Client> {
-  const formData = new FormData();
-  formData.append('photo', file);
-  formData.append('consentAt', consentAt);
-  const response = await apiClient.post<Client>(`/clients/${id}/photo`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return response.data;
-}
-
 export async function exportClient(id: string): Promise<ClientExport> {
   const response = await apiClient.get<ClientExport>(`/clients/${id}/export`);
   return response.data;
@@ -54,10 +40,5 @@ export async function exportClient(id: string): Promise<ClientExport> {
 
 export async function anonymizeClient(id: string): Promise<Client> {
   const response = await apiClient.post<Client>(`/clients/${id}/anonymize`);
-  return response.data;
-}
-
-export async function deleteClientPhoto(id: string): Promise<Client> {
-  const response = await apiClient.delete<Client>(`/clients/${id}/photo`);
   return response.data;
 }

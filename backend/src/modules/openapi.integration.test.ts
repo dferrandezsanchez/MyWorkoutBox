@@ -28,7 +28,6 @@ describe('OpenAPI documentation', () => {
       '/auth/tenant',
       '/clients',
       '/clients/{id}',
-      '/clients/{id}/photo',
       '/clients/{id}/export',
       '/clients/{id}/anonymize',
       '/exercises',
@@ -43,6 +42,9 @@ describe('OpenAPI documentation', () => {
     for (const path of expectedPaths) {
       expect(body.paths, `OpenAPI spec must document ${path}`).toHaveProperty(path);
     }
+    expect(body.paths).not.toHaveProperty('/clients/{id}/photo');
+    expect(body.components.schemas.Client.properties).not.toHaveProperty('photoUrl');
+    expect(body.components.schemas.Client.properties).not.toHaveProperty('photoConsentAt');
   });
 
   it('serves Swagger UI', async () => {

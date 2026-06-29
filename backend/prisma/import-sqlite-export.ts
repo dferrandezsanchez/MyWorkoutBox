@@ -28,7 +28,7 @@ const DATE_FIELDS: Record<TableName, string[]> = {
   tenants: ['createdAt', 'updatedAt'],
   users: ['createdAt', 'updatedAt'],
   user_tenant_memberships: ['createdAt', 'updatedAt'],
-  clients: ['birthDate', 'anonymizedAt', 'photoConsentAt', 'createdAt', 'updatedAt'],
+  clients: ['birthDate', 'anonymizedAt', 'createdAt', 'updatedAt'],
   exercises: ['createdAt', 'updatedAt'],
   performance_records: ['date', 'createdAt', 'updatedAt'],
   audit_logs: ['createdAt'],
@@ -91,6 +91,10 @@ function normalizeRows(table: TableName, rows: Row[]): Row[] {
       normalized.improvementDirection = normalized.improvementDirection ?? 'higher';
       normalized.measurementFields = normalized.measurementFields ?? '[]';
       normalized.variantGroups = normalized.variantGroups ?? '[]';
+    }
+    if (table === 'clients') {
+      delete normalized.photoUrl;
+      delete normalized.photoConsentAt;
     }
     return normalized;
   });

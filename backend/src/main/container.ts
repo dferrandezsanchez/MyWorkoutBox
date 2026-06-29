@@ -10,13 +10,11 @@ import {
 import {
   AnonymizeClientUseCase,
   CreateClientUseCase,
-  DeleteClientPhotoUseCase,
   ExportClientUseCase,
   GetClientUseCase,
   ListClientsUseCase,
   SetClientStatusUseCase,
   UpdateClientUseCase,
-  UploadClientPhotoUseCase,
 } from '../application/clients';
 import {
   CreateExerciseUseCase,
@@ -49,7 +47,6 @@ import {
 } from '../infrastructure/repositories/prisma-repositories';
 import { BcryptPasswordHasher } from '../infrastructure/security/bcrypt-password-hasher';
 import { JwtTokenService } from '../infrastructure/security/jwt-token-service';
-import { LocalPhotoStorage } from '../infrastructure/storage/local-photo-storage';
 import { SystemClock } from '../infrastructure/time/system-clock';
 
 export function createContainer() {
@@ -63,7 +60,6 @@ export function createContainer() {
 
   const passwordHasher = new BcryptPasswordHasher();
   const tokenService = new JwtTokenService(process.env.JWT_SECRET, process.env.JWT_EXPIRES_IN ?? '8h');
-  const photoStorage = new LocalPhotoStorage();
   const clock = new SystemClock();
 
   return {
@@ -83,10 +79,8 @@ export function createContainer() {
       create: new CreateClientUseCase(clients, auditLogs),
       update: new UpdateClientUseCase(clients, auditLogs),
       setStatus: new SetClientStatusUseCase(clients, auditLogs),
-      uploadPhoto: new UploadClientPhotoUseCase(clients, auditLogs, photoStorage),
       exportData: new ExportClientUseCase(clients, performances, auditLogs),
-      anonymize: new AnonymizeClientUseCase(clients, auditLogs, photoStorage),
-      deletePhoto: new DeleteClientPhotoUseCase(clients, auditLogs, photoStorage),
+      anonymize: new AnonymizeClientUseCase(clients, auditLogs),
     },
     exercises: {
       list: new ListExercisesUseCase(exercises),

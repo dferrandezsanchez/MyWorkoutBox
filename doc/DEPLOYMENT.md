@@ -26,14 +26,13 @@ git push origin v0.1.0-alpha
 
 ## 📁 Estructura recomendada en el VPS
 
-Usa rutas fuera del repositorio para assets persistentes, backups y build público del frontend.
+Usa rutas fuera del repositorio para backups y el build público del frontend.
 
 ```txt
 /var/www/myworkoutbox/
   repo/       # Clon del repositorio
   public/     # Build del frontend publicado por el despliegue
   backups/    # Backups y exports fuera de Git
-  uploads/    # Ficheros persistentes fuera de Git
 ```
 
 Variables de ejemplo:
@@ -57,7 +56,7 @@ El branding del tenant se resuelve tras el login desde el tenant autenticado. `V
 ### 1. Crear carpetas
 
 ```bash
-mkdir -p /var/www/myworkoutbox/{repo,public,backups,uploads}
+mkdir -p /var/www/myworkoutbox/{repo,public,backups}
 ```
 
 ### 2. Clonar el repositorio
@@ -204,14 +203,6 @@ location /api/ {
   proxy_pass http://127.0.0.1:3000/;
 }
 
-location /uploads/ {
-  proxy_http_version 1.1;
-  proxy_set_header Host $host;
-  proxy_set_header X-Real-IP $remote_addr;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto $scheme;
-  proxy_pass http://127.0.0.1:3000/uploads/;
-}
 ```
 
 ### 4. Servir frontend y configurar fallback de React Router
@@ -227,7 +218,7 @@ location / {
 }
 ```
 
-Si usas otro servidor web, configura el equivalente: servir el build estático y devolver `index.html` cuando la ruta no sea un fichero real. No apliques este fallback a `/api/` ni a `/uploads/`; esas rutas deben mantener sus reglas de proxy.
+Si usas otro servidor web, configura el equivalente: servir el build estático y devolver `index.html` cuando la ruta no sea un fichero real. No apliques este fallback a `/api/`; esa ruta debe mantener su regla de proxy.
 
 ## ✅ Primera release
 
@@ -255,11 +246,15 @@ Antes de migraciones de producción o importaciones manuales, genera un backup:
 mysqldump -u myworkoutbox_user -p myworkoutbox_prod > "$APP_PATH/backups/myworkoutbox-$(date +%Y%m%d%H%M%S).sql"
 ```
 
-Los uploads deben permanecer fuera del repositorio. El despliegue enlaza `backend/uploads` con:
+### Retirada de fotos de versiones anteriores
 
-```txt
-/var/www/myworkoutbox/uploads
+La aplicación ya no almacena ni publica fotos de clientes. Tras realizar el backup de base de datos, desplegar la migración y verificar la aplicación, elimina manualmente los ficheros heredados:
+
+```bash
+rm -rf "$APP_PATH/uploads"
 ```
+
+Retira también cualquier regla `/uploads/` que permanezca en el reverse proxy. Esta limpieza es deliberadamente manual y no forma parte del script de despliegue.
 
 ## 🔁 Migración manual desde SQLite
 
@@ -296,7 +291,7 @@ npm run migration:import-sqlite-export -- "$APP_PATH/backups/sqlite-export.json"
 - El login funciona con usuarios reales configurados.
 - El panel admin carga sin errores.
 - La vista trainer carga clientes y permite registrar marcas.
-- Las imágenes subidas se conservan tras reiniciar la API.
+- Los antiguos endpoints y rutas `/uploads/` ya no están disponibles.
 - Las rutas frontend funcionan al recargar la página.
 - No hay escrituras contra SQLite.
 - `systemd` deja la API en estado `active`.

@@ -28,12 +28,7 @@ export default function ClientCard({ client }: ClientCardProps) {
       className="group flex min-h-[70px] w-full cursor-pointer items-center gap-3 border-b border-border/70 bg-elevated/75 px-3 py-3 text-left transition-colors last:border-b-0 hover:bg-primary/8 focus-ring"
       aria-label={`Ver perfil de ${client.firstName} ${client.lastName}`}
     >
-      <Avatar
-        photoUrl={client.photoUrl}
-        firstName={client.firstName}
-        lastName={client.lastName}
-        size="md"
-      />
+      <Avatar firstName={client.firstName} lastName={client.lastName} size="md" />
 
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-text-primary group-hover:text-primary">
