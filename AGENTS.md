@@ -121,7 +121,6 @@ Directrices:
 - No acoples endpoints a necesidades puntuales de una pantalla si puede evitarse.
 - Mantén MariaDB/MySQL como base de datos real del proyecto.
 - No recuperes dependencias de SQLite salvo para scripts explícitos de migración.
-- Mantén uploads fuera del repositorio.
 - Mantén despliegue portable para servidor Linux/VPS con reverse proxy y `systemd`.
 - No ejecutes migraciones destructivas ni importaciones de datos automáticamente en deploy.
 
@@ -132,7 +131,7 @@ Directrices:
 - Mantén `JWT_SECRET`, `DATABASE_URL`, claves SSH y credenciales fuera del repositorio.
 - CORS debe ser configurable por entorno.
 - Valida roles y tenant context en operaciones protegidas.
-- Trata RGPD, anonimización, exportación y fotos de cliente como flujos sensibles.
+- Trata RGPD, anonimización y exportación de clientes como flujos sensibles.
 
 ## Git y documentación
 
@@ -189,6 +188,6 @@ Usar antes de releases o cambios de infraestructura.
 
 - Revisar variables de entorno.
 - Revisar migraciones Prisma.
-- Revisar backups y uploads persistentes.
+- Revisar backups y datos persistentes.
 - Revisar health check, reverse proxy, CORS y systemd.
 - Confirmar que no hay dependencias accidentales de entorno local.

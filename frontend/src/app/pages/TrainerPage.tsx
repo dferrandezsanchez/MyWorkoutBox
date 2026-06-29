@@ -116,7 +116,6 @@ export default function TrainerPage() {
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <Avatar
-                      photoUrl={client.photoUrl}
                       firstName={client.firstName}
                       lastName={client.lastName}
                       size="md"

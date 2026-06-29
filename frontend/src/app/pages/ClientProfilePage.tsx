@@ -68,7 +68,6 @@ export default function ClientProfilePage() {
 
             <div className="flex items-center gap-4">
               <Avatar
-                photoUrl={client.photoUrl}
                 firstName={client.firstName}
                 lastName={client.lastName}
                 size="lg"

@@ -17,16 +17,6 @@ export interface TokenService {
   verify(token: string): TokenPayload;
 }
 
-export interface UploadedPhoto {
-  tempPath: string;
-  filename: string;
-}
-
-export interface PhotoStorage {
-  persistClientPhoto(file: UploadedPhoto): Promise<string>;
-  deleteByUrl(url: string): Promise<void>;
-}
-
 export interface Clock {
   now(): Date;
 }

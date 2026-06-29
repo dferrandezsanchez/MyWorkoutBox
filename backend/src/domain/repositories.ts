@@ -73,8 +73,6 @@ export type CreateClientData = {
 };
 
 export type UpdateClientData = Partial<Omit<CreateClientData, 'notes'>> & {
-  photoUrl?: string | null;
-  photoConsentAt?: Date | null;
   notes?: string | null;
   anonymizedAt?: Date;
 };

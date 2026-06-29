@@ -72,11 +72,9 @@ export interface Client {
   height?: number;             // cm
   weight?: number;             // kg
   bodyFatPercentage?: number;
-  photoUrl?: string;
   notes?: string;
   status: 'ACTIVE' | 'INACTIVE';
   anonymizedAt?: string | null;
-  photoConsentAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

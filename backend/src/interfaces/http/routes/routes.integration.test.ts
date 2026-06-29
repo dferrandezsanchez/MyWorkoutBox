@@ -37,10 +37,8 @@ function createFakeContainer(): AppContainer {
       create: useCase({ id: 'client-1' }),
       update: useCase({ id: 'client-1', firstName: 'Updated' }),
       setStatus: useCase({ id: 'client-1', status: Status.INACTIVE }),
-      uploadPhoto: useCase({ id: 'client-1', photoUrl: '/uploads/clients/photo.jpg' }),
       exportData: useCase({ client: { id: 'client-1' } }),
       anonymize: useCase({ id: 'client-1', anonymizedAt: new Date().toISOString() }),
-      deletePhoto: useCase({ id: 'client-1', photoUrl: null }),
     },
     exercises: {
       list: useCase([]),
@@ -92,10 +90,10 @@ describe('HTTP routes', () => {
     await request(app).get('/clients/client-1').set(auth).expect(200);
     await request(app).put('/clients/client-1').set(auth).send({ firstName: 'Updated' }).expect(200);
     await request(app).patch('/clients/client-1/status').set(auth).send({ status: Status.INACTIVE }).expect(200);
-    await request(app).post('/clients/client-1/photo').set(auth).expect(400, { error: 'Se requiere un archivo de imagen' });
     await request(app).get('/clients/client-1/export').set(auth).expect(200);
     await request(app).post('/clients/client-1/anonymize').set(auth).expect(200);
-    await request(app).delete('/clients/client-1/photo').set(auth).expect(200);
+    await request(app).post('/clients/client-1/photo').set(auth).expect(404);
+    await request(app).delete('/clients/client-1/photo').set(auth).expect(404);
 
     expect(container.clients.list.execute).toHaveBeenCalledWith('tenant-1', 'demo', true);
   });

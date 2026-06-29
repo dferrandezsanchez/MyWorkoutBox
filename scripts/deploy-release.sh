@@ -21,10 +21,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 BACKUP_DIR="$APP_PATH/backups"
-UPLOADS_DIR="$APP_PATH/uploads"
 SERVICE_NAME="${SYSTEMD_SERVICE_NAME:-${PM2_APP_NAME:-myworkoutbox-api}}"
 
-mkdir -p "$BACKUP_DIR" "$FRONTEND_PUBLIC_PATH" "$UPLOADS_DIR"
+mkdir -p "$BACKUP_DIR" "$FRONTEND_PUBLIC_PATH"
 
 write_backend_env() {
   cat > "$BACKEND_DIR/.env" <<EOF
@@ -47,11 +46,6 @@ EOF
 
 install_and_build_backend() {
   cd "$BACKEND_DIR"
-  if [[ -d uploads && ! -L uploads ]]; then
-    cp -a uploads/. "$UPLOADS_DIR/" 2>/dev/null || true
-  fi
-  rm -rf uploads
-  ln -sfn "$UPLOADS_DIR" uploads
   npm ci
   npm run prisma:generate
   npx prisma migrate deploy

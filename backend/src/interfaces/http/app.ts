@@ -41,7 +41,6 @@ export function createHttpApp(container: AppContainer) {
   app.use(cors(corsOrigins?.length ? { origin: corsOrigins } : undefined));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  app.use('/uploads', express.static('uploads'));
 
   app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });

@@ -1,5 +1,4 @@
 interface AvatarProps {
-  photoUrl?: string;
   firstName: string;
   lastName: string;
   size?: 'sm' | 'md' | 'lg';
@@ -11,21 +10,10 @@ const sizeClasses = {
   lg: 'w-16 h-16 text-base',
 };
 
-export default function Avatar({ photoUrl, firstName, lastName, size = 'md' }: AvatarProps) {
+export default function Avatar({ firstName, lastName, size = 'md' }: AvatarProps) {
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   const sizeClass = sizeClasses[size];
-  const ariaLabel = `Foto de ${firstName} ${lastName}`;
-
-  if (photoUrl) {
-    return (
-      <img
-        src={photoUrl}
-        alt={ariaLabel}
-        aria-label={ariaLabel}
-        className={`${sizeClass} rounded-full object-cover`}
-      />
-    );
-  }
+  const ariaLabel = `Iniciales de ${firstName} ${lastName}`;
 
   return (
     <div

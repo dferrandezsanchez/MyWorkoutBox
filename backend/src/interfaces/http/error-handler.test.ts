@@ -28,23 +28,6 @@ describe('errorHandler', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Permisos insuficientes' });
   });
 
-  it('maps multer and photo validation errors to bad request', () => {
-    const multerError = new Error('Unexpected field');
-    multerError.name = 'MulterError';
-    const multerResponse = createResponse();
-
-    errorHandler(multerError, {} as any, multerResponse as any, vi.fn());
-
-    expect(multerResponse.status).toHaveBeenCalledWith(400);
-    expect(multerResponse.json).toHaveBeenCalledWith({ error: 'Unexpected field' });
-
-    const photoResponse = createResponse();
-    errorHandler(new Error('Solo se permiten imágenes'), {} as any, photoResponse as any, vi.fn());
-
-    expect(photoResponse.status).toHaveBeenCalledWith(400);
-    expect(photoResponse.json).toHaveBeenCalledWith({ error: 'Solo se permiten imágenes' });
-  });
-
   it('returns a generic response for unexpected errors', () => {
     const res = createResponse();
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

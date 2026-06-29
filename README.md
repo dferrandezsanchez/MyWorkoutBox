@@ -15,7 +15,7 @@ El proyecto nace como un producto real orientado a entrenadores personales y cen
 - Registro de marcas y rendimiento por cliente y ejercicio.
 - Histórico de progreso y cálculo de marca actual.
 - Panel administrador y vista operativa para entrenadores.
-- RGPD básico: exportación de datos, anonimización y gestión de foto de cliente.
+- RGPD básico: exportación de datos y anonimización.
 - Auditoría de acciones relevantes.
 - Preparación para producción con MySQL/MariaDB, CORS configurable y despliegue por tags.
 - Documentación OpenAPI/Swagger para consumir la API desde otros clientes.
@@ -43,7 +43,6 @@ El proyecto nace como un producto real orientado a entrenadores personales y cen
 - MySQL/MariaDB
 - JWT
 - bcrypt
-- Multer
 - Vitest + Supertest
 - OpenAPI 3.0
 
@@ -52,12 +51,12 @@ El proyecto nace como un producto real orientado a entrenadores personales y cen
 - GitHub Actions
 - Servidor Linux/VPS
 - MariaDB/MySQL en producción
-- Reverse proxy para API, uploads y frontend
+- Reverse proxy para API y frontend
 - systemd para mantener viva la API
 
 ## 🏛️ Arquitectura
 
-El backend sigue una Clean Architecture estricta: las reglas de dominio y los casos de uso no dependen de Express, Prisma, JWT, bcrypt, Multer, filesystem ni variables de entorno. Esas dependencias quedan confinadas en infraestructura o adaptadores HTTP.
+El backend sigue una Clean Architecture estricta: las reglas de dominio y los casos de uso no dependen de Express, Prisma, JWT, bcrypt, filesystem ni variables de entorno. Esas dependencias quedan confinadas en infraestructura o adaptadores HTTP.
 
 ```mermaid
 flowchart TD
@@ -108,7 +107,7 @@ También existen tests de arquitectura para evitar regresiones:
 │   └── src/
 │       ├── domain/              # Reglas puras y contratos internos
 │       ├── application/         # Casos de uso y puertos
-│       ├── infrastructure/      # Prisma, seguridad, storage y adaptadores externos
+│       ├── infrastructure/      # Prisma, seguridad y adaptadores externos
 │       ├── interfaces/http/     # Express, rutas, middlewares y controladores
 │       ├── main/                # Composition root
 │       └── modules/             # Tests/compatibilidad de módulos existentes

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useClients, useCreateClient, useSetClientStatus, useExportClient, useAnonymizeClient } from '@features/clients/hooks/useClients';
-import ClientPhotoUploader from '@features/clients/components/ClientPhotoUploader';
 import ClientCard from '@features/clients/components/ClientCard';
 import ClientForm from '@features/clients/components/ClientForm';
 import type { CreateClientData } from '@shared/types/api';
@@ -18,7 +17,6 @@ export default function ClientsAdminPage() {
   const anonymizeMutation = useAnonymizeClient();
 
   const [showCreate, setShowCreate] = useState(false);
-  const [uploadFor, setUploadFor] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -43,7 +41,7 @@ export default function ClientsAdminPage() {
       <PageHeader
         eyebrow="Administración"
         title="Clientes"
-        description="Gestiona altas, estado, fotos y acciones RGPD."
+        description="Gestiona altas, estado y acciones RGPD."
         actions={
           <>
             <Button onClick={() => navigate('/admin/exercises')}>Ejercicios</Button>
@@ -109,11 +107,6 @@ export default function ClientsAdminPage() {
                 >
                   Anonimizar
                   </Button>
-                  <Button
-                  onClick={() => setUploadFor(c.id)}
-                >
-                  Foto
-                  </Button>
                 </div>
               </div>
             </div>
@@ -138,9 +131,6 @@ export default function ClientsAdminPage() {
               </div>
             </div>
           </div>
-        )}
-        {uploadFor && (
-          <ClientPhotoUploader clientId={uploadFor} onClose={() => setUploadFor(null)} />
         )}
     </AppShell>
   );
