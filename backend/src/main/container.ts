@@ -37,12 +37,26 @@ import {
   UpdateTrainerUseCase,
 } from '../application/trainers';
 import {
+  AddSessionExerciseUseCase,
+  CompleteTrainingSessionUseCase,
+  CreateSessionSeriesUseCase,
+  DeleteSessionSeriesUseCase,
+  DiscardTrainingSessionUseCase,
+  GetActiveTrainingSessionUseCase,
+  GetTrainingSessionUseCase,
+  ListClientTrainingSessionsUseCase,
+  RemoveSessionExerciseUseCase,
+  StartTrainingSessionUseCase,
+  UpdateSessionSeriesUseCase,
+} from '../application/training-sessions';
+import {
   PrismaAuditLogRepository,
   PrismaClientRepository,
   PrismaExerciseRepository,
   PrismaMembershipRepository,
   PrismaPerformanceRepository,
   PrismaTenantRepository,
+  PrismaTrainingSessionRepository,
   PrismaUserRepository,
 } from '../infrastructure/repositories/prisma-repositories';
 import { BcryptPasswordHasher } from '../infrastructure/security/bcrypt-password-hasher';
@@ -57,6 +71,7 @@ export function createContainer() {
   const exercises = new PrismaExerciseRepository();
   const performances = new PrismaPerformanceRepository();
   const auditLogs = new PrismaAuditLogRepository();
+  const trainingSessions = new PrismaTrainingSessionRepository();
 
   const passwordHasher = new BcryptPasswordHasher();
   const tokenService = new JwtTokenService(process.env.JWT_SECRET, process.env.JWT_EXPIRES_IN ?? '8h');
@@ -79,7 +94,7 @@ export function createContainer() {
       create: new CreateClientUseCase(clients, auditLogs),
       update: new UpdateClientUseCase(clients, auditLogs),
       setStatus: new SetClientStatusUseCase(clients, auditLogs),
-      exportData: new ExportClientUseCase(clients, performances, auditLogs),
+      exportData: new ExportClientUseCase(clients, performances, trainingSessions, auditLogs),
       anonymize: new AnonymizeClientUseCase(clients, auditLogs),
     },
     exercises: {
@@ -101,6 +116,19 @@ export function createContainer() {
       update: new UpdateTrainerUseCase(users, memberships),
       setActive: new SetTrainerActiveUseCase(memberships),
       resetPassword: new ResetTrainerPasswordUseCase(users, memberships, passwordHasher),
+    },
+    trainingSessions: {
+      start: new StartTrainingSessionUseCase(trainingSessions, clients, auditLogs, clock),
+      getActive: new GetActiveTrainingSessionUseCase(trainingSessions),
+      get: new GetTrainingSessionUseCase(trainingSessions),
+      listByClient: new ListClientTrainingSessionsUseCase(trainingSessions, clients),
+      addExercise: new AddSessionExerciseUseCase(trainingSessions, exercises),
+      removeExercise: new RemoveSessionExerciseUseCase(trainingSessions),
+      createSeries: new CreateSessionSeriesUseCase(trainingSessions, performances, auditLogs, clock),
+      updateSeries: new UpdateSessionSeriesUseCase(trainingSessions, performances, auditLogs, clock),
+      deleteSeries: new DeleteSessionSeriesUseCase(trainingSessions, performances, auditLogs),
+      complete: new CompleteTrainingSessionUseCase(trainingSessions, auditLogs, clock),
+      discard: new DiscardTrainingSessionUseCase(trainingSessions, auditLogs),
     },
   };
 }

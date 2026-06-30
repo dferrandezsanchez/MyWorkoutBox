@@ -7,6 +7,9 @@ import type {
   PerformanceRecord,
   PerformanceRecordWithTrainerName,
   Tenant,
+  TrainingSession,
+  TrainingSessionDetail,
+  TrainingSessionExercise,
   User,
 } from './shared/entities';
 
@@ -111,6 +114,7 @@ export interface PerformanceRepository {
     exerciseId: string,
   ): Promise<PerformanceRecordWithTrainerName | null>;
   findByClient(tenantId: string, clientId: string): Promise<PerformanceRecord[]>;
+  findByClientWithTrainer(tenantId: string, clientId: string): Promise<PerformanceRecordWithTrainerName[]>;
   create(data: {
     tenantId: string;
     clientId: string;
@@ -124,7 +128,37 @@ export interface PerformanceRepository {
     duration?: number;
     distance?: number;
     notes?: string;
+    variantValues?: string;
+    sessionExerciseId?: string;
+    seriesNumber?: number;
   }): Promise<PerformanceRecord>;
+  update(id: string, data: {
+    value?: string;
+    unit?: string;
+    date?: Date;
+    weight?: number | null;
+    repetitions?: number | null;
+    duration?: number | null;
+    distance?: number | null;
+    notes?: string | null;
+    variantValues?: string | null;
+  }): Promise<PerformanceRecord>;
+  delete(id: string): Promise<void>;
+  findById(tenantId: string, id: string): Promise<PerformanceRecord | null>;
+  renumberSeries(sessionExerciseId: string): Promise<void>;
+}
+
+export interface TrainingSessionRepository {
+  findActiveByTrainer(tenantId: string, trainerId: string): Promise<TrainingSession | null>;
+  findById(tenantId: string, id: string): Promise<TrainingSession | null>;
+  findDetail(tenantId: string, id: string): Promise<TrainingSessionDetail | null>;
+  listByClient(tenantId: string, clientId: string): Promise<TrainingSessionDetail[]>;
+  create(data: { tenantId: string; clientId: string; trainerId: string; startedAt: Date }): Promise<TrainingSession>;
+  complete(id: string, completedAt: Date, notes?: string): Promise<TrainingSession>;
+  delete(id: string): Promise<void>;
+  addExercise(sessionId: string, exerciseId: string): Promise<TrainingSessionExercise>;
+  findExercise(sessionId: string, id: string): Promise<TrainingSessionExercise | null>;
+  removeExercise(sessionId: string, id: string): Promise<void>;
 }
 
 export interface AuditLogRepository {

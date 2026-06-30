@@ -6,6 +6,7 @@ import type {
   PerformanceUnit,
   Role,
   Status,
+  TrainingSessionStatus,
 } from './enums';
 
 export interface User {
@@ -101,8 +102,41 @@ export interface PerformanceRecord {
   distance: number | null;
   date: Date;
   notes: string | null;
+  variantValues: string | null;
+  sessionExerciseId: string | null;
+  seriesNumber: number | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface TrainingSession {
+  id: string;
+  tenantId: string;
+  clientId: string;
+  trainerId: string;
+  status: TrainingSessionStatus;
+  startedAt: Date;
+  completedAt: Date | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TrainingSessionExercise {
+  id: string;
+  sessionId: string;
+  exerciseId: string;
+  position: number;
+  createdAt: Date;
+}
+
+export interface TrainingSessionDetail extends TrainingSession {
+  client: Client;
+  trainerName: string;
+  exercises: Array<TrainingSessionExercise & {
+    exercise: Exercise;
+    series: PerformanceRecordWithTrainerName[];
+  }>;
 }
 
 export interface PerformanceRecordWithTrainerName extends PerformanceRecord {

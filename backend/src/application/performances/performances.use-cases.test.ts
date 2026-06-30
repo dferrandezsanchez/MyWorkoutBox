@@ -119,6 +119,9 @@ function createSut(options: { exercise?: Exercise | null; client?: Client | null
       return latest ? { ...latest, trainerName: 'Trainer Test' } : null;
     },
     findByClient: async () => records,
+    findByClientWithTrainer: async () => [...records]
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .map((record) => ({ ...record, trainerName: 'Trainer' })),
     create: async (data) => {
       const record = createRecord(data);
       records.push(record);

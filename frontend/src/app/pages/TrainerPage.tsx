@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Search, Users, Zap } from 'lucide-react';
 import Avatar from '@shared/components/Avatar';
 import AppShell from '@app/layout/AppShell';
-import { EmptyState, Panel, StatusBadge, TextInput } from '@shared/components/ui';
+import { Button, EmptyState, Panel, StatusBadge, TextInput } from '@shared/components/ui';
 import { useClients } from '@features/clients/hooks/useClients';
 import { useTheme } from '@shared/theme/ThemeProvider';
+import { useActiveSession } from '@features/training-sessions/hooks/useTrainingSessions';
+import { useAuthUser } from '@features/auth/hooks/useAuthUser';
 
 function calculateAge(birthDate: string): number {
   return Math.floor(
@@ -21,6 +23,8 @@ function formatAge(birthDate: string): string {
 export default function TrainerPage() {
   const navigate = useNavigate();
   const { brand } = useTheme();
+  const { data: activeSession } = useActiveSession();
+  const { data: user } = useAuthUser();
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
 
@@ -40,6 +44,12 @@ export default function TrainerPage() {
       searchPlaceholder="Buscar cliente"
     >
       <div className="mx-auto max-w-3xl space-y-4">
+        {activeSession && (
+          <Panel className="flex flex-col gap-3 border-primary/35 bg-primary/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div><p className="text-xs font-semibold uppercase tracking-wide text-primary">Sesión en curso</p><p className="mt-1 font-semibold text-text-primary">{activeSession.client.firstName} {activeSession.client.lastName}</p><p className="text-sm text-text-secondary">{activeSession.exercises.length} ejercicios registrados</p></div>
+            <Button variant="primary" onClick={() => navigate(`/trainer/sessions/${activeSession.id}`)}>Continuar sesión</Button>
+          </Panel>
+        )}
         <Panel className="relative overflow-hidden p-5">
           <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-primary/25 blur-3xl" />
           <div className="relative">
@@ -49,7 +59,7 @@ export default function TrainerPage() {
                   Modo entrenador
                 </p>
                 <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary">
-                  Hola, Entrenador
+                  Hola, {user?.name || 'Entrenador'}
                 </h1>
                 <p className="mt-1 text-sm text-text-secondary">
                   Busca cliente, abre su ficha y registra marcas sin perder tiempo.

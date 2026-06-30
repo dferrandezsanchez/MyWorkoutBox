@@ -2,12 +2,12 @@
 
 ## Current Status
 
-Last local audit: 2026-06-29.
+Last local audit: 2026-06-30.
 
 | Area | Status |
 | --- | --- |
-| Backend tests | 18 files, 58 tests passing |
-| Frontend tests | 11 files, 34 tests passing |
+| Backend tests | 19 files, 63 tests passing |
+| Frontend tests | 11 files, 35 tests passing |
 | Backend lint | Passing |
 | Frontend lint | Passing with 2 non-blocking warnings |
 | Backend build | Passing |
@@ -19,8 +19,8 @@ Last local audit: 2026-06-29.
 
 | Package | Statements | Branches | Functions | Lines |
 | --- | ---: | ---: | ---: | ---: |
-| Backend | 88.14% | 75.38% | 97.12% | 91.31% |
-| Frontend | 93.64% | 75.95% | 95.09% | 95.38% |
+| Backend | 86.02% | 71.07% | 95.79% | 91.05% |
+| Frontend | 93.10% | 76.67% | 95.14% | 94.67% |
 
 ## Commands
 
@@ -54,10 +54,10 @@ ESLint with SonarJS is enforced in CI. Errors block the gate; warnings are allow
 
 ## Main Gaps
 
-- Backend route handlers have lower coverage than application use cases.
+- Backend line and branch coverage can be improved around error paths and repository edge cases.
 - Backend time adapters still have low direct unit coverage.
 - Auth use cases are covered for critical paths, but more profile and tenant edge cases can be added.
-- Frontend coverage is still low in theme provider, shared UI components and performance form branches.
+- Frontend coverage is still low in theme provider, shared UI components and complex page flows.
 - Product-level frontend flows are not covered end-to-end yet.
 
 ## Recommended Next Tests
@@ -65,5 +65,5 @@ ESLint with SonarJS is enforced in CI. Errors block the gate; warnings are allow
 - Protected route: missing token, expired token and role-based redirects.
 - Theme provider: stored preference, system preference and tenant branding persistence.
 - Shared UI components: status badges, action tiles, theme toggle and empty states.
-- Performance form: dynamic fields, validation errors and variant payloads.
+- Training session page: exercise search, series copy/edit/delete and completion confirmation.
 - Backend route handlers: auth, clients, trainers and exercises controller-level error paths.

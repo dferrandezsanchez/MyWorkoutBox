@@ -43,9 +43,9 @@ export const openApiDocument: OpenApiDocument = {
   openapi: '3.0.3',
   info: {
     title: 'MyWorkoutBox API',
-    version: '0.3.1-alpha',
+    version: '0.4.0-alpha',
     description:
-      'API HTTP para gestionar centros de entrenamiento, clientes, entrenadores, ejercicios evaluables y marcas de rendimiento.',
+      'API HTTP para gestionar centros de entrenamiento, clientes, entrenadores, sesiones, ejercicios evaluables y marcas de rendimiento.',
   },
   servers: [
     { url: 'http://localhost:3000', description: 'Local development' },
@@ -57,6 +57,7 @@ export const openApiDocument: OpenApiDocument = {
     { name: 'Clients', description: 'Gestión de clientes y flujos RGPD' },
     { name: 'Exercises', description: 'Catálogo de ejercicios evaluables' },
     { name: 'Performances', description: 'Registro e histórico de marcas' },
+    { name: 'Training Sessions', description: 'Sesiones, ejercicios y series del entrenador' },
     { name: 'Trainers', description: 'Gestión de entrenadores' },
   ],
   components: {
@@ -160,6 +161,9 @@ export const openApiDocument: OpenApiDocument = {
           weight: { type: 'number', nullable: true },
           bodyFatPercentage: { type: 'number', nullable: true },
           notes: { type: 'string', nullable: true },
+          variantValues: { type: 'string', nullable: true, description: 'JSON serializado con variantes seleccionadas' },
+          sessionExerciseId: { type: 'string', nullable: true },
+          seriesNumber: { type: 'integer', nullable: true },
           status: { $ref: '#/components/schemas/Status' },
           anonymizedAt: { type: 'string', format: 'date-time', nullable: true },
           createdAt: { type: 'string', format: 'date-time' },
@@ -176,6 +180,34 @@ export const openApiDocument: OpenApiDocument = {
           weight: { type: 'number' },
           bodyFatPercentage: { type: 'number' },
           notes: { type: 'string' },
+          variants: { type: 'object', additionalProperties: { type: 'string' } },
+        },
+      },
+      TrainingSessionExercise: {
+        type: 'object',
+        required: ['id', 'exerciseId', 'position', 'exercise', 'series'],
+        properties: {
+          id: { type: 'string' },
+          exerciseId: { type: 'string' },
+          position: { type: 'integer' },
+          exercise: { $ref: '#/components/schemas/Exercise' },
+          series: { type: 'array', items: { $ref: '#/components/schemas/PerformanceRecord' } },
+        },
+      },
+      TrainingSession: {
+        type: 'object',
+        required: ['id', 'clientId', 'trainerId', 'status', 'startedAt', 'client', 'exercises'],
+        properties: {
+          id: { type: 'string' },
+          clientId: { type: 'string' },
+          trainerId: { type: 'string' },
+          trainerName: { type: 'string' },
+          status: { type: 'string', enum: ['ACTIVE', 'COMPLETED'] },
+          startedAt: { type: 'string', format: 'date-time' },
+          completedAt: { type: 'string', format: 'date-time', nullable: true },
+          notes: { type: 'string', nullable: true },
+          client: { $ref: '#/components/schemas/Client' },
+          exercises: { type: 'array', items: { $ref: '#/components/schemas/TrainingSessionExercise' } },
         },
       },
       Exercise: {
@@ -254,6 +286,7 @@ export const openApiDocument: OpenApiDocument = {
           exerciseId: { type: 'string' },
           exerciseName: { type: 'string' },
           record: { $ref: '#/components/schemas/PerformanceRecord' },
+          bestRecord: { $ref: '#/components/schemas/PerformanceRecord' },
         },
       },
       Trainer: {
@@ -562,13 +595,81 @@ Object.assign(openApiDocument.paths, {
       parameters: [{ name: 'clientId', in: 'path', required: true, schema: { type: 'string' } }, { name: 'exerciseId', in: 'path', required: true, schema: { type: 'string' } }],
       responses: { 200: { description: 'Histórico', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/PerformanceRecord' } } } } }, ...authResponses },
     },
+  },
+  '/clients/{id}/training-sessions': {
+    get: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Lista sesiones completadas de un cliente',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Sesiones', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/TrainingSession' } } } } }, ...authResponses },
+    },
+  },
+  '/training-sessions': {
     post: {
-      tags: ['Performances'],
-      security: [{ bearerAuth: [] }],
-      summary: 'Registra una marca',
-      parameters: [{ name: 'clientId', in: 'path', required: true, schema: { type: 'string' } }, { name: 'exerciseId', in: 'path', required: true, schema: { type: 'string' } }],
-      requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/PerformanceInput' } } } },
-      responses: { 201: { description: 'Marca registrada', content: { 'application/json': { schema: { $ref: '#/components/schemas/PerformanceRecord' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...authResponses },
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Inicia una sesión individual',
+      requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['clientId'], properties: { clientId: { type: 'string' } } } } } },
+      responses: { 201: { description: 'Sesión iniciada', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, 409: { $ref: '#/components/responses/Conflict' }, ...authResponses },
+    },
+  },
+  '/training-sessions/active': {
+    get: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Obtiene la sesión activa del usuario',
+      responses: { 200: { description: 'Sesión activa o null', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession', nullable: true } } } }, ...authResponses },
+    },
+  },
+  '/training-sessions/{id}': {
+    get: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Obtiene el detalle de una sesión',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Sesión', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, 404: { $ref: '#/components/responses/NotFound' }, ...authResponses },
+    },
+    delete: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Descarta una sesión vacía',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 204: { description: 'Sesión descartada' }, 409: { $ref: '#/components/responses/Conflict' }, ...authResponses },
+    },
+  },
+  '/training-sessions/{id}/exercises': {
+    post: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Añade un ejercicio a la sesión',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['exerciseId'], properties: { exerciseId: { type: 'string' } } } } } },
+      responses: { 201: { description: 'Sesión actualizada', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, ...authResponses },
+    },
+  },
+  '/training-sessions/{id}/exercises/{sessionExerciseId}': {
+    delete: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Quita un ejercicio sin series',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'sessionExerciseId', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Sesión actualizada', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, 409: { $ref: '#/components/responses/Conflict' }, ...authResponses },
+    },
+  },
+  '/training-sessions/{id}/exercises/{sessionExerciseId}/series': {
+    post: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Registra una nueva serie',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'sessionExerciseId', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PerformanceInput' } } } },
+      responses: { 201: { description: 'Serie registrada', content: { 'application/json': { schema: { $ref: '#/components/schemas/PerformanceRecord' } } } }, ...authResponses },
+    },
+  },
+  '/training-sessions/{id}/series/{recordId}': {
+    put: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Edita una serie de la sesión',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'recordId', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PerformanceInput' } } } },
+      responses: { 200: { description: 'Serie actualizada', content: { 'application/json': { schema: { $ref: '#/components/schemas/PerformanceRecord' } } } }, ...authResponses },
+    },
+    delete: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Elimina y renumera una serie',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'recordId', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 204: { description: 'Serie eliminada' }, ...authResponses },
+    },
+  },
+  '/training-sessions/{id}/complete': {
+    post: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Finaliza y bloquea una sesión',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { notes: { type: 'string' } } } } } },
+      responses: { 200: { description: 'Sesión finalizada', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, ...authResponses },
     },
   },
   '/trainers': pathItem('Trainers', 'Trainer', true),

@@ -20,8 +20,12 @@ Las cuentas utilizan datos de demostración y permiten revisar los flujos dispon
 - Gestión de clientes: alta, edición, estado activo/inactivo y ficha individual.
 - Gestión de entrenadores: alta, estado y cambio de contraseña.
 - Catálogo de ejercicios evaluables con plantillas de medición.
-- Registro de marcas y rendimiento por cliente y ejercicio.
+- Sesiones de entrenamiento individuales, iniciadas por el entrenador sin planificación previa.
+- Incorporación dinámica de ejercicios y registro rápido de varias series por ejercicio.
+- Edición y eliminación de series durante la sesión, con numeración automática y cierre inmutable.
+- Registro de marcas y rendimiento vinculado a cada sesión, cliente y ejercicio.
 - Histórico de progreso y cálculo de marca actual.
+- Histórico y detalle de sesiones completadas por cliente.
 - Panel administrador y vista operativa para entrenadores.
 - RGPD básico: exportación de datos y anonimización.
 - Auditoría de acciones relevantes.
@@ -93,7 +97,7 @@ El frontend usa una arquitectura por módulos funcionales. `app` compone rutas, 
 ```mermaid
 flowchart LR
   App[app<br/>router, pages, layout]
-  Features[features<br/>auth, clients, exercises, performances, trainers]
+  Features[features<br/>auth, clients, exercises, performances, training sessions, trainers]
   Shared[shared<br/>api, auth session, UI, theme, types, state]
 
   App --> Features
@@ -122,7 +126,7 @@ También existen tests de arquitectura para evitar regresiones:
 ├── frontend/
 │   └── src/
 │       ├── app/                 # Router, pages y layout de aplicación
-│       ├── features/            # Auth, clientes, ejercicios, marcas y entrenadores
+│       ├── features/            # Auth, clientes, ejercicios, marcas, sesiones y entrenadores
 │       ├── shared/              # UI, API client, theme, state, tipos y sesión
 │       └── test/                # Setup de tests frontend
 ├── .github/workflows/           # CI/CD

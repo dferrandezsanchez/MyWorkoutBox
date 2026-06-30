@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import bcrypt from 'bcrypt';
 import prisma from '../../infrastructure/prisma/prisma-client';
-import { PerformanceUnit, Role, Status } from '../../types/domain';
+import { PerformanceUnit, Role, Status, TrainingSessionStatus } from '../../types/domain';
 import { createContainer } from '../../main/container';
 import { ensureTenantMembership, TEST_TENANT_ID } from '../../test/tenant';
 
@@ -62,14 +62,26 @@ beforeAll(async () => {
       date: new Date('2026-06-01T00:00:00.000Z'),
     },
   });
+
+  await prisma.trainingSession.create({
+    data: {
+      tenantId: TEST_TENANT_ID,
+      clientId,
+      trainerId: adminUserId,
+      status: TrainingSessionStatus.COMPLETED,
+      startedAt: new Date('2026-06-01T09:00:00.000Z'),
+      completedAt: new Date('2026-06-01T10:00:00.000Z'),
+    },
+  });
 });
 
 describe('RGPD client service', () => {
-  it('exports personal data and performances', async () => {
+  it('exports personal data, performances and training sessions', async () => {
     const exported = await createContainer().clients.exportData.execute(TEST_TENANT_ID, clientId, adminUserId);
 
     expect(exported.client.id).toBe(clientId);
     expect(exported.performances).toHaveLength(1);
+    expect(exported.trainingSessions).toHaveLength(1);
   });
 
   it('anonymizes personal fields and preserves performances', async () => {

@@ -1,5 +1,10 @@
-import type { Client, PerformanceRecord } from '../../domain/shared/entities';
-import type { AuditLogRepository, ClientRepository, PerformanceRepository } from '../../domain/repositories';
+import type { Client, PerformanceRecord, TrainingSessionDetail } from '../../domain/shared/entities';
+import type {
+  AuditLogRepository,
+  ClientRepository,
+  PerformanceRepository,
+  TrainingSessionRepository,
+} from '../../domain/repositories';
 import { GetClientUseCase } from './get-client.use-case';
 
 export class ExportClientUseCase {
@@ -8,6 +13,7 @@ export class ExportClientUseCase {
   constructor(
     clients: ClientRepository,
     private readonly performances: PerformanceRepository,
+    private readonly trainingSessions: TrainingSessionRepository,
     private readonly auditLogs: AuditLogRepository,
   ) {
     this.getClient = new GetClientUseCase(clients);
@@ -17,9 +23,16 @@ export class ExportClientUseCase {
     tenantId: string,
     id: string,
     actorUserId: string,
-  ): Promise<{ client: Client; performances: PerformanceRecord[] }> {
+  ): Promise<{
+    client: Client;
+    performances: PerformanceRecord[];
+    trainingSessions: TrainingSessionDetail[];
+  }> {
     const client = await this.getClient.execute(tenantId, id);
-    const performances = await this.performances.findByClient(tenantId, id);
+    const [performances, trainingSessions] = await Promise.all([
+      this.performances.findByClient(tenantId, id),
+      this.trainingSessions.listByClient(tenantId, id),
+    ]);
     await this.auditLogs.create({
       tenantId,
       userId: actorUserId,
@@ -27,6 +40,6 @@ export class ExportClientUseCase {
       entityType: 'Client',
       entityId: id,
     });
-    return { client, performances };
+    return { client, performances, trainingSessions };
   }
 }

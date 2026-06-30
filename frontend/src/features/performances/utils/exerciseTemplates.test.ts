@@ -33,6 +33,10 @@ describe('exerciseTemplates', () => {
 
   it('extracts and formats variants from performance records', () => {
     expect(extractVariant(baseRecord)).toBe('Sumo');
+    expect(extractVariant({ ...baseRecord, variantValues: '{"stance":"Convencional","grip":"Mixto"}' })).toBe(
+      'Convencional / Mixto',
+    );
+    expect(extractVariant({ ...baseRecord, variantValues: 'invalid' })).toBe('Sumo');
     expect(extractVariant({ ...baseRecord, notes: 'Agarre: Prono | buena técnica' })).toBe('Prono');
     expect(extractVariant({ ...baseRecord, notes: undefined })).toBeNull();
     expect(formatPerformance(baseRecord)).toBe('100 kg x 5 · Sumo');

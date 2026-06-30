@@ -34,6 +34,13 @@ describe('OpenAPI documentation', () => {
       '/exercises/{id}',
       '/clients/{clientId}/current-performances',
       '/clients/{clientId}/exercises/{exerciseId}/performances',
+      '/clients/{id}/training-sessions',
+      '/training-sessions',
+      '/training-sessions/active',
+      '/training-sessions/{id}',
+      '/training-sessions/{id}/exercises',
+      '/training-sessions/{id}/exercises/{sessionExerciseId}/series',
+      '/training-sessions/{id}/complete',
       '/trainers',
       '/trainers/{id}',
       '/trainers/{id}/password',
@@ -45,6 +52,7 @@ describe('OpenAPI documentation', () => {
     expect(body.paths).not.toHaveProperty('/clients/{id}/photo');
     expect(body.components.schemas.Client.properties).not.toHaveProperty('photoUrl');
     expect(body.components.schemas.Client.properties).not.toHaveProperty('photoConsentAt');
+    expect(body.paths['/clients/{clientId}/exercises/{exerciseId}/performances']).not.toHaveProperty('post');
   });
 
   it('serves Swagger UI', async () => {

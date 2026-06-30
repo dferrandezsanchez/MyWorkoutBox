@@ -26,19 +26,5 @@ export function createPerformancesRouter(container: AppContainer): Router {
     }
   });
 
-  router.post('/clients/:clientId/exercises/:exerciseId/performances', auth, async (req, res, next): Promise<void> => {
-    try {
-      res.status(201).json(await container.performances.create.execute(
-        req.user!.tenantId,
-        req.params.clientId,
-        req.params.exerciseId,
-        req.user!.userId,
-        req.body,
-      ));
-    } catch (err) {
-      next(err);
-    }
-  });
-
   return router;
 }

@@ -130,8 +130,22 @@ describe('production readiness API flow', () => {
   });
 
   it('supports trainer performance creation, current marks and ordered history', async () => {
-    await request(app)
-      .post(`/clients/${clientId}/exercises/${exerciseId}/performances`)
+    const sessionResponse = await request(app)
+      .post('/training-sessions')
+      .set('Authorization', `Bearer ${trainerToken}`)
+      .send({ clientId })
+      .expect(201);
+    const sessionId = sessionResponse.body.id;
+
+    const exerciseResponse = await request(app)
+      .post(`/training-sessions/${sessionId}/exercises`)
+      .set('Authorization', `Bearer ${trainerToken}`)
+      .send({ exerciseId })
+      .expect(201);
+    const sessionExerciseId = exerciseResponse.body.exercises[0].id;
+
+    const firstSeriesResponse = await request(app)
+      .post(`/training-sessions/${sessionId}/exercises/${sessionExerciseId}/series`)
       .set('Authorization', `Bearer ${trainerToken}`)
       .send({
         value: 100,
@@ -142,15 +156,29 @@ describe('production readiness API flow', () => {
       .expect(201);
 
     await request(app)
-      .post(`/clients/${clientId}/exercises/${exerciseId}/performances`)
+      .post(`/training-sessions/${sessionId}/exercises/${sessionExerciseId}/series`)
       .set('Authorization', `Bearer ${trainerToken}`)
-      .send({
-        value: 110,
-        unit: PerformanceUnit.kg,
-        repetitions: 3,
-        date: '2026-06-02',
-      })
+      .send({ value: 110, unit: PerformanceUnit.kg, repetitions: 3, date: '2026-06-02' })
       .expect(201);
+
+    await request(app)
+      .put(`/training-sessions/${sessionId}/series/${firstSeriesResponse.body.id}`)
+      .set('Authorization', `Bearer ${trainerToken}`)
+      .send({ value: 105, unit: PerformanceUnit.kg, repetitions: 5, date: '2026-06-01' })
+      .expect(200)
+      .expect(({ body }) => expect(body.value).toBe('105'));
+
+    await request(app)
+      .delete(`/training-sessions/${sessionId}/series/${firstSeriesResponse.body.id}`)
+      .set('Authorization', `Bearer ${trainerToken}`)
+      .expect(204);
+
+    await request(app)
+      .post(`/training-sessions/${sessionId}/exercises/${sessionExerciseId}/series`)
+      .set('Authorization', `Bearer ${trainerToken}`)
+      .send({ value: 100, unit: PerformanceUnit.kg, repetitions: 5, date: '2026-06-01' })
+      .expect(201)
+      .expect(({ body }) => expect(body.seriesNumber).toBe(2));
 
     await request(app)
       .get(`/clients/${clientId}/current-performances`)
@@ -168,6 +196,24 @@ describe('production readiness API flow', () => {
       .expect(({ body }) => {
         expect(body.map((record: { value: string }) => record.value)).toEqual(['110', '100']);
       });
+
+    await request(app)
+      .post(`/training-sessions/${sessionId}/complete`)
+      .set('Authorization', `Bearer ${trainerToken}`)
+      .send({ notes: 'Production readiness session' })
+      .expect(200)
+      .expect(({ body }) => expect(body.status).toBe('COMPLETED'));
+
+    const discardableSession = await request(app)
+      .post('/training-sessions')
+      .set('Authorization', `Bearer ${trainerToken}`)
+      .send({ clientId })
+      .expect(201);
+
+    await request(app)
+      .delete(`/training-sessions/${discardableSession.body.id}`)
+      .set('Authorization', `Bearer ${trainerToken}`)
+      .expect(204);
   });
 
   it('supports RGPD export and anonymization over HTTP', async () => {
