@@ -1,10 +1,10 @@
-import type { Client, PerformanceRecord, TrainingSessionDetail } from '../../domain/shared/entities';
 import type {
   AuditLogRepository,
   ClientRepository,
   PerformanceRepository,
   TrainingSessionRepository,
 } from '../../domain/repositories';
+import type { ClientExportData } from './client-export.dto';
 import { GetClientUseCase } from './get-client.use-case';
 
 export class ExportClientUseCase {
@@ -23,11 +23,7 @@ export class ExportClientUseCase {
     tenantId: string,
     id: string,
     actorUserId: string,
-  ): Promise<{
-    client: Client;
-    performances: PerformanceRecord[];
-    trainingSessions: TrainingSessionDetail[];
-  }> {
+  ): Promise<ClientExportData> {
     const client = await this.getClient.execute(tenantId, id);
     const [performances, trainingSessions] = await Promise.all([
       this.performances.findByClient(tenantId, id),

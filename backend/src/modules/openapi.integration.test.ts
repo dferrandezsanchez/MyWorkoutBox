@@ -52,6 +52,14 @@ describe('OpenAPI documentation', () => {
     expect(body.paths).not.toHaveProperty('/clients/{id}/photo');
     expect(body.components.schemas.Client.properties).not.toHaveProperty('photoUrl');
     expect(body.components.schemas.Client.properties).not.toHaveProperty('photoConsentAt');
+    expect(body.components.schemas.Client.properties).not.toHaveProperty('sessionExerciseId');
+    expect(body.components.schemas.PerformanceRecord.properties).toHaveProperty('sessionExerciseId');
+    expect(body.components.schemas.ClientExport).toMatchObject({
+      required: ['client', 'performances', 'trainingSessions'],
+    });
+    expect(body.paths['/clients/{id}/export'].get.responses[200].content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/ClientExport',
+    });
     expect(body.paths['/clients/{clientId}/exercises/{exerciseId}/performances']).not.toHaveProperty('post');
   });
 
