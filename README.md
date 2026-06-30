@@ -4,6 +4,14 @@ MyWorkoutBox es una aplicación web para centros de entrenamiento que necesitan 
 
 El proyecto nace como un producto real orientado a entrenadores personales y centros fitness: centraliza el seguimiento de clientes, permite registrar progresos por ejercicio y mantiene un histórico consultable para tomar mejores decisiones de entrenamiento.
 
+## 🌐 Demo
+
+- Aplicación: [https://tumeta.danielferrandez.dev](https://tumeta.danielferrandez.dev)
+- Administrador: `admin-demo@gym.com` / `Admin1234!`
+- Entrenador: `trainer-demo@gym.com` / `Trainer1234!`
+
+Las cuentas utilizan datos de demostración y permiten revisar los flujos disponibles para cada rol.
+
 ## ✨ Funcionalidades
 
 - Autenticación con JWT y control de acceso por roles.
@@ -234,17 +242,6 @@ npm --prefix frontend run dev
 npm --prefix frontend run build
 npm --prefix frontend test
 ```
-
-### Migración de datos desde SQLite
-
-El proyecto ya trabaja con MySQL/MariaDB. Si existe una base SQLite antigua con datos piloto, la migración se hace de forma manual y verificable:
-
-```bash
-npm --prefix backend run migration:export-sqlite -- /path/to/source.sqlite /path/to/export.json
-npm --prefix backend run migration:import-sqlite-export -- /path/to/export.json
-```
-
-El despliegue no ejecuta importaciones destructivas automáticas.
 
 ## ✅ Testing
 
