@@ -1,5 +1,6 @@
 export * from './anonymize-client.use-case';
 export * from './client-inputs';
+export * from './client-export.dto';
 export * from './create-client.use-case';
 export * from './export-client.use-case';
 export * from './get-client.use-case';

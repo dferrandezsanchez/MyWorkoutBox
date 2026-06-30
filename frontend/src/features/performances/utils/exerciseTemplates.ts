@@ -94,6 +94,15 @@ export function getExerciseTemplate(exerciseName = '', defaultUnit?: Performance
 }
 
 export function extractVariant(record?: PerformanceRecord | null): string | null {
+  if (record?.variantValues) {
+    try {
+      const variants = JSON.parse(record.variantValues) as Record<string, unknown>;
+      const values = Object.values(variants).filter((value): value is string => typeof value === 'string' && Boolean(value.trim()));
+      if (values.length) return values.join(' / ');
+    } catch {
+      // Preserve compatibility with malformed historical values by falling back to notes.
+    }
+  }
   if (!record?.notes) return null;
   const match = record.notes.match(/(?:Agarre|Variante):\s*([^|.\n]+)/i);
   return match?.[1]?.trim() ?? null;

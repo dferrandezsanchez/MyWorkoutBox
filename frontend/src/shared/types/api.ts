@@ -122,6 +122,9 @@ export interface PerformanceRecord {
   distance?: number;
   date: string;               // ISO 8601
   notes?: string;
+  variantValues?: string | null;
+  sessionExerciseId?: string | null;
+  seriesNumber?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -132,12 +135,40 @@ export interface CurrentMark {
   exerciseName: string;
   exercise: Exercise;
   record: PerformanceRecord | null;
+  bestRecord: PerformanceRecord | null;
+}
+
+export interface TrainingSessionExercise {
+  id: string;
+  sessionId: string;
+  exerciseId: string;
+  position: number;
+  createdAt: string;
+  exercise: Exercise;
+  series: PerformanceRecord[];
+}
+
+export interface TrainingSession {
+  id: string;
+  tenantId: string;
+  clientId: string;
+  trainerId: string;
+  trainerName: string;
+  status: 'ACTIVE' | 'COMPLETED';
+  startedAt: string;
+  completedAt?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  client: Client;
+  exercises: TrainingSessionExercise[];
 }
 
 // Export data for GDPR portability
 export interface ClientExport {
   client: Client;
   performances: PerformanceRecord[];
+  trainingSessions: TrainingSession[];
 }
 
 // ── Mutation input types ──────────────────────────────────────────────────────
@@ -212,6 +243,7 @@ export interface CreatePerformanceData {
   duration?: number;
   distance?: number;
   notes?: string;
+  variants?: Record<string, string>;
 }
 
 // User info returned by the API (includes role)

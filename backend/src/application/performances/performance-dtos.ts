@@ -27,4 +27,5 @@ export interface CurrentMarkResult {
     variantGroups: string;
   };
   record: PerformanceRecordWithTrainerName | null;
+  bestRecord: PerformanceRecordWithTrainerName | null;
 }

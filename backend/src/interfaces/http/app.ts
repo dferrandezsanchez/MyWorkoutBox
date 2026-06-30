@@ -7,6 +7,7 @@ import { createClientsRouter } from './routes/clients.routes';
 import { createExercisesRouter } from './routes/exercises.routes';
 import { createPerformancesRouter } from './routes/performances.routes';
 import { createTrainersRouter } from './routes/trainers.routes';
+import { createTrainingSessionsRouter } from './routes/training-sessions.routes';
 import { openApiDocument } from './openapi';
 
 const swaggerHtml = `<!doctype html>
@@ -58,6 +59,7 @@ export function createHttpApp(container: AppContainer) {
   app.use('/clients', createClientsRouter(container));
   app.use('/exercises', createExercisesRouter(container));
   app.use('/trainers', createTrainersRouter(container));
+  app.use('/training-sessions', createTrainingSessionsRouter(container));
   app.use('/', createPerformancesRouter(container));
 
   app.use(errorHandler);

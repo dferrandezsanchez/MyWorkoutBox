@@ -1,14 +1,13 @@
-import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Dumbbell, History, Plus, Trophy } from 'lucide-react';
+import { CalendarDays, ChevronLeft, Dumbbell, History, Play, Trophy } from 'lucide-react';
 import Avatar from '@shared/components/Avatar';
-import PerformanceForm from '@features/performances/components/PerformanceForm';
 import AppShell from '@app/layout/AppShell';
 import { Button, EmptyState, Panel, StatusBadge } from '@shared/components/ui';
 import { useClient } from '@features/clients/hooks/useClients';
-import { useCurrentPerformances, usePerformanceHistory } from '@features/performances/hooks/usePerformances';
-import { formatPerformance, getBestRecord } from '@features/performances/utils/exerciseTemplates';
-import type { CurrentMark, Exercise } from '@shared/types/api';
+import { useCurrentPerformances } from '@features/performances/hooks/usePerformances';
+import { formatPerformance } from '@features/performances/utils/exerciseTemplates';
+import { useActiveSession, useClientSessions, useStartSession } from '@features/training-sessions/hooks/useTrainingSessions';
+import type { CurrentMark } from '@shared/types/api';
 
 function calculateAge(birthDate: string): number {
   return Math.floor(
@@ -24,7 +23,6 @@ function formatAge(birthDate: string): string {
 export default function ClientProfilePage() {
   const { id: clientId } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [showForm, setShowForm] = useState<{ exerciseId: string; exerciseName: string; exercise?: Exercise } | null>(null);
 
   const { data: client, isLoading: isLoadingClient, isError: isErrorClient } = useClient(clientId!);
   const {
@@ -32,9 +30,21 @@ export default function ClientProfilePage() {
     isLoading: isLoadingPerformances,
     isError: isErrorPerformances,
   } = useCurrentPerformances(clientId!);
+  const { data: activeSession } = useActiveSession();
+  const { data: clientSessions = [] } = useClientSessions(clientId!);
+  const startSession = useStartSession();
 
   const isLoading = isLoadingClient || isLoadingPerformances;
   const isError = isErrorClient || isErrorPerformances;
+
+  const openSession = async () => {
+    if (activeSession) {
+      navigate(`/trainer/sessions/${activeSession.id}`);
+      return;
+    }
+    const session = await startSession.mutateAsync(clientId!);
+    navigate(`/trainer/sessions/${session.id}`);
+  };
 
   if (isLoading) {
     return (
@@ -92,6 +102,10 @@ export default function ClientProfilePage() {
                 {client.notes}
               </p>
             )}
+            <Button variant="primary" onClick={() => void openSession()} className="mt-4 inline-flex w-full items-center justify-center gap-2 sm:w-auto">
+              <Play size={17} fill="currentColor" />
+              {activeSession ? `Continuar sesión de ${activeSession.client.firstName}` : 'Iniciar entrenamiento'}
+            </Button>
           </div>
         </Panel>
 
@@ -102,7 +116,7 @@ export default function ClientProfilePage() {
                 Marcas
               </p>
               <h2 className="mt-1 text-xl font-semibold text-text-primary">Ejercicios de referencia</h2>
-              <p className="text-sm text-text-secondary">Última marca, mejor registro y actualización rápida.</p>
+              <p className="text-sm text-text-secondary">Última marca, mejor registro e histórico.</p>
             </div>
           </div>
 
@@ -115,29 +129,21 @@ export default function ClientProfilePage() {
                   key={item.exerciseId}
                   item={item}
                   clientId={clientId!}
-                  onUpdate={() =>
-                    setShowForm({
-                      exerciseId: item.exerciseId,
-                      exerciseName: item.exerciseName,
-                      exercise: item.exercise,
-                    })
-                  }
                 />
               ))}
             </div>
           )}
         </section>
+        <section>
+          <div className="mb-3"><p className="text-xs font-semibold uppercase tracking-wide text-primary">Entrenamientos</p><h2 className="mt-1 text-xl font-semibold text-text-primary">Sesiones anteriores</h2></div>
+          {clientSessions.length === 0 ? <EmptyState title="Sin sesiones finalizadas" /> : (
+            <Panel className="overflow-hidden p-0"><div className="divide-y divide-border/70">{clientSessions.map((session) => {
+              const series = session.exercises.reduce((total, item) => total + item.series.length, 0);
+              return <button key={session.id} onClick={() => navigate(`/trainer/sessions/${session.id}`)} className="flex min-h-16 w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-primary/10 focus-ring"><span className="flex items-center gap-3"><CalendarDays size={18} className="text-primary" /><span><span className="block font-semibold text-text-primary">{new Date(session.startedAt).toLocaleDateString('es-ES')}</span><span className="text-xs text-text-secondary">{session.exercises.length} ejercicios · {series} series</span></span></span><span className="text-sm text-text-secondary">{session.trainerName}</span></button>;
+            })}</div></Panel>
+          )}
+        </section>
       </div>
-
-      {showForm && (
-        <PerformanceForm
-          clientId={clientId!}
-          exerciseId={showForm.exerciseId}
-          exerciseName={showForm.exerciseName}
-          exercise={showForm.exercise}
-          onClose={() => setShowForm(null)}
-        />
-      )}
     </AppShell>
   );
 }
@@ -145,15 +151,11 @@ export default function ClientProfilePage() {
 function ExerciseMarkCard({
   item,
   clientId,
-  onUpdate,
 }: {
   item: CurrentMark;
   clientId: string;
-  onUpdate: () => void;
 }) {
   const navigate = useNavigate();
-  const { data: history } = usePerformanceHistory(clientId, item.exerciseId);
-  const best = getBestRecord(history ?? [], item.exercise);
 
   return (
     <Panel className="max-w-full overflow-hidden p-4">
@@ -189,15 +191,11 @@ function ExerciseMarkCard({
             <Trophy size={13} />
             Mejor
           </p>
-          <p className="mt-1 truncate text-sm font-semibold text-text-primary">{formatPerformance(best)}</p>
+          <p className="mt-1 truncate text-sm font-semibold text-text-primary">{formatPerformance(item.bestRecord)}</p>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-2 min-[380px]:grid-cols-[1.15fr_0.85fr]">
-        <Button variant="primary" onClick={onUpdate} className="inline-flex w-full items-center justify-center gap-2">
-          <Plus size={16} />
-          Actualizar
-        </Button>
+      <div className="mt-4">
         <Button
           variant="secondary"
           onClick={() => navigate(`/clients/${clientId}/exercises/${item.exerciseId}`)}

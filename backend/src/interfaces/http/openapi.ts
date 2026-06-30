@@ -9,23 +9,23 @@ type OpenApiDocument = {
 
 const errorResponses = {
   BadRequest: {
-    description: 'Solicitud inválida',
+    description: 'Invalid request',
     content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
   },
   Unauthorized: {
-    description: 'Token ausente, inválido o caducado',
+    description: 'Missing, invalid, or expired token',
     content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
   },
   Forbidden: {
-    description: 'Permisos insuficientes para el recurso solicitado',
+    description: 'Insufficient permissions for the requested resource',
     content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
   },
   NotFound: {
-    description: 'Recurso no encontrado',
+    description: 'Resource not found',
     content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
   },
   Conflict: {
-    description: 'Conflicto con el estado actual del recurso',
+    description: 'Conflict with the current resource state',
     content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
   },
 };
@@ -43,21 +43,22 @@ export const openApiDocument: OpenApiDocument = {
   openapi: '3.0.3',
   info: {
     title: 'MyWorkoutBox API',
-    version: '0.3.1-alpha',
+    version: '0.4.0-alpha',
     description:
-      'API HTTP para gestionar centros de entrenamiento, clientes, entrenadores, ejercicios evaluables y marcas de rendimiento.',
+      'HTTP API for managing training centers, clients, trainers, sessions, measurable exercises, and performance records.',
   },
   servers: [
     { url: 'http://localhost:3000', description: 'Local development' },
     { url: 'https://app.example.com/api', description: 'Production behind reverse proxy' },
   ],
   tags: [
-    { name: 'Health', description: 'Estado de la API' },
-    { name: 'Auth', description: 'Autenticación, usuario actual y tenant activo' },
-    { name: 'Clients', description: 'Gestión de clientes y flujos RGPD' },
-    { name: 'Exercises', description: 'Catálogo de ejercicios evaluables' },
-    { name: 'Performances', description: 'Registro e histórico de marcas' },
-    { name: 'Trainers', description: 'Gestión de entrenadores' },
+    { name: 'Health', description: 'API health status' },
+    { name: 'Auth', description: 'Authentication, current user, and active tenant' },
+    { name: 'Clients', description: 'Client management and GDPR workflows' },
+    { name: 'Exercises', description: 'Measurable exercise catalog' },
+    { name: 'Performances', description: 'Performance records and history' },
+    { name: 'Training Sessions', description: 'Trainer sessions, exercises, and series' },
+    { name: 'Trainers', description: 'Trainer management' },
   ],
   components: {
     securitySchemes: {
@@ -178,6 +179,42 @@ export const openApiDocument: OpenApiDocument = {
           notes: { type: 'string' },
         },
       },
+      TrainingSessionExercise: {
+        type: 'object',
+        required: ['id', 'exerciseId', 'position', 'exercise', 'series'],
+        properties: {
+          id: { type: 'string' },
+          exerciseId: { type: 'string' },
+          position: { type: 'integer' },
+          exercise: { $ref: '#/components/schemas/Exercise' },
+          series: { type: 'array', items: { $ref: '#/components/schemas/PerformanceRecord' } },
+        },
+      },
+      TrainingSession: {
+        type: 'object',
+        required: ['id', 'clientId', 'trainerId', 'status', 'startedAt', 'client', 'exercises'],
+        properties: {
+          id: { type: 'string' },
+          clientId: { type: 'string' },
+          trainerId: { type: 'string' },
+          trainerName: { type: 'string' },
+          status: { type: 'string', enum: ['ACTIVE', 'COMPLETED'] },
+          startedAt: { type: 'string', format: 'date-time' },
+          completedAt: { type: 'string', format: 'date-time', nullable: true },
+          notes: { type: 'string', nullable: true },
+          client: { $ref: '#/components/schemas/Client' },
+          exercises: { type: 'array', items: { $ref: '#/components/schemas/TrainingSessionExercise' } },
+        },
+      },
+      ClientExport: {
+        type: 'object',
+        required: ['client', 'performances', 'trainingSessions'],
+        properties: {
+          client: { $ref: '#/components/schemas/Client' },
+          performances: { type: 'array', items: { $ref: '#/components/schemas/PerformanceRecord' } },
+          trainingSessions: { type: 'array', items: { $ref: '#/components/schemas/TrainingSession' } },
+        },
+      },
       Exercise: {
         type: 'object',
         required: ['id', 'tenantId', 'name', 'category', 'defaultUnit', 'status'],
@@ -190,8 +227,8 @@ export const openApiDocument: OpenApiDocument = {
           evaluationType: { type: 'string' },
           improvementDirection: { type: 'string' },
           defaultUnit: { $ref: '#/components/schemas/PerformanceUnit' },
-          measurementFields: { type: 'string', description: 'JSON serializado con campos de medición' },
-          variantGroups: { type: 'string', description: 'JSON serializado con variantes' },
+          measurementFields: { type: 'string', description: 'Serialized JSON measurement fields' },
+          variantGroups: { type: 'string', description: 'Serialized JSON variant groups' },
           description: { type: 'string', nullable: true },
           status: { $ref: '#/components/schemas/Status' },
           createdAt: { type: 'string', format: 'date-time' },
@@ -231,6 +268,9 @@ export const openApiDocument: OpenApiDocument = {
           distance: { type: 'number', nullable: true },
           date: { type: 'string', format: 'date-time' },
           notes: { type: 'string', nullable: true },
+          variantValues: { type: 'string', nullable: true, description: 'Serialized JSON selected variants' },
+          sessionExerciseId: { type: 'string', nullable: true },
+          seriesNumber: { type: 'integer', nullable: true },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
         },
@@ -246,6 +286,7 @@ export const openApiDocument: OpenApiDocument = {
           distance: { type: 'number' },
           date: { type: 'string', format: 'date' },
           notes: { type: 'string' },
+          variants: { type: 'object', additionalProperties: { type: 'string' } },
         },
       },
       CurrentMark: {
@@ -254,6 +295,7 @@ export const openApiDocument: OpenApiDocument = {
           exerciseId: { type: 'string' },
           exerciseName: { type: 'string' },
           record: { $ref: '#/components/schemas/PerformanceRecord' },
+          bestRecord: { $ref: '#/components/schemas/PerformanceRecord' },
         },
       },
       Trainer: {
@@ -289,10 +331,10 @@ export const openApiDocument: OpenApiDocument = {
     '/health': {
       get: {
         tags: ['Health'],
-        summary: 'Comprueba el estado de la API',
+        summary: 'Check API health',
         responses: {
           200: {
-            description: 'API operativa',
+            description: 'API is operational',
             content: {
               'application/json': {
                 schema: {
@@ -312,7 +354,7 @@ export const openApiDocument: OpenApiDocument = {
     '/auth/login': {
       post: {
         tags: ['Auth'],
-        summary: 'Inicia sesión',
+        summary: 'Sign in',
         requestBody: {
           required: true,
           content: {
@@ -330,7 +372,7 @@ export const openApiDocument: OpenApiDocument = {
         },
         responses: {
           200: {
-            description: 'Login completado o selección de tenant requerida',
+            description: 'Login completed or tenant selection required',
             content: {
               'application/json': {
                 schema: {
@@ -350,7 +392,7 @@ export const openApiDocument: OpenApiDocument = {
     '/auth/select-tenant': {
       post: {
         tags: ['Auth'],
-        summary: 'Selecciona tenant tras login multi-tenant',
+        summary: 'Select a tenant after multi-tenant login',
         requestBody: {
           required: true,
           content: {
@@ -368,7 +410,7 @@ export const openApiDocument: OpenApiDocument = {
         },
         responses: {
           200: {
-            description: 'Tenant seleccionado',
+            description: 'Tenant selected',
             content: { 'application/json': { schema: { $ref: '#/components/schemas/LoginSuccessResponse' } } },
           },
           400: { $ref: '#/components/responses/BadRequest' },
@@ -380,27 +422,27 @@ export const openApiDocument: OpenApiDocument = {
       post: {
         tags: ['Auth'],
         security: [{ bearerAuth: [] }],
-        summary: 'Cierra sesión en cliente',
-        responses: { 200: { description: 'Sesión cerrada', content: { 'application/json': { schema: { $ref: '#/components/schemas/MessageResponse' } } } }, ...authResponses },
+        summary: 'Sign out on the client',
+        responses: { 200: { description: 'Session closed', content: { 'application/json': { schema: { $ref: '#/components/schemas/MessageResponse' } } } }, ...authResponses },
       },
     },
     '/auth/me': {
       get: {
         tags: ['Auth'],
         security: [{ bearerAuth: [] }],
-        summary: 'Obtiene el usuario autenticado',
+        summary: 'Get the authenticated user',
         responses: {
-          200: { description: 'Usuario actual', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
+          200: { description: 'Current user', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
           ...authResponses,
         },
       },
       put: {
         tags: ['Auth'],
         security: [{ bearerAuth: [] }],
-        summary: 'Actualiza el usuario autenticado',
+        summary: 'Update the authenticated user',
         requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { name: { type: 'string' }, email: { type: 'string', format: 'email' } } } } } },
         responses: {
-          200: { description: 'Usuario actualizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
+          200: { description: 'User updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/User' } } } },
           400: { $ref: '#/components/responses/BadRequest' },
           ...authResponses,
         },
@@ -410,12 +452,12 @@ export const openApiDocument: OpenApiDocument = {
       put: {
         tags: ['Auth'],
         security: [{ bearerAuth: [] }],
-        summary: 'Cambia la contraseña del usuario autenticado',
+        summary: 'Change the authenticated user password',
         requestBody: {
           content: { 'application/json': { schema: { type: 'object', required: ['currentPassword', 'newPassword'], properties: { currentPassword: { type: 'string' }, newPassword: { type: 'string', minLength: 8 } } } } },
         },
         responses: {
-          200: { description: 'Contraseña actualizada', content: { 'application/json': { schema: { $ref: '#/components/schemas/MessageResponse' } } } },
+          200: { description: 'Password updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/MessageResponse' } } } },
           400: { $ref: '#/components/responses/BadRequest' },
           ...authResponses,
         },
@@ -425,19 +467,19 @@ export const openApiDocument: OpenApiDocument = {
       get: {
         tags: ['Auth'],
         security: [{ bearerAuth: [] }],
-        summary: 'Obtiene el tenant activo',
+        summary: 'Get the active tenant',
         responses: {
-          200: { description: 'Tenant activo', content: { 'application/json': { schema: { $ref: '#/components/schemas/Tenant' } } } },
+          200: { description: 'Active tenant', content: { 'application/json': { schema: { $ref: '#/components/schemas/Tenant' } } } },
           ...authResponses,
         },
       },
       put: {
         tags: ['Auth'],
         security: [{ bearerAuth: [] }],
-        summary: 'Actualiza branding del tenant activo',
+        summary: 'Update active tenant branding',
         requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/Tenant' } } } },
         responses: {
-          200: { description: 'Tenant actualizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Tenant' } } } },
+          200: { description: 'Tenant updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Tenant' } } } },
           400: { $ref: '#/components/responses/BadRequest' },
           ...adminResponses,
         },
@@ -450,20 +492,20 @@ const pathItem = (tag: string, schema: string, adminOnly = false) => ({
   get: {
     tags: [tag],
     security: [{ bearerAuth: [] }],
-    summary: `Lista ${tag.toLowerCase()}`,
+    summary: `List ${tag.toLowerCase()}`,
     parameters: [{ name: 'includeInactive', in: 'query', schema: { type: 'boolean' } }],
     responses: {
-      200: { description: 'Listado', content: { 'application/json': { schema: { type: 'array', items: { $ref: `#/components/schemas/${schema}` } } } } },
+      200: { description: 'Resource list', content: { 'application/json': { schema: { type: 'array', items: { $ref: `#/components/schemas/${schema}` } } } } },
       ...(adminOnly ? adminResponses : authResponses),
     },
   },
   post: {
     tags: [tag],
     security: [{ bearerAuth: [] }],
-    summary: `Crea ${tag.toLowerCase()}`,
+    summary: `Create ${tag.toLowerCase()}`,
     requestBody: { content: { 'application/json': { schema: { $ref: `#/components/schemas/${schema}Input` } } } },
     responses: {
-      201: { description: 'Creado', content: { 'application/json': { schema: { $ref: `#/components/schemas/${schema}` } } } },
+      201: { description: 'Resource created', content: { 'application/json': { schema: { $ref: `#/components/schemas/${schema}` } } } },
       400: { $ref: '#/components/responses/BadRequest' },
       ...adminResponses,
     },
@@ -476,45 +518,45 @@ Object.assign(openApiDocument.paths, {
     get: {
       tags: ['Clients'],
       security: [{ bearerAuth: [] }],
-      summary: 'Obtiene un cliente',
+      summary: 'Get a client',
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-      responses: { 200: { description: 'Cliente', content: { 'application/json': { schema: { $ref: '#/components/schemas/Client' } } } }, 404: { $ref: '#/components/responses/NotFound' }, ...authResponses },
+      responses: { 200: { description: 'Client details', content: { 'application/json': { schema: { $ref: '#/components/schemas/Client' } } } }, 404: { $ref: '#/components/responses/NotFound' }, ...authResponses },
     },
     put: {
       tags: ['Clients'],
       security: [{ bearerAuth: [] }],
-      summary: 'Actualiza un cliente',
+      summary: 'Update a client',
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientInput' } } } },
-      responses: { 200: { description: 'Cliente actualizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Client' } } } }, ...adminResponses },
+      responses: { 200: { description: 'Client updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Client' } } } }, ...adminResponses },
     },
   },
   '/clients/{id}/status': {
     patch: {
       tags: ['Clients'],
       security: [{ bearerAuth: [] }],
-      summary: 'Activa o desactiva un cliente',
+      summary: 'Activate or deactivate a client',
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/StatusInput' } } } },
-      responses: { 200: { description: 'Cliente actualizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Client' } } } }, ...adminResponses },
+      responses: { 200: { description: 'Client updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Client' } } } }, ...adminResponses },
     },
   },
   '/clients/{id}/export': {
     get: {
       tags: ['Clients'],
       security: [{ bearerAuth: [] }],
-      summary: 'Exporta datos RGPD del cliente',
+      summary: 'Export client data for GDPR portability',
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-      responses: { 200: { description: 'Datos exportados', content: { 'application/json': { schema: { type: 'object' } } } }, ...adminResponses },
+      responses: { 200: { description: 'Exported client data', content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientExport' } } } }, ...adminResponses },
     },
   },
   '/clients/{id}/anonymize': {
     post: {
       tags: ['Clients'],
       security: [{ bearerAuth: [] }],
-      summary: 'Anonimiza un cliente',
+      summary: 'Anonymize a client',
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-      responses: { 200: { description: 'Cliente anonimizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Client' } } } }, ...adminResponses },
+      responses: { 200: { description: 'Client anonymized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Client' } } } }, ...adminResponses },
     },
   },
   '/exercises': pathItem('Exercises', 'Exercise'),
@@ -522,53 +564,121 @@ Object.assign(openApiDocument.paths, {
     get: {
       tags: ['Exercises'],
       security: [{ bearerAuth: [] }],
-      summary: 'Obtiene un ejercicio',
+      summary: 'Get an exercise',
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-      responses: { 200: { description: 'Ejercicio', content: { 'application/json': { schema: { $ref: '#/components/schemas/Exercise' } } } }, ...authResponses },
+      responses: { 200: { description: 'Exercise details', content: { 'application/json': { schema: { $ref: '#/components/schemas/Exercise' } } } }, ...authResponses },
     },
     put: {
       tags: ['Exercises'],
       security: [{ bearerAuth: [] }],
-      summary: 'Actualiza un ejercicio',
+      summary: 'Update an exercise',
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/ExerciseInput' } } } },
-      responses: { 200: { description: 'Ejercicio actualizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Exercise' } } } }, ...adminResponses },
+      responses: { 200: { description: 'Exercise updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Exercise' } } } }, ...adminResponses },
     },
   },
   '/exercises/{id}/status': {
     patch: {
       tags: ['Exercises'],
       security: [{ bearerAuth: [] }],
-      summary: 'Activa o desactiva un ejercicio',
+      summary: 'Activate or deactivate an exercise',
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/StatusInput' } } } },
-      responses: { 200: { description: 'Ejercicio actualizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Exercise' } } } }, ...adminResponses },
+      responses: { 200: { description: 'Exercise updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Exercise' } } } }, ...adminResponses },
     },
   },
   '/clients/{clientId}/current-performances': {
     get: {
       tags: ['Performances'],
       security: [{ bearerAuth: [] }],
-      summary: 'Obtiene marcas actuales de un cliente',
+      summary: 'Get current client performance records',
       parameters: [{ name: 'clientId', in: 'path', required: true, schema: { type: 'string' } }],
-      responses: { 200: { description: 'Marcas actuales', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/CurrentMark' } } } } }, ...authResponses },
+      responses: { 200: { description: 'Current performance records', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/CurrentMark' } } } } }, ...authResponses },
     },
   },
   '/clients/{clientId}/exercises/{exerciseId}/performances': {
     get: {
       tags: ['Performances'],
       security: [{ bearerAuth: [] }],
-      summary: 'Obtiene histórico de marcas',
+      summary: 'Get performance history',
       parameters: [{ name: 'clientId', in: 'path', required: true, schema: { type: 'string' } }, { name: 'exerciseId', in: 'path', required: true, schema: { type: 'string' } }],
-      responses: { 200: { description: 'Histórico', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/PerformanceRecord' } } } } }, ...authResponses },
+      responses: { 200: { description: 'Performance history', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/PerformanceRecord' } } } } }, ...authResponses },
     },
+  },
+  '/clients/{id}/training-sessions': {
+    get: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'List completed client training sessions',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Training sessions', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/TrainingSession' } } } } }, ...authResponses },
+    },
+  },
+  '/training-sessions': {
     post: {
-      tags: ['Performances'],
-      security: [{ bearerAuth: [] }],
-      summary: 'Registra una marca',
-      parameters: [{ name: 'clientId', in: 'path', required: true, schema: { type: 'string' } }, { name: 'exerciseId', in: 'path', required: true, schema: { type: 'string' } }],
-      requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/PerformanceInput' } } } },
-      responses: { 201: { description: 'Marca registrada', content: { 'application/json': { schema: { $ref: '#/components/schemas/PerformanceRecord' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...authResponses },
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Start an individual training session',
+      requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['clientId'], properties: { clientId: { type: 'string' } } } } } },
+      responses: { 201: { description: 'Training session started', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, 409: { $ref: '#/components/responses/Conflict' }, ...authResponses },
+    },
+  },
+  '/training-sessions/active': {
+    get: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Get the current user active training session',
+      responses: { 200: { description: 'Active training session or null', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession', nullable: true } } } }, ...authResponses },
+    },
+  },
+  '/training-sessions/{id}': {
+    get: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Get training session details',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Training session details', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, 404: { $ref: '#/components/responses/NotFound' }, ...authResponses },
+    },
+    delete: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Discard an empty training session',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 204: { description: 'Training session discarded' }, 409: { $ref: '#/components/responses/Conflict' }, ...authResponses },
+    },
+  },
+  '/training-sessions/{id}/exercises': {
+    post: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Add an exercise to a training session',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['exerciseId'], properties: { exerciseId: { type: 'string' } } } } } },
+      responses: { 201: { description: 'Training session updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, ...authResponses },
+    },
+  },
+  '/training-sessions/{id}/exercises/{sessionExerciseId}': {
+    delete: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Remove an exercise without series',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'sessionExerciseId', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Training session updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, 409: { $ref: '#/components/responses/Conflict' }, ...authResponses },
+    },
+  },
+  '/training-sessions/{id}/exercises/{sessionExerciseId}/series': {
+    post: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Create a new exercise series',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'sessionExerciseId', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PerformanceInput' } } } },
+      responses: { 201: { description: 'Exercise series created', content: { 'application/json': { schema: { $ref: '#/components/schemas/PerformanceRecord' } } } }, ...authResponses },
+    },
+  },
+  '/training-sessions/{id}/series/{recordId}': {
+    put: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Update a training session series',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'recordId', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PerformanceInput' } } } },
+      responses: { 200: { description: 'Exercise series updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/PerformanceRecord' } } } }, ...authResponses },
+    },
+    delete: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Delete and renumber a training session series',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'recordId', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 204: { description: 'Exercise series deleted' }, ...authResponses },
+    },
+  },
+  '/training-sessions/{id}/complete': {
+    post: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Complete and lock a training session',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { notes: { type: 'string' } } } } } },
+      responses: { 200: { description: 'Training session completed', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, ...authResponses },
     },
   },
   '/trainers': pathItem('Trainers', 'Trainer', true),
@@ -576,37 +686,37 @@ Object.assign(openApiDocument.paths, {
     get: {
       tags: ['Trainers'],
       security: [{ bearerAuth: [] }],
-      summary: 'Obtiene un entrenador',
+      summary: 'Get a trainer',
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-      responses: { 200: { description: 'Entrenador', content: { 'application/json': { schema: { $ref: '#/components/schemas/Trainer' } } } }, ...adminResponses },
+      responses: { 200: { description: 'Trainer details', content: { 'application/json': { schema: { $ref: '#/components/schemas/Trainer' } } } }, ...adminResponses },
     },
     put: {
       tags: ['Trainers'],
       security: [{ bearerAuth: [] }],
-      summary: 'Actualiza un entrenador',
+      summary: 'Update a trainer',
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       requestBody: { content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainerInput' } } } },
-      responses: { 200: { description: 'Entrenador actualizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Trainer' } } } }, ...adminResponses },
+      responses: { 200: { description: 'Trainer updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Trainer' } } } }, ...adminResponses },
     },
   },
   '/trainers/{id}/status': {
     patch: {
       tags: ['Trainers'],
       security: [{ bearerAuth: [] }],
-      summary: 'Activa o desactiva un entrenador',
+      summary: 'Activate or deactivate a trainer',
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       requestBody: { content: { 'application/json': { schema: { type: 'object', required: ['active'], properties: { active: { type: 'boolean' } } } } } },
-      responses: { 200: { description: 'Entrenador actualizado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Trainer' } } } }, ...adminResponses },
+      responses: { 200: { description: 'Trainer updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Trainer' } } } }, ...adminResponses },
     },
   },
   '/trainers/{id}/password': {
     put: {
       tags: ['Trainers'],
       security: [{ bearerAuth: [] }],
-      summary: 'Restablece contraseña de un entrenador',
+      summary: 'Reset a trainer password',
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
       requestBody: { content: { 'application/json': { schema: { type: 'object', required: ['password'], properties: { password: { type: 'string', minLength: 8 } } } } } },
-      responses: { 200: { description: 'Contraseña actualizada', content: { 'application/json': { schema: { $ref: '#/components/schemas/MessageResponse' } } } }, ...adminResponses },
+      responses: { 200: { description: 'Password updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/MessageResponse' } } } }, ...adminResponses },
     },
   },
 });

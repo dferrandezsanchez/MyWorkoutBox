@@ -60,6 +60,19 @@ function createFakeContainer(): AppContainer {
       setActive: useCase({ id: 'trainer-1', active: false }),
       resetPassword: useCase(undefined),
     },
+    trainingSessions: {
+      start: useCase({ id: 'session-1' }),
+      getActive: useCase(null),
+      get: useCase({ id: 'session-1' }),
+      listByClient: useCase([]),
+      addExercise: useCase({ id: 'session-1', exercises: [{ id: 'item-1' }] }),
+      removeExercise: useCase({ id: 'session-1', exercises: [] }),
+      createSeries: useCase({ id: 'record-1', seriesNumber: 1 }),
+      updateSeries: useCase({ id: 'record-1', value: '110' }),
+      deleteSeries: useCase(undefined),
+      complete: useCase({ id: 'session-1', status: 'COMPLETED' }),
+      discard: useCase(undefined),
+    },
   } as unknown as AppContainer;
 }
 
@@ -92,6 +105,7 @@ describe('HTTP routes', () => {
     await request(app).patch('/clients/client-1/status').set(auth).send({ status: Status.INACTIVE }).expect(200);
     await request(app).get('/clients/client-1/export').set(auth).expect(200);
     await request(app).post('/clients/client-1/anonymize').set(auth).expect(200);
+    await request(app).get('/clients/client-1/training-sessions').set(auth).expect(200);
     await request(app).post('/clients/client-1/photo').set(auth).expect(404);
     await request(app).delete('/clients/client-1/photo').set(auth).expect(404);
 
@@ -118,6 +132,17 @@ describe('HTTP routes', () => {
 
     await request(app).get('/clients/client-1/current-performances').set(auth).expect(200);
     await request(app).get('/clients/client-1/exercises/exercise-1/performances').set(auth).expect(200);
-    await request(app).post('/clients/client-1/exercises/exercise-1/performances').set(auth).send({ value: 100 }).expect(201);
+    await request(app).post('/clients/client-1/exercises/exercise-1/performances').set(auth).send({ value: 100 }).expect(404);
+
+    await request(app).get('/training-sessions/active').set(auth).expect(200);
+    await request(app).post('/training-sessions').set(auth).send({ clientId: 'client-1' }).expect(201);
+    await request(app).get('/training-sessions/session-1').set(auth).expect(200);
+    await request(app).post('/training-sessions/session-1/exercises').set(auth).send({ exerciseId: 'exercise-1' }).expect(201);
+    await request(app).post('/training-sessions/session-1/exercises/item-1/series').set(auth).send({ value: 100, unit: 'kg' }).expect(201);
+    await request(app).put('/training-sessions/session-1/series/record-1').set(auth).send({ value: 110, unit: 'kg' }).expect(200);
+    await request(app).delete('/training-sessions/session-1/series/record-1').set(auth).expect(204);
+    await request(app).delete('/training-sessions/session-1/exercises/item-1').set(auth).expect(200);
+    await request(app).post('/training-sessions/session-1/complete').set(auth).send({}).expect(200);
+    await request(app).delete('/training-sessions/session-1').set(auth).expect(204);
   });
 });

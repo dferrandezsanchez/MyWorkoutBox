@@ -15,15 +15,33 @@ export class GetCurrentMarksUseCase {
     if (!client) throw notFound();
 
     const exercises = await this.exercises.list(tenantId, false);
-    return Promise.all(
-      exercises.map(async (exercise) => ({
+    const records = await this.performances.findByClientWithTrainer(tenantId, clientId);
+    return exercises.map((exercise) => {
+      const exerciseRecords = records.filter((record) => record.exerciseId === exercise.id);
+      return {
         exerciseId: exercise.id,
         exerciseName: exercise.name,
         exercise: toExerciseSummary(exercise),
-        record: await this.performances.findLatestByClientExercise(tenantId, clientId, exercise.id),
-      })),
-    );
+        record: exerciseRecords[0] ?? null,
+        bestRecord: findBestRecord(exerciseRecords, exercise.improvementDirection),
+      };
+    });
   }
+}
+
+function findBestRecord<T extends { value: string }>(records: T[], direction: string): T | null {
+  if (records.length === 0) return null;
+  if (direction === 'qualitative') return records[0];
+  return records.reduce((best, record) => {
+    const currentValue = Number(record.value);
+    const bestValue = Number(best.value);
+    if (!Number.isFinite(currentValue)) return best;
+    if (!Number.isFinite(bestValue)) return record;
+    const isImprovement = direction === 'lower'
+      ? currentValue < bestValue
+      : currentValue > bestValue;
+    return isImprovement ? record : best;
+  });
 }
 
 function toExerciseSummary(exercise: Exercise): CurrentMarkResult['exercise'] {

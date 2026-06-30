@@ -12,6 +12,13 @@ export const Status = {
 
 export type Status = typeof Status[keyof typeof Status];
 
+export const TrainingSessionStatus = {
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+} as const;
+
+export type TrainingSessionStatus = typeof TrainingSessionStatus[keyof typeof TrainingSessionStatus];
+
 export const PerformanceUnit = {
   kg: 'kg',
   repetitions: 'repetitions',

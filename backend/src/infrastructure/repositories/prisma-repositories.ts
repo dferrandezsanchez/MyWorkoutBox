@@ -7,6 +7,7 @@ import type {
   MembershipRepository,
   PerformanceRepository,
   TenantRepository,
+  TrainingSessionRepository,
   UpdateClientData,
   UpdateExerciseData,
   UserRepository,
@@ -18,6 +19,9 @@ import type {
   PerformanceRecord,
   PerformanceRecordWithTrainerName,
   Tenant,
+  TrainingSession,
+  TrainingSessionDetail,
+  TrainingSessionExercise,
   User,
 } from '../../domain/shared/entities';
 import { Role, Status } from '../../domain/shared/enums';
@@ -233,7 +237,7 @@ export class PrismaPerformanceRepository implements PerformanceRepository {
   ): Promise<PerformanceRecordWithTrainerName[]> {
     const records = await prisma.performanceRecord.findMany({
       where: { tenantId, clientId, exerciseId },
-      orderBy: { date: 'desc' },
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
       include: { trainer: { select: { name: true } } },
     });
     return records.map(toPerformanceWithTrainerName);
@@ -246,7 +250,7 @@ export class PrismaPerformanceRepository implements PerformanceRepository {
   ): Promise<PerformanceRecordWithTrainerName | null> {
     const record = await prisma.performanceRecord.findFirst({
       where: { tenantId, clientId, exerciseId },
-      orderBy: { date: 'desc' },
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
       include: { trainer: { select: { name: true } } },
     });
     return record ? toPerformanceWithTrainerName(record) : null;
@@ -255,6 +259,15 @@ export class PrismaPerformanceRepository implements PerformanceRepository {
   async findByClient(tenantId: string, clientId: string): Promise<PerformanceRecord[]> {
     const records = await prisma.performanceRecord.findMany({ where: { tenantId, clientId } });
     return records.map(toPerformance);
+  }
+
+  async findByClientWithTrainer(tenantId: string, clientId: string): Promise<PerformanceRecordWithTrainerName[]> {
+    const records = await prisma.performanceRecord.findMany({
+      where: { tenantId, clientId },
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+      include: { trainer: { select: { name: true } } },
+    });
+    return records.map(toPerformanceWithTrainerName);
   }
 
   async create(data: {
@@ -270,9 +283,117 @@ export class PrismaPerformanceRepository implements PerformanceRepository {
     duration?: number;
     distance?: number;
     notes?: string;
+    variantValues?: string;
+    sessionExerciseId?: string;
+    seriesNumber?: number;
   }): Promise<PerformanceRecord> {
     const record = await prisma.performanceRecord.create({ data });
     return toPerformance(record);
+  }
+
+  async update(id: string, data: {
+    value?: string;
+    unit?: string;
+    date?: Date;
+    weight?: number | null;
+    repetitions?: number | null;
+    duration?: number | null;
+    distance?: number | null;
+    notes?: string | null;
+    variantValues?: string | null;
+  }): Promise<PerformanceRecord> {
+    return toPerformance(await prisma.performanceRecord.update({ where: { id }, data }));
+  }
+
+  async delete(id: string): Promise<void> {
+    await prisma.performanceRecord.delete({ where: { id } });
+  }
+
+  async findById(tenantId: string, id: string): Promise<PerformanceRecord | null> {
+    const record = await prisma.performanceRecord.findFirst({ where: { tenantId, id } });
+    return record ? toPerformance(record) : null;
+  }
+
+  async renumberSeries(sessionExerciseId: string): Promise<void> {
+    const records = await prisma.performanceRecord.findMany({
+      where: { sessionExerciseId },
+      orderBy: [{ seriesNumber: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true },
+    });
+    await prisma.$transaction(records.map((record, index) =>
+      prisma.performanceRecord.update({ where: { id: record.id }, data: { seriesNumber: index + 1 } }),
+    ));
+  }
+}
+
+const sessionDetailInclude = {
+  client: true,
+  trainer: { select: { name: true } },
+  exercises: {
+    orderBy: { position: 'asc' as const },
+    include: {
+      exercise: true,
+      series: {
+        orderBy: { seriesNumber: 'asc' as const },
+        include: { trainer: { select: { name: true } } },
+      },
+    },
+  },
+};
+
+export class PrismaTrainingSessionRepository implements TrainingSessionRepository {
+  async findActiveByTrainer(tenantId: string, trainerId: string): Promise<TrainingSession | null> {
+    const session = await prisma.trainingSession.findFirst({ where: { tenantId, trainerId, status: 'ACTIVE' } });
+    return session ? toTrainingSession(session) : null;
+  }
+
+  async findById(tenantId: string, id: string): Promise<TrainingSession | null> {
+    const session = await prisma.trainingSession.findFirst({ where: { tenantId, id } });
+    return session ? toTrainingSession(session) : null;
+  }
+
+  async findDetail(tenantId: string, id: string): Promise<TrainingSessionDetail | null> {
+    const session = await prisma.trainingSession.findFirst({ where: { tenantId, id }, include: sessionDetailInclude });
+    return session ? toTrainingSessionDetail(session) : null;
+  }
+
+  async listByClient(tenantId: string, clientId: string): Promise<TrainingSessionDetail[]> {
+    const sessions = await prisma.trainingSession.findMany({
+      where: { tenantId, clientId, status: 'COMPLETED' },
+      orderBy: { startedAt: 'desc' },
+      include: sessionDetailInclude,
+    });
+    return sessions.map(toTrainingSessionDetail);
+  }
+
+  async create(data: { tenantId: string; clientId: string; trainerId: string; startedAt: Date }): Promise<TrainingSession> {
+    return toTrainingSession(await prisma.trainingSession.create({ data }));
+  }
+
+  async complete(id: string, completedAt: Date, notes?: string): Promise<TrainingSession> {
+    return toTrainingSession(await prisma.trainingSession.update({
+      where: { id },
+      data: { status: 'COMPLETED', completedAt, notes: notes?.trim() || null },
+    }));
+  }
+
+  async delete(id: string): Promise<void> {
+    await prisma.trainingSession.delete({ where: { id } });
+  }
+
+  async addExercise(sessionId: string, exerciseId: string): Promise<TrainingSessionExercise> {
+    const aggregate = await prisma.trainingSessionExercise.aggregate({ where: { sessionId }, _max: { position: true } });
+    return prisma.trainingSessionExercise.create({
+      data: { sessionId, exerciseId, position: (aggregate._max.position ?? 0) + 1 },
+    });
+  }
+
+  async findExercise(sessionId: string, id: string): Promise<TrainingSessionExercise | null> {
+    return prisma.trainingSessionExercise.findFirst({ where: { sessionId, id } });
+  }
+
+  async removeExercise(sessionId: string, id: string): Promise<void> {
+    await prisma.trainingSessionExercise.delete({ where: { id, sessionId } });
   }
 }
 
@@ -404,10 +525,45 @@ function toPerformance(record: {
   distance: number | null;
   date: Date;
   notes: string | null;
+  variantValues: string | null;
+  sessionExerciseId: string | null;
+  seriesNumber: number | null;
   createdAt: Date;
   updatedAt: Date;
 }): PerformanceRecord {
   return record;
+}
+
+function toTrainingSession(session: {
+  id: string;
+  tenantId: string;
+  clientId: string;
+  trainerId: string;
+  status: string;
+  startedAt: Date;
+  completedAt: Date | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}): TrainingSession {
+  return { ...session, status: session.status as TrainingSession['status'] };
+}
+
+function toTrainingSessionDetail(session: any): TrainingSessionDetail {
+  return {
+    ...toTrainingSession(session),
+    client: toClient(session.client),
+    trainerName: session.trainer.name,
+    exercises: session.exercises.map((item: any) => ({
+      id: item.id,
+      sessionId: item.sessionId,
+      exerciseId: item.exerciseId,
+      position: item.position,
+      createdAt: item.createdAt,
+      exercise: toExercise(item.exercise),
+      series: item.series.map(toPerformanceWithTrainerName),
+    })),
+  };
 }
 
 function toPerformanceWithTrainerName(record: Parameters<typeof toPerformance>[0] & { trainer: { name: string } }) {

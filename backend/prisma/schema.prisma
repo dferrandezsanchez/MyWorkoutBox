@@ -22,6 +22,7 @@ model User {
   performances PerformanceRecord[]
   auditLogs    AuditLog[]
   memberships  UserTenantMembership[]
+  trainingSessions TrainingSession[]
 
   @@map("users")
 }
@@ -62,6 +63,7 @@ model Tenant {
   exercises    Exercise[]
   performances PerformanceRecord[]
   auditLogs    AuditLog[]
+  trainingSessions TrainingSession[]
 
   @@index([organizationId])
   @@map("tenants")
@@ -101,6 +103,7 @@ model Client {
 
   tenant       Tenant              @relation(fields: [tenantId], references: [id])
   performances PerformanceRecord[]
+  trainingSessions TrainingSession[]
 
   @@index([tenantId, status])
   @@map("clients")
@@ -124,6 +127,7 @@ model Exercise {
 
   tenant       Tenant              @relation(fields: [tenantId], references: [id])
   performances PerformanceRecord[]
+  sessionExercises TrainingSessionExercise[]
 
   @@index([tenantId, status])
   @@map("exercises")
@@ -143,6 +147,9 @@ model PerformanceRecord {
   distance    Float?
   date        DateTime
   notes       String?         @db.Text
+  variantValues String?       @db.Text
+  sessionExerciseId String?   @db.VarChar(36)
+  seriesNumber Int?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
@@ -150,10 +157,50 @@ model PerformanceRecord {
   client   Client   @relation(fields: [clientId], references: [id])
   exercise Exercise @relation(fields: [exerciseId], references: [id])
   trainer  User     @relation(fields: [trainerId], references: [id])
+  sessionExercise TrainingSessionExercise? @relation(fields: [sessionExerciseId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, clientId])
   @@index([clientId, exerciseId, date(sort: Desc)])
+  @@index([sessionExerciseId, seriesNumber])
   @@map("performance_records")
+}
+
+model TrainingSession {
+  id          String    @id @default(uuid()) @db.VarChar(36)
+  tenantId    String    @db.VarChar(36)
+  clientId    String    @db.VarChar(36)
+  trainerId   String    @db.VarChar(36)
+  status      String    @default("ACTIVE") @db.VarChar(32)
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  client    Client   @relation(fields: [clientId], references: [id])
+  trainer   User     @relation(fields: [trainerId], references: [id])
+  exercises TrainingSessionExercise[]
+
+  @@index([tenantId, trainerId, status])
+  @@index([tenantId, clientId, startedAt(sort: Desc)])
+  @@map("training_sessions")
+}
+
+model TrainingSessionExercise {
+  id         String   @id @default(uuid()) @db.VarChar(36)
+  sessionId  String   @db.VarChar(36)
+  exerciseId String   @db.VarChar(36)
+  position   Int
+  createdAt  DateTime @default(now())
+
+  session  TrainingSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise Exercise          @relation(fields: [exerciseId], references: [id])
+  series   PerformanceRecord[]
+
+  @@unique([sessionId, exerciseId])
+  @@unique([sessionId, position])
+  @@map("training_session_exercises")
 }
 
 model AuditLog {

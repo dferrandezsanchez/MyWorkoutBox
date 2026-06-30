@@ -77,5 +77,13 @@ export function createClientsRouter(container: AppContainer): Router {
     }
   });
 
+  router.get('/:id/training-sessions', auth, async (req, res, next): Promise<void> => {
+    try {
+      res.status(200).json(await container.trainingSessions.listByClient.execute(req.user!.tenantId, req.params.id));
+    } catch (err) {
+      next(err);
+    }
+  });
+
   return router;
 }

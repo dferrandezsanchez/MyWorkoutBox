@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, LineChart, Plus } from 'lucide-react';
+import { ChevronLeft, LineChart } from 'lucide-react';
 import { useClient } from '@features/clients/hooks/useClients';
 import { useExercise } from '@features/exercises/hooks/useExercises';
 import { usePerformanceHistory } from '@features/performances/hooks/usePerformances';
-import PerformanceForm from '@features/performances/components/PerformanceForm';
 import ProgressChart from '@features/performances/components/ProgressChart';
 import AppShell from '@app/layout/AppShell';
 import { Button, EmptyState, Panel } from '@shared/components/ui';
@@ -21,8 +19,6 @@ function formatDate(iso: string): string {
 export default function ExerciseHistoryPage() {
   const { id: clientId, exerciseId } = useParams<{ id: string; exerciseId: string }>();
   const navigate = useNavigate();
-
-  const [showForm, setShowForm] = useState(false);
 
   const { data: client, isLoading: isLoadingClient, isError: isErrorClient } = useClient(clientId!);
   const { data: exercise, isLoading: isLoadingExercise, isError: isErrorExercise } = useExercise(exerciseId!);
@@ -63,10 +59,6 @@ export default function ExerciseHistoryPage() {
             <Button onClick={() => navigate(-1)} className="inline-flex min-h-10 items-center gap-2 px-3">
               <ChevronLeft size={16} />
               Volver
-            </Button>
-            <Button variant="primary" onClick={() => setShowForm(true)} className="inline-flex min-h-10 items-center gap-2">
-              <Plus size={16} />
-              Nueva marca
             </Button>
           </div>
 
@@ -125,17 +117,6 @@ export default function ExerciseHistoryPage() {
           </>
         )}
       </div>
-
-      {showForm && (
-        <PerformanceForm
-          clientId={clientId!}
-          exerciseId={exerciseId!}
-          exerciseName={exercise.name}
-          defaultUnit={exercise.defaultUnit}
-          exercise={exercise}
-          onClose={() => setShowForm(false)}
-        />
-      )}
     </AppShell>
   );
 }
