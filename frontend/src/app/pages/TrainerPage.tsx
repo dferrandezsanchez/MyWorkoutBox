@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, ChevronRight, CirclePlay, Clock3, Search, Zap } from 'lucide-react';
+import { CalendarDays, ChevronRight, CirclePlay, Clock3, Search } from 'lucide-react';
 import Avatar from '@shared/components/Avatar';
 import AppShell from '@app/layout/AppShell';
 import { Button, EmptyState, Panel, TextInput } from '@shared/components/ui';
@@ -42,6 +42,7 @@ export default function TrainerPage() {
     const olderSessions = sessions.filter((session) => !isToday(session.startedAt));
     return [...todaySessions, ...olderSessions].slice(0, 4);
   }, [sessions]);
+  const todaySessionCount = sessions.filter((session) => isToday(session.startedAt)).length;
 
   const sessionTarget = activeSession
     ? `/trainer/sessions/${activeSession.id}`
@@ -50,21 +51,18 @@ export default function TrainerPage() {
   return (
     <AppShell title="Inicio">
       <div className="mx-auto max-w-5xl space-y-5">
-        <Panel className="relative overflow-hidden p-5 sm:p-7">
-          <div className="relative grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+        <Panel className="relative overflow-hidden p-4 sm:p-6">
+          <div className="relative grid gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Modo entrenador</p>
-              <h1 className="mt-2 text-3xl font-semibold text-text-primary sm:text-4xl">
+              <h1 className="mt-2 text-2xl font-semibold text-text-primary sm:text-3xl">
                 Hola, {user?.name || 'Entrenador'}
               </h1>
-              <p className="mt-3 max-w-xl text-base leading-7 text-text-secondary">
+              <p className="mt-2 max-w-xl text-sm leading-6 text-text-secondary sm:text-base">
                 Encuentra un cliente y registra su entrenamiento sin perder tiempo.
               </p>
             </div>
-            <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-white shadow-[0_14px_32px_rgba(var(--color-primary)/0.30)]">
-              <Zap size={25} fill="currentColor" />
-            </span>
-            <label className="relative block md:col-span-2">
+            <label className="relative block">
               <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary" size={21} />
               <TextInput
                 type="search"
@@ -72,7 +70,7 @@ export default function TrainerPage() {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Buscar cliente"
                 aria-label="Buscar cliente"
-                className="h-14 w-full pl-12 text-base"
+                className="h-12 w-full pl-12 text-base"
               />
             </label>
           </div>
@@ -85,7 +83,7 @@ export default function TrainerPage() {
             <section className="grid grid-cols-3 gap-2 sm:gap-3">
               <MiniStat label="Centro" value={brand.shortName} />
               <MiniStat label="Activos" value={activeClients.length} tone="primary" />
-              <MiniStat label="Sesiones" value={sessions.length} />
+              <MiniStat label="Hoy" value={todaySessionCount} />
             </section>
 
             <Button
@@ -143,7 +141,7 @@ function RecentSessions({ sessions, isLoading, onOpen }: { sessions: import('@sh
   return (
     <Panel className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-border/70 px-4 py-4 sm:px-5">
-        <div><h2 className="text-xl font-semibold text-text-primary">Sesiones recientes</h2><p className="mt-1 text-sm text-text-secondary">Las de hoy aparecen primero</p></div>
+        <div><h2 className="text-xl font-semibold text-text-primary">Sesiones recientes</h2><p className="mt-1 text-sm text-text-secondary">Últimos entrenamientos</p></div>
         <CalendarDays className="text-primary" size={21} />
       </div>
       {isLoading && <p className="py-10 text-center text-text-secondary">Cargando sesiones...</p>}
@@ -161,5 +159,5 @@ function RecentSessions({ sessions, isLoading, onOpen }: { sessions: import('@sh
 }
 
 function MiniStat({ label, value, tone }: { label: string; value: string | number; tone?: 'primary' }) {
-  return <div className={`min-w-0 rounded-xl border bg-elevated/70 px-3 py-4 shadow-sm ${tone ? 'border-primary/35' : 'border-border/70'}`}><p className="truncate text-[11px] font-semibold uppercase tracking-wide text-text-secondary">{label}</p><p className={`mt-1 truncate text-lg font-semibold ${tone ? 'text-primary' : 'text-text-primary'}`}>{value}</p></div>;
+  return <div className={`min-w-0 rounded-xl border bg-elevated/70 px-3 py-3 shadow-sm ${tone ? 'border-primary/35' : 'border-border/70'}`}><p className="truncate text-[11px] font-semibold uppercase tracking-wide text-text-secondary">{label}</p><p className={`mt-0.5 truncate text-lg font-semibold ${tone ? 'text-primary' : 'text-text-primary'}`}>{value}</p></div>;
 }

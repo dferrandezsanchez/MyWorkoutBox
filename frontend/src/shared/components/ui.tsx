@@ -1,9 +1,9 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 import {
+  Dumbbell,
   Moon,
   Settings,
   Sun,
-  Zap,
   type LucideIcon,
 } from 'lucide-react';
 import { useTheme, type ThemePreference } from '@shared/theme/ThemeProvider';
@@ -157,9 +157,10 @@ export function MobileActionButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="absolute left-1/2 top-0 flex h-16 w-16 -translate-x-1/2 -translate-y-6 items-center justify-center rounded-2xl border border-primary/40 bg-primary text-white shadow-[0_18px_42px_rgba(var(--color-primary)/0.45)] focus-ring"
+      className="absolute left-1/2 top-0 flex h-[68px] w-16 -translate-x-1/2 -translate-y-5 flex-col items-center justify-center gap-1 rounded-2xl border border-primary/40 bg-primary text-white shadow-[0_18px_42px_rgba(var(--color-primary)/0.38)] focus-ring"
     >
-      <Zap size={24} fill="currentColor" />
+      <Dumbbell size={21} />
+      <span className="text-[10px] font-semibold leading-none">Sesión</span>
     </button>
   );
 }

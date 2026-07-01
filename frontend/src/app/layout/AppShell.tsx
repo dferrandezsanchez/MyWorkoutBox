@@ -192,11 +192,16 @@ export function AppShell({
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              <ThemeToggle compact />
-              <span className="hidden h-10 w-px bg-border sm:block" />
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-text-primary text-sm font-bold text-background ring-2 ring-primary/20">
+              <div className="hidden lg:block"><ThemeToggle compact /></div>
+              <span className="hidden h-10 w-px bg-border lg:block" />
+              <button
+                type="button"
+                onClick={() => navigate(isAdmin ? '/admin/settings' : '/trainer/account')}
+                aria-label="Abrir cuenta"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-text-primary text-sm font-bold text-background ring-2 ring-primary/20 focus-ring"
+              >
                 {(displayUser?.name || displayUser?.email || 'U').slice(0, 2).toUpperCase()}
-              </span>
+              </button>
               <div className="hidden text-left sm:block">
                 <p className="text-sm font-semibold text-text-primary">
                   {displayUser?.name || displayUser?.email || 'Usuario'}
@@ -205,15 +210,15 @@ export function AppShell({
                   {displayUser?.role === 'ADMIN' ? 'Administrador' : 'Entrenador'}
                 </p>
               </div>
-              <Button variant="ghost" onClick={logout} className="gap-2 px-3 sm:inline-flex sm:items-center">
+              <Button variant="ghost" onClick={logout} className="hidden gap-2 px-3 lg:inline-flex lg:items-center">
                 <LogOut size={16} />
-                <span className="hidden sm:inline">Salir</span>
+                <span>Salir</span>
               </Button>
             </div>
           </div>
         </header>
 
-        <main role="main" className="px-4 pb-28 pt-5 lg:px-8 lg:pb-8">
+        <main role="main" className="px-4 pb-32 pt-5 lg:px-8 lg:pb-8">
           {children}
         </main>
       </div>
