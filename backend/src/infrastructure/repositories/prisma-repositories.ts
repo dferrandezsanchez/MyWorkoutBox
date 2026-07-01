@@ -366,6 +366,16 @@ export class PrismaTrainingSessionRepository implements TrainingSessionRepositor
     return sessions.map(toTrainingSessionDetail);
   }
 
+  async listByTrainer(tenantId: string, trainerId: string, limit: number): Promise<TrainingSessionDetail[]> {
+    const sessions = await prisma.trainingSession.findMany({
+      where: { tenantId, trainerId, status: 'COMPLETED' },
+      orderBy: { startedAt: 'desc' },
+      take: limit,
+      include: sessionDetailInclude,
+    });
+    return sessions.map(toTrainingSessionDetail);
+  }
+
   async create(data: { tenantId: string; clientId: string; trainerId: string; startedAt: Date }): Promise<TrainingSession> {
     return toTrainingSession(await prisma.trainingSession.create({ data }));
   }

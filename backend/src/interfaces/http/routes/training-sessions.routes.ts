@@ -8,6 +8,13 @@ export function createTrainingSessionsRouter(container: AppContainer): Router {
 
   router.use(auth);
 
+  router.get('/', async (req, res, next): Promise<void> => {
+    try {
+      const limit = Number(req.query.limit ?? 10);
+      res.status(200).json(await container.trainingSessions.listByTrainer.execute(req.user!.tenantId, req.user!.userId, limit));
+    } catch (error) { next(error); }
+  });
+
   router.get('/active', async (req, res, next): Promise<void> => {
     try {
       res.status(200).json(await container.trainingSessions.getActive.execute(req.user!.tenantId, req.user!.userId));

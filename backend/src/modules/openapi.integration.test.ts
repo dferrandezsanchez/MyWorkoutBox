@@ -61,6 +61,8 @@ describe('OpenAPI documentation', () => {
       $ref: '#/components/schemas/ClientExport',
     });
     expect(body.paths['/clients/{clientId}/exercises/{exerciseId}/performances']).not.toHaveProperty('post');
+    expect(body.paths['/training-sessions']).toHaveProperty('get');
+    expect(body.components.schemas.CurrentMark.properties.recentRecords.maxItems).toBe(6);
   });
 
   it('serves Swagger UI', async () => {

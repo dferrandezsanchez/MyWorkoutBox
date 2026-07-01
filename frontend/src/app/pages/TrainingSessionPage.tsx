@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, ChevronLeft, Clock3, Dumbbell, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import AppShell from '@app/layout/AppShell';
@@ -9,10 +9,23 @@ import { useSessionActions, useTrainingSession } from '@features/training-sessio
 import { Button, EmptyState, Panel, TextInput } from '@shared/components/ui';
 import type { CreatePerformanceData, PerformanceRecord, TrainingSessionExercise } from '@shared/types/api';
 
-function durationLabel(startedAt: string, completedAt?: string | null): string {
-  const milliseconds = new Date(completedAt ?? Date.now()).getTime() - new Date(startedAt).getTime();
-  const minutes = Math.max(0, Math.floor(milliseconds / 60000));
-  return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
+function formatElapsed(startedAt?: string, completedAt?: string | null): string {
+  if (!startedAt) return '00:00:00';
+  const seconds = Math.max(0, Math.floor((new Date(completedAt ?? Date.now()).getTime() - new Date(startedAt).getTime()) / 1000));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return [hours, minutes, seconds % 60].map((value) => String(value).padStart(2, '0')).join(':');
+}
+
+function useElapsedTime(startedAt?: string, completedAt?: string | null, active = false): string {
+  const [elapsed, setElapsed] = useState(() => formatElapsed(startedAt, completedAt));
+  useEffect(() => {
+    setElapsed(formatElapsed(startedAt, completedAt));
+    if (!active) return undefined;
+    const timer = window.setInterval(() => setElapsed(formatElapsed(startedAt)), 1000);
+    return () => window.clearInterval(timer);
+  }, [active, completedAt, startedAt]);
+  return elapsed;
 }
 
 export default function TrainingSessionPage() {
@@ -26,6 +39,7 @@ export default function TrainingSessionPage() {
   const [editor, setEditor] = useState<{ item: TrainingSessionExercise; record?: PerformanceRecord; copyFrom?: PerformanceRecord } | null>(null);
   const [showComplete, setShowComplete] = useState(false);
   const [sessionNotes, setSessionNotes] = useState('');
+  const elapsed = useElapsedTime(session?.startedAt, session?.completedAt, session?.status === 'ACTIVE');
 
   const availableExercises = useMemo(() => {
     const selected = new Set(session?.exercises.map((item) => item.exerciseId));
@@ -59,24 +73,19 @@ export default function TrainingSessionPage() {
   return (
     <AppShell title={active ? 'Sesión activa' : 'Detalle de sesión'}>
       <div className="mx-auto max-w-3xl space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <Button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 px-3"><ChevronLeft size={16} /> Volver</Button>
+          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wide ${active ? 'bg-emerald-500/12 text-emerald-600' : 'bg-primary/15 text-primary'}`}><span className={`h-2 w-2 rounded-full ${active ? 'bg-emerald-400' : 'bg-primary'}`} />{active ? 'En curso' : 'Finalizada'}</span>
+        </div>
         <Panel className="p-4 sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 px-3">
-              <ChevronLeft size={16} /> Volver
-            </Button>
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${active ? 'bg-emerald-500/15 text-emerald-600' : 'bg-primary/15 text-primary'}`}>
-              {active ? 'En curso' : 'Finalizada'}
-            </span>
-          </div>
-          <div className="mt-4 flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-primary">Entrenamiento</p>
               <h1 className="mt-1 text-2xl font-semibold text-text-primary">{session.client.firstName} {session.client.lastName}</h1>
               <p className="mt-1 text-sm text-text-secondary">Entrenador: {session.trainerName}</p>
             </div>
-            <div className="text-right text-sm text-text-secondary">
-              <p className="inline-flex items-center gap-1.5"><Clock3 size={15} /> {durationLabel(session.startedAt, session.completedAt)}</p>
-              <p className="mt-1">{session.exercises.length} ejercicios · {seriesTotal} series</p>
+            <div className="shrink-0 rounded-xl border border-border/70 bg-surface/70 px-3 py-2 text-right">
+              <p className="inline-flex items-center gap-1.5 font-mono text-base font-semibold text-text-primary"><Clock3 size={15} /> {elapsed}</p>
+              <p className="mt-1 text-xs text-text-secondary">{session.exercises.length} ejercicios · {seriesTotal} series</p>
             </div>
           </div>
           {session.client.notes && <p className="mt-4 rounded-xl bg-surface/70 p-3 text-sm text-text-secondary">{session.client.notes}</p>}
@@ -113,9 +122,16 @@ export default function TrainingSessionPage() {
           </div>
         )}
 
+        {active && (
+          <button type="button" onClick={() => setShowPicker(true)} className="flex min-h-36 w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-surface/30 text-text-secondary transition-colors hover:border-primary/50 hover:text-primary focus-ring">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-elevated"><Plus size={24} /></span>
+            <span className="font-semibold">Añadir ejercicio</span>
+          </button>
+        )}
+
         {session.notes && <Panel className="p-4"><p className="text-sm font-semibold text-text-primary">Notas de la sesión</p><p className="mt-2 text-sm text-text-secondary">{session.notes}</p></Panel>}
 
-        {active && <div className="sticky bottom-24 grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-elevated/95 p-2 shadow-xl backdrop-blur lg:bottom-4"><Button variant="primary" onClick={() => setShowPicker(true)} className="inline-flex items-center justify-center gap-2"><Plus size={17} /> Ejercicio</Button><Button onClick={() => seriesTotal > 0 ? setShowComplete(true) : confirm('¿Descartar esta sesión vacía?') && actions.discard.mutateAsync().then(() => navigate('/trainer'))} className="inline-flex items-center justify-center gap-2">{seriesTotal > 0 ? <><CheckCircle2 size={17} /> Finalizar</> : 'Descartar'}</Button></div>}
+        {active && <div className="sticky bottom-24 rounded-xl border border-border/70 bg-elevated/95 p-2 shadow-xl backdrop-blur lg:bottom-4"><Button variant={seriesTotal > 0 ? 'primary' : 'danger'} onClick={() => seriesTotal > 0 ? setShowComplete(true) : confirm('¿Descartar esta sesión vacía?') && actions.discard.mutateAsync().then(() => navigate('/trainer'))} className="inline-flex w-full items-center justify-center gap-2">{seriesTotal > 0 ? <><CheckCircle2 size={17} /> Finalizar entrenamiento</> : 'Descartar sesión vacía'}</Button></div>}
       </div>
 
       {showPicker && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 sm:items-center" role="dialog" aria-modal="true"><div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-elevated p-4 sm:rounded-2xl"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold">Añadir ejercicio</h2><button onClick={() => setShowPicker(false)} className="h-10 w-10 rounded-xl focus-ring" aria-label="Cerrar"><X className="mx-auto" size={18} /></button></div><label className="relative mt-3 block"><Search className="absolute left-3 top-3 text-text-secondary" size={18} /><TextInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar ejercicio" className="w-full pl-10" autoFocus /></label><div className="mt-3 divide-y divide-border/60">{availableExercises.map((exercise) => <button key={exercise.id} onClick={() => void addExercise(exercise.id)} className="flex min-h-14 w-full items-center justify-between py-3 text-left focus-ring"><span><span className="block font-semibold">{exercise.name}</span><span className="text-xs text-text-secondary">{exercise.category}</span></span><Plus size={18} className="text-primary" /></button>)}</div></div></div>}

@@ -14,6 +14,7 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthUser } from '@features/auth/hooks/useAuthUser';
+import { useActiveSession } from '@features/training-sessions/hooks/useTrainingSessions';
 import { getAuthUser, removeToken } from '@features/auth/model/auth-store';
 import { Button, MobileActionButton, ThemeToggle } from '@shared/components/ui';
 import { PLATFORM_BRAND } from '@shared/config/branding';
@@ -38,10 +39,11 @@ export function AppShell({
   const location = useLocation();
   const queryClient = useQueryClient();
   const user = getAuthUser();
+  const isAdmin = user?.role === 'ADMIN';
   const { data: fullUser } = useAuthUser();
+  const { data: activeSession } = useActiveSession(!isAdmin);
   const { brand } = useTheme();
   const displayUser = fullUser ?? user;
-  const isAdmin = user?.role === 'ADMIN';
 
   const logout = () => {
     removeToken();
@@ -59,10 +61,16 @@ export function AppShell({
       ]
     : [
         {
-          label: 'Clientes',
+          label: 'Inicio',
           path: '/trainer',
-          icon: Users,
+          icon: LayoutDashboard,
           active: location.pathname === '/trainer' || /^\/clients\/[^/]+$/.test(location.pathname),
+        },
+        {
+          label: activeSession ? 'Sesión activa' : 'Nueva sesión',
+          path: activeSession ? `/trainer/sessions/${activeSession.id}` : '/trainer/sessions/new',
+          icon: Dumbbell,
+          active: location.pathname.startsWith('/trainer/sessions'),
         },
         {
           label: 'Cuenta',
@@ -74,8 +82,6 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-background text-text-primary">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(var(--color-primary)/0.16),transparent_34%),radial-gradient(circle_at_88%_8%,rgba(99,102,241,0.12),transparent_28%)]" />
-
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[282px] border-r border-white/10 bg-[#07111f]/95 px-5 py-6 text-white shadow-2xl backdrop-blur-xl lg:flex lg:flex-col dark:bg-[#07111f]/95">
         <button
           onClick={() => navigate('/')}
@@ -252,9 +258,9 @@ export function AppShell({
               );
             })}
             <div className="relative min-h-[58px]">
-              <MobileActionButton label="Buscar cliente" onClick={() => navigate('/trainer')} />
+              <MobileActionButton label={navItems[1].label} onClick={() => navigate(navItems[1].path)} />
             </div>
-            {navItems.slice(1).map((item) => {
+            {navItems.slice(2).map((item) => {
               const Icon = item.icon;
               return (
                 <button

@@ -4,8 +4,12 @@ import * as api from '@features/training-sessions/api/training-sessions.api';
 
 const sessionKey = (id: string) => ['training-session', id];
 
-export function useActiveSession() {
-  return useQuery({ queryKey: ['training-session', 'active'], queryFn: api.getActiveSession });
+export function useActiveSession(enabled = true) {
+  return useQuery({ queryKey: ['training-session', 'active'], queryFn: api.getActiveSession, enabled });
+}
+
+export function useTrainerSessions(limit = 10) {
+  return useQuery({ queryKey: ['training-sessions', 'trainer', limit], queryFn: () => api.listTrainerSessions(limit) });
 }
 
 export function useTrainingSession(id: string) {
@@ -23,6 +27,7 @@ export function useStartSession() {
     onSuccess: (session) => {
       client.setQueryData(sessionKey(session.id), session);
       client.setQueryData(['training-session', 'active'], session);
+      void client.invalidateQueries({ queryKey: ['training-sessions', 'trainer'] });
     },
   });
 }
@@ -38,6 +43,7 @@ export function useSessionActions(id: string) {
         client.invalidateQueries({ queryKey: ['training-sessions', 'client', session.clientId] }),
         client.invalidateQueries({ queryKey: ['currentPerformances', session.clientId] }),
         client.invalidateQueries({ queryKey: ['performanceHistory', session.clientId] }),
+        client.invalidateQueries({ queryKey: ['training-sessions', 'trainer'] }),
       ]);
     }
   };

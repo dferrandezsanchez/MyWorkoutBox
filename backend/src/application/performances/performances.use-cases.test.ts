@@ -211,6 +211,7 @@ describe('PerformanceUseCases', () => {
 
     expect(currentMarks).toHaveLength(1);
     expect(currentMarks[0].record?.id).toBe('latest');
+    expect(currentMarks[0].recentRecords.map((record) => record.id)).toEqual(['old', 'latest']);
     expect(currentMarks[0].exercise.name).toBe('Back Squat');
   });
 });

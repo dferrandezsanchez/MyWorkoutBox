@@ -28,4 +28,5 @@ export interface CurrentMarkResult {
   };
   record: PerformanceRecordWithTrainerName | null;
   bestRecord: PerformanceRecordWithTrainerName | null;
+  recentRecords: PerformanceRecordWithTrainerName[];
 }

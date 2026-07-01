@@ -136,6 +136,7 @@ export interface CurrentMark {
   exercise: Exercise;
   record: PerformanceRecord | null;
   bestRecord: PerformanceRecord | null;
+  recentRecords: PerformanceRecord[];
 }
 
 export interface TrainingSessionExercise {

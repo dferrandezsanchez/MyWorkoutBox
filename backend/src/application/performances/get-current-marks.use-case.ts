@@ -24,6 +24,7 @@ export class GetCurrentMarksUseCase {
         exercise: toExerciseSummary(exercise),
         record: exerciseRecords[0] ?? null,
         bestRecord: findBestRecord(exerciseRecords, exercise.improvementDirection),
+        recentRecords: exerciseRecords.slice(0, 6).reverse(),
       };
     });
   }

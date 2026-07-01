@@ -6,6 +6,7 @@ export * from './discard-training-session.use-case';
 export * from './get-active-training-session.use-case';
 export * from './get-training-session.use-case';
 export * from './list-client-training-sessions.use-case';
+export * from './list-trainer-training-sessions.use-case';
 export * from './remove-session-exercise.use-case';
 export * from './session-dtos';
 export * from './start-training-session.use-case';

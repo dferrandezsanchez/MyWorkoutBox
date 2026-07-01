@@ -5,6 +5,10 @@ export async function getActiveSession(): Promise<TrainingSession | null> {
   return (await apiClient.get<TrainingSession | null>('/training-sessions/active')).data;
 }
 
+export async function listTrainerSessions(limit = 10): Promise<TrainingSession[]> {
+  return (await apiClient.get<TrainingSession[]>('/training-sessions', { params: { limit } })).data;
+}
+
 export async function startSession(clientId: string): Promise<TrainingSession> {
   return (await apiClient.post<TrainingSession>('/training-sessions', { clientId })).data;
 }
