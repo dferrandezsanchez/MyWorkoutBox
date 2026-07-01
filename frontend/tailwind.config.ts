@@ -13,6 +13,7 @@ const config: Config = {
           DEFAULT: 'rgb(var(--color-primary) / <alpha-value>)',
           hover: 'rgb(var(--color-primary-hover) / <alpha-value>)',
           soft: 'rgb(var(--color-primary-soft) / <alpha-value>)',
+          contrast: 'rgb(var(--color-primary-contrast) / <alpha-value>)',
         },
         text: {
           primary: 'rgb(var(--color-text-primary) / <alpha-value>)',
@@ -23,6 +24,10 @@ const config: Config = {
         surface: 'rgb(var(--color-surface) / <alpha-value>)',
         elevated: 'rgb(var(--color-elevated) / <alpha-value>)',
         border: 'rgb(var(--color-border) / <alpha-value>)',
+        'border-strong': 'rgb(var(--color-border-strong) / <alpha-value>)',
+        success: 'rgb(var(--color-success) / <alpha-value>)',
+        warning: 'rgb(var(--color-warning) / <alpha-value>)',
+        danger: 'rgb(var(--color-danger) / <alpha-value>)',
       },
     },
   },

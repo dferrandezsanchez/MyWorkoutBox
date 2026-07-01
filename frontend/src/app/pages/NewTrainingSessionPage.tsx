@@ -56,13 +56,17 @@ export default function NewTrainingSessionPage() {
 
   return (
     <AppShell title="Nueva sesión">
-      <div className="mx-auto max-w-4xl space-y-5">
-        <button onClick={() => navigate('/trainer')} className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-text-secondary hover:text-text-primary focus-ring"><ChevronLeft size={18} />Volver</button>
-        <Panel className="p-5 sm:p-7">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Nuevo entrenamiento</p>
-          <h1 className="mt-2 text-3xl font-semibold text-text-primary">¿Con quién vamos a entrenar?</h1>
-          <p className="mt-3 max-w-2xl leading-7 text-text-secondary">Selecciona un cliente activo. Confirmaremos la elección antes de iniciar la sesión.</p>
-          <label className="relative mt-5 block"><Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary" size={20} /><TextInput type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar cliente por nombre" className="h-14 w-full pl-12 text-base" autoFocus /></label>
+      <div className="mx-auto max-w-4xl space-y-4">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/trainer')} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-elevated/80 text-text-secondary hover:text-text-primary focus-ring" aria-label="Volver"><ChevronLeft size={19} /></button>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Nuevo entrenamiento</p>
+            <h1 className="text-2xl font-semibold text-text-primary">Selecciona cliente</h1>
+          </div>
+        </div>
+        <Panel className="p-4 sm:p-5">
+          <p className="text-sm text-text-secondary">Busca un cliente activo para iniciar una nueva sesión.</p>
+          <label className="relative mt-3 block"><Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary" size={20} /><TextInput type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar cliente" className="h-12 w-full pl-12 text-base" autoFocus /></label>
         </Panel>
 
         {!query && recentClients.length > 0 && <ClientSection title="Clientes recientes" clients={recentClients} onSelect={setSelected} />}
@@ -79,9 +83,10 @@ export default function NewTrainingSessionPage() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="Confirmar cliente">
           <div className="w-full max-w-md rounded-t-2xl border border-border bg-elevated p-5 shadow-2xl sm:rounded-2xl">
             <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-primary">Confirmar entrenamiento</p><h2 className="mt-2 text-2xl font-semibold text-text-primary">{selected.firstName} {selected.lastName}</h2><p className="mt-1 text-sm text-text-secondary">{age(selected.birthDate)} años{selected.height ? ` · ${selected.height} cm` : ''}{selected.weight ? ` · ${selected.weight} kg` : ''}</p></div><button className="flex h-11 w-11 items-center justify-center rounded-lg focus-ring" onClick={() => setSelected(null)} aria-label="Cerrar"><X size={19} /></button></div>
-            {selected.notes && <p className="mt-4 rounded-xl border border-border/70 bg-surface/70 p-3 text-sm text-text-secondary">{selected.notes}</p>}
+            {selected.notes && <p className="mt-4 rounded-xl border border-border/70 bg-surface/70 p-3 text-sm leading-6 text-text-secondary">{selected.notes}</p>}
+            <p className="mt-4 text-sm text-text-secondary">Se iniciará una nueva sesión activa para este cliente.</p>
             {startSession.isError && <p className="mt-4 text-sm text-red-500">No se pudo iniciar la sesión. Comprueba que no exista otra activa.</p>}
-            <div className="mt-5 grid grid-cols-2 gap-2"><Button onClick={() => setSelected(null)}>Cancelar</Button><Button variant="primary" disabled={startSession.isPending} onClick={() => void confirmStart()}>{startSession.isPending ? 'Iniciando...' : 'Iniciar sesión'}</Button></div>
+            <div className="mt-5 grid grid-cols-2 gap-2"><Button variant="ghost" onClick={() => setSelected(null)}>Cancelar</Button><Button variant="primary" disabled={startSession.isPending} onClick={() => void confirmStart()}>{startSession.isPending ? 'Iniciando...' : 'Iniciar sesión'}</Button></div>
           </div>
         </div>
       )}

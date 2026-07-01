@@ -3,7 +3,7 @@ import { KeyRound, LogOut, Palette, UserCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import AppShell from '@app/layout/AppShell';
-import { Button, Panel, TextInput, ThemeToggle } from '@shared/components/ui';
+import { Button, Panel, TextInput } from '@shared/components/ui';
 import { useAuthUser, useChangePassword, useUpdateAuthUser } from '@features/auth/hooks/useAuthUser';
 import { removeToken } from '@features/auth/model/auth-store';
 
@@ -127,11 +127,8 @@ export default function TrainerAccountPage() {
             <h2 className="text-lg font-semibold text-text-primary">Apariencia</h2>
           </div>
           <p className="mt-1 text-sm text-text-secondary">
-            Usa el tema del dispositivo o fija una preferencia para esta cuenta.
+            MyWorkoutBox utiliza un tema oscuro fijo para una experiencia consistente.
           </p>
-          <div className="mt-4">
-            <ThemeToggle />
-          </div>
         </Panel>
 
         <Panel className="p-4 sm:p-5">

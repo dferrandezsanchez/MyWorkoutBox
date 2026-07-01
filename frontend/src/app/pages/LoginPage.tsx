@@ -4,7 +4,7 @@ import { Building2, Eye, EyeOff, LogIn, ShieldCheck } from 'lucide-react';
 import { login, selectTenant } from '@features/auth/api/auth.api';
 import { setStoredTenantBrand, setToken } from '@features/auth/model/auth-store';
 import { queryClient } from '@shared/state/query-client';
-import { Button, Panel, TextInput, ThemeToggle } from '@shared/components/ui';
+import { Button, Panel, TextInput } from '@shared/components/ui';
 import { PLATFORM_BRAND } from '@shared/config/branding';
 import type { LoginSuccessResponse, TenantOption } from '@shared/types/auth';
 
@@ -108,7 +108,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <div className="mb-6 flex items-start justify-between gap-3">
+          <div className="mb-6">
             <div>
               <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
                 <ShieldCheck size={14} />
@@ -117,7 +117,6 @@ export default function LoginPage() {
               <h2 className="mb-1 text-xl font-semibold text-text-primary">Iniciar sesión</h2>
               <p className="text-sm text-text-secondary">Accede con tu cuenta del centro.</p>
             </div>
-            <ThemeToggle compact />
           </div>
 
           {selectionToken ? (

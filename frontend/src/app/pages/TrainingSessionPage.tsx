@@ -5,8 +5,8 @@ import AppShell from '@app/layout/AppShell';
 import PerformanceForm from '@features/performances/components/PerformanceForm';
 import { formatPerformance } from '@features/performances/utils/exerciseTemplates';
 import { useExercises } from '@features/exercises/hooks/useExercises';
-import { useSessionActions, useTrainingSession } from '@features/training-sessions/hooks/useTrainingSessions';
-import { Button, EmptyState, Panel, TextInput } from '@shared/components/ui';
+import { useSessionActions, useTrainerSessions, useTrainingSession } from '@features/training-sessions/hooks/useTrainingSessions';
+import { Button, ConfirmDialog, EmptyState, Panel, TextInput } from '@shared/components/ui';
 import type { CreatePerformanceData, PerformanceRecord, TrainingSessionExercise } from '@shared/types/api';
 
 function formatElapsed(startedAt?: string, completedAt?: string | null): string {
@@ -32,12 +32,15 @@ export default function TrainingSessionPage() {
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: session, isLoading, isError } = useTrainingSession(id);
+  const { data: recentSessions = [] } = useTrainerSessions(20);
   const { data: exercises = [] } = useExercises();
   const actions = useSessionActions(id);
   const [showPicker, setShowPicker] = useState(false);
   const [query, setQuery] = useState('');
   const [editor, setEditor] = useState<{ item: TrainingSessionExercise; record?: PerformanceRecord; copyFrom?: PerformanceRecord } | null>(null);
   const [showComplete, setShowComplete] = useState(false);
+  const [showDiscard, setShowDiscard] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState<PerformanceRecord | null>(null);
   const [sessionNotes, setSessionNotes] = useState('');
   const elapsed = useElapsedTime(session?.startedAt, session?.completedAt, session?.status === 'ACTIVE');
 
@@ -46,6 +49,20 @@ export default function TrainingSessionPage() {
     const normalized = query.trim().toLowerCase();
     return exercises.filter((exercise) => !selected.has(exercise.id) && (!normalized || exercise.name.toLowerCase().includes(normalized)));
   }, [exercises, query, session?.exercises]);
+  const recentExerciseIds = useMemo(() => {
+    const availableIds = new Set(availableExercises.map((exercise) => exercise.id));
+    const ids: string[] = [];
+    recentSessions.forEach((recentSession) => {
+      recentSession.exercises.forEach((item) => {
+        if (availableIds.has(item.exerciseId) && !ids.includes(item.exerciseId)) ids.push(item.exerciseId);
+      });
+    });
+    return ids.slice(0, 4);
+  }, [availableExercises, recentSessions]);
+  const recentExercises = recentExerciseIds
+    .map((exerciseId) => availableExercises.find((exercise) => exercise.id === exerciseId))
+    .filter((exercise): exercise is NonNullable<typeof exercise> => Boolean(exercise));
+  const otherExercises = availableExercises.filter((exercise) => !recentExerciseIds.includes(exercise.id));
 
   if (isLoading) return <AppShell title="Sesión"><p className="text-text-secondary">Cargando sesión...</p></AppShell>;
   if (isError || !session) return <AppShell title="Sesión"><p className="text-red-500">No se pudo cargar la sesión</p></AppShell>;
@@ -111,7 +128,7 @@ export default function TrainingSessionPage() {
                     {item.series.map((record) => (
                       <div key={record.id} className="flex items-center justify-between gap-3 px-4 py-3">
                         <div><p className="text-xs font-semibold uppercase text-text-secondary">Serie {record.seriesNumber}</p><p className="mt-0.5 font-semibold text-text-primary">{formatPerformance(record)}</p></div>
-                        {active && <div className="flex gap-1"><button type="button" aria-label={`Editar serie ${record.seriesNumber}`} onClick={() => setEditor({ item, record })} className="flex h-10 w-10 items-center justify-center rounded-xl text-text-secondary hover:bg-surface focus-ring"><Pencil size={16} /></button><button type="button" aria-label={`Eliminar serie ${record.seriesNumber}`} onClick={() => confirm('¿Eliminar esta serie?') && actions.deleteSeries.mutate(record.id)} className="flex h-10 w-10 items-center justify-center rounded-xl text-red-500 hover:bg-red-500/10 focus-ring"><Trash2 size={16} /></button></div>}
+                        {active && <div className="flex gap-1"><button type="button" aria-label={`Editar serie ${record.seriesNumber}`} onClick={() => setEditor({ item, record })} className="flex h-10 w-10 items-center justify-center rounded-xl text-text-secondary hover:bg-surface focus-ring"><Pencil size={16} /></button><button type="button" aria-label={`Eliminar serie ${record.seriesNumber}`} onClick={() => setRecordToDelete(record)} className="flex h-10 w-10 items-center justify-center rounded-xl text-danger hover:bg-danger/10 focus-ring"><Trash2 size={16} /></button></div>}
                       </div>
                     ))}
                   </div>
@@ -122,23 +139,47 @@ export default function TrainingSessionPage() {
           </div>
         )}
 
-        {active && (
-          <button type="button" onClick={() => setShowPicker(true)} className="flex min-h-36 w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-surface/30 text-text-secondary transition-colors hover:border-primary/50 hover:text-primary focus-ring">
-            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-elevated"><Plus size={24} /></span>
-            <span className="font-semibold">Añadir ejercicio</span>
-          </button>
-        )}
-
         {session.notes && <Panel className="p-4"><p className="text-sm font-semibold text-text-primary">Notas de la sesión</p><p className="mt-2 text-sm text-text-secondary">{session.notes}</p></Panel>}
 
-        {active && <div className="sticky bottom-24 rounded-xl border border-border/70 bg-elevated/95 p-2 shadow-xl backdrop-blur lg:bottom-4"><Button variant={seriesTotal > 0 ? 'primary' : 'danger'} onClick={() => seriesTotal > 0 ? setShowComplete(true) : confirm('¿Descartar esta sesión vacía?') && actions.discard.mutateAsync().then(() => navigate('/trainer'))} className="inline-flex w-full items-center justify-center gap-2">{seriesTotal > 0 ? <><CheckCircle2 size={17} /> Finalizar entrenamiento</> : 'Descartar sesión vacía'}</Button></div>}
+        {active && (
+          <div className="sticky bottom-24 z-20 grid grid-cols-2 gap-2 rounded-xl border border-border/70 bg-elevated/95 p-2 shadow-xl backdrop-blur lg:bottom-4">
+            <Button variant="primary" onClick={() => setShowPicker(true)} className="inline-flex items-center justify-center gap-2">
+              <Plus size={17} /> Ejercicio
+            </Button>
+            {seriesTotal > 0 ? (
+              <Button onClick={() => setShowComplete(true)} className="inline-flex items-center justify-center gap-2">
+                <CheckCircle2 size={17} /> Finalizar
+              </Button>
+            ) : (
+              <Button variant="ghost" onClick={() => setShowDiscard(true)} className="text-danger hover:text-danger">
+                Descartar
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
-      {showPicker && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 sm:items-center" role="dialog" aria-modal="true"><div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-elevated p-4 sm:rounded-2xl"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold">Añadir ejercicio</h2><button onClick={() => setShowPicker(false)} className="h-10 w-10 rounded-xl focus-ring" aria-label="Cerrar"><X className="mx-auto" size={18} /></button></div><label className="relative mt-3 block"><Search className="absolute left-3 top-3 text-text-secondary" size={18} /><TextInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar ejercicio" className="w-full pl-10" autoFocus /></label><div className="mt-3 divide-y divide-border/60">{availableExercises.map((exercise) => <button key={exercise.id} onClick={() => void addExercise(exercise.id)} className="flex min-h-14 w-full items-center justify-between py-3 text-left focus-ring"><span><span className="block font-semibold">{exercise.name}</span><span className="text-xs text-text-secondary">{exercise.category}</span></span><Plus size={18} className="text-primary" /></button>)}</div></div></div>}
+      {showPicker && <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 sm:items-center" role="dialog" aria-modal="true" aria-label="Añadir ejercicio"><div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-elevated p-4 sm:rounded-2xl"><div className="flex items-center justify-between"><h2 className="text-lg font-semibold">Añadir ejercicio</h2><button onClick={() => setShowPicker(false)} className="h-10 w-10 rounded-xl focus-ring" aria-label="Cerrar"><X className="mx-auto" size={18} /></button></div><label className="relative mt-3 block"><Search className="absolute left-3 top-3 text-text-secondary" size={18} /><TextInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar ejercicio" className="w-full pl-10" autoFocus /></label>{recentExercises.length > 0 && <ExercisePickerSection title="Recientes" exercises={recentExercises} onSelect={addExercise} />}<ExercisePickerSection title={recentExercises.length > 0 ? 'Todos los ejercicios' : undefined} exercises={otherExercises} onSelect={addExercise} />{availableExercises.length === 0 && <div className="mt-4"><EmptyState title="No encontramos ejercicios con ese nombre" /></div>}</div></div>}
 
-      {editor && <PerformanceForm key={`${editor.item.id}-${editor.record?.id ?? 'new'}-${editor.item.series.length}`} exerciseName={editor.item.exercise.name} defaultUnit={editor.item.exercise.defaultUnit} exercise={editor.item.exercise} initialRecord={editor.record ?? editor.copyFrom} copyMode={Boolean(editor.copyFrom)} onSave={saveSeries} onClose={() => setEditor(null)} />}
+      {editor && <PerformanceForm key={`${editor.item.id}-${editor.record?.id ?? 'new'}-${editor.item.series.length}`} context="session" exerciseName={editor.item.exercise.name} defaultUnit={editor.item.exercise.defaultUnit} exercise={editor.item.exercise} initialRecord={editor.record ?? editor.copyFrom} copyMode={Boolean(editor.copyFrom)} onSave={saveSeries} onClose={() => setEditor(null)} />}
 
       {showComplete && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4" role="dialog" aria-modal="true"><div className="w-full max-w-md rounded-2xl bg-elevated p-5"><h2 className="text-xl font-semibold">Finalizar sesión</h2><p className="mt-2 text-sm text-text-secondary">Se bloquearán {session.exercises.length} ejercicios y {seriesTotal} series. Esta acción no se puede deshacer.</p><textarea value={sessionNotes} onChange={(event) => setSessionNotes(event.target.value)} placeholder="Notas de la sesión (opcional)" rows={3} className="mt-4 w-full rounded-xl border border-border bg-surface p-3 focus-ring" /><div className="mt-4 flex justify-end gap-2"><Button onClick={() => setShowComplete(false)}>Cancelar</Button><Button variant="primary" onClick={() => actions.complete.mutateAsync(sessionNotes).then(() => setShowComplete(false))}>Confirmar finalización</Button></div></div></div>}
+
+      {showDiscard && <ConfirmDialog title="Descartar sesión" description="Se eliminarán los ejercicios y series registrados en esta sesión. Esta acción no se puede deshacer." confirmLabel="Descartar" pending={actions.discard.isPending} onCancel={() => setShowDiscard(false)} onConfirm={() => void actions.discard.mutateAsync().then(() => navigate('/trainer'))} />}
+
+      {recordToDelete && <ConfirmDialog title="Eliminar serie" description="Esta serie dejará de formar parte del entrenamiento." confirmLabel="Eliminar" pending={actions.deleteSeries.isPending} onCancel={() => setRecordToDelete(null)} onConfirm={() => void actions.deleteSeries.mutateAsync(recordToDelete.id).then(() => setRecordToDelete(null))} />}
     </AppShell>
+  );
+}
+
+function ExercisePickerSection({ title, exercises, onSelect }: { title?: string; exercises: { id: string; name: string; category: string }[]; onSelect: (exerciseId: string) => Promise<void> }) {
+  if (exercises.length === 0) return null;
+  return (
+    <section className="mt-4">
+      {title && <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-text-secondary">{title}</h3>}
+      <div className="divide-y divide-border/60">
+        {exercises.map((exercise) => <button key={exercise.id} onClick={() => void onSelect(exercise.id)} className="flex min-h-14 w-full items-center justify-between py-3 text-left focus-ring"><span><span className="block font-semibold">{exercise.name}</span><span className="text-xs text-text-secondary">{exercise.category}</span></span><Plus size={18} className="text-primary" /></button>)}
+      </div>
+    </section>
   );
 }

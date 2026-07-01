@@ -1,18 +1,16 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 import {
-  Dumbbell,
   Moon,
   Settings,
   Sun,
   type LucideIcon,
 } from 'lucide-react';
-import { useTheme, type ThemePreference } from '@shared/theme/ThemeProvider';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 const buttonVariants: Record<ButtonVariant, string> = {
   primary:
-    'border-primary bg-primary text-white shadow-[0_14px_34px_rgba(var(--color-primary)/0.32)] hover:bg-primary-hover',
+    'border-primary bg-primary text-primary-contrast shadow-[0_14px_34px_rgba(var(--color-primary)/0.32)] hover:bg-primary-hover',
   secondary:
     'border-border/80 bg-elevated/80 text-text-primary shadow-sm hover:bg-surface',
   ghost:
@@ -144,72 +142,25 @@ export function ActionTile({
   );
 }
 
-export function MobileActionButton({
-  label = 'Acción rápida',
-  onClick,
-}: {
-  label?: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="absolute left-1/2 top-0 flex h-[68px] w-16 -translate-x-1/2 -translate-y-5 flex-col items-center justify-center gap-1 rounded-2xl border border-primary/40 bg-primary text-white shadow-[0_18px_42px_rgba(var(--color-primary)/0.38)] focus-ring"
-    >
-      <Dumbbell size={21} />
-      <span className="text-[10px] font-semibold leading-none">Sesión</span>
-    </button>
-  );
-}
-
 export function ThemeToggle({ compact = false }: { compact?: boolean }) {
-  const { preference, resolvedTheme, setPreference, toggleTheme } = useTheme();
-  const nextLabel = resolvedTheme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
-
   if (compact) {
     return (
-      <button
-        type="button"
-        onClick={toggleTheme}
-        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-border/70 bg-elevated/85 text-text-secondary shadow-sm transition-colors hover:bg-surface hover:text-text-primary focus-ring"
-        aria-label={nextLabel}
-        title={nextLabel}
+      <div
+        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-border/70 bg-elevated/85 text-text-secondary shadow-sm"
+        aria-label="Tema oscuro fijo"
+        title="Tema oscuro fijo"
       >
-        {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-      </button>
+        <Moon size={18} />
+      </div>
     );
   }
 
-  const options: { value: ThemePreference; label: string; icon: LucideIcon }[] = [
-    { value: 'system', label: 'Sistema', icon: Settings },
-    { value: 'light', label: 'Claro', icon: Sun },
-    { value: 'dark', label: 'Oscuro', icon: Moon },
-  ];
-
   return (
-    <div className="grid grid-cols-3 gap-2 rounded-xl border border-border/70 bg-surface/70 p-1">
-      {options.map((option) => {
-        const Icon = option.icon;
-        const active = preference === option.value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => setPreference(option.value)}
-            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold transition-colors focus-ring ${
-              active
-                ? 'bg-elevated text-primary shadow-sm'
-                : 'text-text-secondary hover:bg-elevated/80 hover:text-text-primary'
-            }`}
-          >
-            <Icon size={16} />
-            <span>{option.label}</span>
-          </button>
-        );
-      })}
+    <div className="grid grid-cols-1 rounded-xl border border-border/70 bg-surface/70 p-1">
+      <div className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-elevated px-3 text-sm font-semibold text-text-primary">
+        <Moon size={16} />
+        <span>Modo oscuro</span>
+      </div>
     </div>
   );
 }
@@ -270,6 +221,41 @@ export function EmptyState({ title, description }: { title: string; description?
     <div className="rounded-2xl border border-dashed border-border/80 bg-elevated/70 px-6 py-10 text-center">
       <p className="font-medium text-text-primary">{title}</p>
       {description && <p className="mt-1 text-sm text-text-secondary">{description}</p>}
+    </div>
+  );
+}
+
+export function ConfirmDialog({
+  title,
+  description,
+  confirmLabel,
+  cancelLabel = 'Cancelar',
+  tone = 'danger',
+  pending = false,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  cancelLabel?: string;
+  tone?: 'danger' | 'primary';
+  pending?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/65 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-description">
+      <div className="w-full max-w-md rounded-t-2xl border border-border/70 bg-elevated p-5 shadow-2xl sm:rounded-2xl">
+        <h2 id="confirm-dialog-title" className="text-xl font-semibold text-text-primary">{title}</h2>
+        <p id="confirm-dialog-description" className="mt-2 text-sm leading-6 text-text-secondary">{description}</p>
+        <div className="mt-6 grid grid-cols-2 gap-2">
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>{cancelLabel}</Button>
+          <Button type="button" variant={tone} onClick={onConfirm} disabled={pending}>
+            {pending ? 'Procesando...' : confirmLabel}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

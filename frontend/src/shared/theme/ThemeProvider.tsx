@@ -2,17 +2,11 @@ import { createContext, ReactNode, useContext, useEffect, useMemo, useState } fr
 import { getDocumentTitle, PLATFORM_BRAND, type TenantBrand } from '@shared/config/branding';
 import { AUTH_CONTEXT_EVENT, getStoredTenantBrand, getToken, setStoredTenantBrand } from '@shared/auth/session-store';
 
-export type ThemePreference = 'system' | 'light' | 'dark';
-
 interface ThemeContextValue {
   brand: TenantBrand;
-  preference: ThemePreference;
-  resolvedTheme: 'light' | 'dark';
-  setPreference: (preference: ThemePreference) => void;
-  toggleTheme: () => void;
+  resolvedTheme: 'dark';
 }
 
-const THEME_KEY = 'mwb_theme_preference';
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 interface ThemeProviderProps {
@@ -29,28 +23,24 @@ function hexToRgbTriplet(hex: string): string {
   return `${r} ${g} ${b}`;
 }
 
-function getStoredPreference(): ThemePreference {
-  const stored = localStorage.getItem(THEME_KEY);
-  return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
-}
-
-function getSystemTheme(): 'light' | 'dark' {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+function getContrastTriplet(hex: string): string {
+  const normalized = hex.replace('#', '');
+  const value = Number.parseInt(normalized, 16);
+  const channels = [(value >> 16) & 255, (value >> 8) & 255, value & 255]
+    .map((channel) => {
+      const normalizedChannel = channel / 255;
+      return normalizedChannel <= 0.03928
+        ? normalizedChannel / 12.92
+        : ((normalizedChannel + 0.055) / 1.055) ** 2.4;
+    });
+  const luminance = 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  return luminance > 0.45 ? '9 15 25' : '255 255 255';
 }
 
 export function ThemeProvider({ children, loadTenantBrand }: ThemeProviderProps) {
   const fallbackBrand = useMemo(() => PLATFORM_BRAND, []);
   const [brand, setBrand] = useState<TenantBrand>(() => (getToken() ? getStoredTenantBrand() : null) ?? fallbackBrand);
-  const [preference, setPreferenceState] = useState<ThemePreference>(() => getStoredPreference());
-  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => getSystemTheme());
-  const resolvedTheme = preference === 'system' ? systemTheme : preference;
-
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    const onChange = () => setSystemTheme(media.matches ? 'dark' : 'light');
-    media.addEventListener('change', onChange);
-    return () => media.removeEventListener('change', onChange);
-  }, []);
+  const resolvedTheme: 'dark' = 'dark';
 
   useEffect(() => {
     const syncBrand = () => {
@@ -103,23 +93,20 @@ export function ThemeProvider({ children, loadTenantBrand }: ThemeProviderProps)
     root.style.setProperty('--color-primary', hexToRgbTriplet(brand.primary));
     root.style.setProperty('--color-primary-hover', hexToRgbTriplet(brand.primaryHover));
     root.style.setProperty('--color-primary-soft', hexToRgbTriplet(brand.primarySoft));
+    root.style.setProperty('--color-primary-contrast', getContrastTriplet(brand.primary));
     document.title = getDocumentTitle(brand);
   }, [brand, resolvedTheme]);
 
-  const setPreference = (nextPreference: ThemePreference) => {
-    localStorage.setItem(THEME_KEY, nextPreference);
-    setPreferenceState(nextPreference);
+  const setPreference = (_nextPreference: ThemePreference) => {
+    // theme preference is ignored: the app identity is always dark
   };
 
   const value = useMemo(
     () => ({
       brand,
-      preference,
       resolvedTheme,
-      setPreference,
-      toggleTheme: () => setPreference(resolvedTheme === 'dark' ? 'light' : 'dark'),
     }),
-    [brand, preference, resolvedTheme],
+    [brand],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

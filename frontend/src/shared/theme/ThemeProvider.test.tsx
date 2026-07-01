@@ -21,14 +21,11 @@ const tenantBrand: TenantBrand = {
 };
 
 function ThemeProbe() {
-  const { brand, preference, resolvedTheme, setPreference, toggleTheme } = useTheme();
+  const { brand, resolvedTheme } = useTheme();
   return (
     <div>
       <span>{brand.name}</span>
-      <span>{preference}</span>
       <span>{resolvedTheme}</span>
-      <button type="button" onClick={() => setPreference('dark')}>Dark</button>
-      <button type="button" onClick={toggleTheme}>Toggle</button>
     </div>
   );
 }
@@ -70,20 +67,15 @@ describe('ThemeProvider', () => {
     expect(await screen.findByText('Tenant Brand')).toBeInTheDocument();
   });
 
-  it('persists explicit preference and toggles resolved theme', async () => {
-    const user = userEvent.setup();
+  it('always resolves to dark theme', async () => {
     render(
       <ThemeProvider>
         <ThemeProbe />
       </ThemeProvider>,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Dark' }));
-    expect(localStorage.getItem('mwb_theme_preference')).toBe('dark');
-    await waitFor(() => expect(document.documentElement.classList.contains('dark')).toBe(true));
-
-    await user.click(screen.getByRole('button', { name: 'Toggle' }));
-    expect(localStorage.getItem('mwb_theme_preference')).toBe('light');
+    expect(screen.getByText('dark')).toBeInTheDocument();
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
   });
 
 });
