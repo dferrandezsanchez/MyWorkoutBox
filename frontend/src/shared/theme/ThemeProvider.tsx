@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useEffect, useMemo, useState } from 'react';
 import { getDocumentTitle, PLATFORM_BRAND, type TenantBrand } from '@shared/config/branding';
 import { AUTH_CONTEXT_EVENT, getStoredTenantBrand, getToken, setStoredTenantBrand } from '@shared/auth/session-store';
 
@@ -40,7 +40,7 @@ function getContrastTriplet(hex: string): string {
 export function ThemeProvider({ children, loadTenantBrand }: ThemeProviderProps) {
   const fallbackBrand = useMemo(() => PLATFORM_BRAND, []);
   const [brand, setBrand] = useState<TenantBrand>(() => (getToken() ? getStoredTenantBrand() : null) ?? fallbackBrand);
-  const resolvedTheme: 'dark' = 'dark';
+  const resolvedTheme = 'dark' as const;
 
   useEffect(() => {
     const syncBrand = () => {
@@ -97,10 +97,6 @@ export function ThemeProvider({ children, loadTenantBrand }: ThemeProviderProps)
     document.title = getDocumentTitle(brand);
   }, [brand, resolvedTheme]);
 
-  const setPreference = (_nextPreference: ThemePreference) => {
-    // theme preference is ignored: the app identity is always dark
-  };
-
   const value = useMemo(
     () => ({
       brand,
@@ -110,12 +106,4 @@ export function ThemeProvider({ children, loadTenantBrand }: ThemeProviderProps)
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
-}
-
-export function useTheme() {
-  const value = useContext(ThemeContext);
-  if (!value) {
-    throw new Error('useTheme must be used inside ThemeProvider');
-  }
-  return value;
 }

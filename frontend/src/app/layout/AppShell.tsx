@@ -18,7 +18,7 @@ import { useActiveSession } from '@features/training-sessions/hooks/useTrainingS
 import { getAuthUser, removeToken } from '@features/auth/model/auth-store';
 import { Button } from '@shared/components/ui';
 import { PLATFORM_BRAND } from '@shared/config/branding';
-import { useTheme } from '@shared/theme/ThemeProvider';
+import { useTheme } from '@shared/theme/useTheme';
 
 interface AppShellProps {
   children: ReactNode;

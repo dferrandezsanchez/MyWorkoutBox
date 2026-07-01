@@ -1,8 +1,6 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 import {
   Moon,
-  Settings,
-  Sun,
   type LucideIcon,
 } from 'lucide-react';
 
