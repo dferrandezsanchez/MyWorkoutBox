@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { getDocumentTitle, PLATFORM_BRAND, type TenantBrand } from '@shared/config/branding';
 import { AUTH_CONTEXT_EVENT, getStoredTenantBrand, getToken, setStoredTenantBrand } from '@shared/auth/session-store';
 
@@ -7,7 +7,7 @@ interface ThemeContextValue {
   resolvedTheme: 'dark';
 }
 
-const ThemeContext = createContext<ThemeContextValue | null>(null);
+const themeContext = createContext<ThemeContextValue | null>(null);
 
 interface ThemeProviderProps {
   children: ReactNode;
@@ -105,5 +105,14 @@ export function ThemeProvider({ children, loadTenantBrand }: ThemeProviderProps)
     [brand],
   );
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return <themeContext.Provider value={value}>{children}</themeContext.Provider>;
 }
+
+export function useTheme() {
+  const value = useContext(themeContext);
+  if (!value) {
+    throw new Error('useTheme must be used inside ThemeProvider');
+  }
+  return value;
+}
+

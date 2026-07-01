@@ -1,7 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ThemeProvider } from './ThemeProvider';
-import { useTheme } from './useTheme';
+import { ThemeProvider, useTheme } from './ThemeProvider';
 import { setStoredTenantBrand, setToken } from '@shared/auth/session-store';
 import type { TenantBrand } from '@shared/config/branding';
 
