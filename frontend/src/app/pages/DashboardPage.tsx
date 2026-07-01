@@ -49,10 +49,10 @@ export default function DashboardPage() {
   const { data: exercises, isLoading: isLoadingExercises } = useExercises(true);
   const { data: trainers, isLoading: isLoadingTrainers } = useTrainers(true);
 
-  const activeClients = clients?.filter((client) => client.status === 'ACTIVE') ?? [];
-  const inactiveClients = clients?.filter((client) => client.status === 'INACTIVE') ?? [];
-  const activeExercises = exercises?.filter((exercise) => exercise.status === 'ACTIVE') ?? [];
-  const activeTrainers = trainers?.filter((trainer) => trainer.active) ?? [];
+  const activeClients = useMemo(() => clients?.filter((client) => client.status === 'ACTIVE') ?? [], [clients]);
+  const inactiveClients = useMemo(() => clients?.filter((client) => client.status === 'INACTIVE') ?? [], [clients]);
+  const activeExercises = useMemo(() => exercises?.filter((exercise) => exercise.status === 'ACTIVE') ?? [], [exercises]);
+  const activeTrainers = useMemo(() => trainers?.filter((trainer) => trainer.active) ?? [], [trainers]);
   const dataIssues = useMemo(
     () => activeClients.filter(hasDataIssue).slice(0, 6),
     [activeClients],

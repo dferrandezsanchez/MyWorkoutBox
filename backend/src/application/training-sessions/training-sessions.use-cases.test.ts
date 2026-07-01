@@ -17,6 +17,7 @@ import {
   GetActiveTrainingSessionUseCase,
   GetTrainingSessionUseCase,
   ListClientTrainingSessionsUseCase,
+  ListTrainerTrainingSessionsUseCase,
   RemoveSessionExerciseUseCase,
   StartTrainingSessionUseCase,
   UpdateSessionSeriesUseCase,
@@ -49,6 +50,7 @@ function dependencies(initial = detail()) {
     findById: vi.fn(async () => current),
     findDetail: vi.fn(async () => current),
     listByClient: vi.fn(async () => current ? [current] : []),
+    listByTrainer: vi.fn(async () => current ? [current] : []),
     create: vi.fn(async (data) => { current = detail({ ...data }); return current; }),
     complete: vi.fn(async (_id, completedAt, notes) => {
       current = detail({ ...current!, status: TrainingSessionStatus.COMPLETED, completedAt, notes: notes ?? null });
@@ -96,6 +98,8 @@ describe('training session use cases', () => {
     await expect(new GetActiveTrainingSessionUseCase(deps.sessions).execute('tenant-1', 'trainer-1')).resolves.toMatchObject({ id: 'session-1' });
     await expect(new GetTrainingSessionUseCase(deps.sessions).execute('tenant-1', 'trainer-1', 'session-1')).resolves.toMatchObject({ id: 'session-1' });
     await expect(new ListClientTrainingSessionsUseCase(deps.sessions, deps.clients).execute('tenant-1', client.id)).resolves.toHaveLength(1);
+    await expect(new ListTrainerTrainingSessionsUseCase(deps.sessions).execute('tenant-1', 'trainer-1', 500)).resolves.toHaveLength(1);
+    expect(deps.sessions.listByTrainer).toHaveBeenCalledWith('tenant-1', 'trainer-1', 50);
   });
 
   it('adds and removes an exercise without series', async () => {

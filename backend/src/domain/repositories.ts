@@ -153,6 +153,7 @@ export interface TrainingSessionRepository {
   findById(tenantId: string, id: string): Promise<TrainingSession | null>;
   findDetail(tenantId: string, id: string): Promise<TrainingSessionDetail | null>;
   listByClient(tenantId: string, clientId: string): Promise<TrainingSessionDetail[]>;
+  listByTrainer(tenantId: string, trainerId: string, limit: number): Promise<TrainingSessionDetail[]>;
   create(data: { tenantId: string; clientId: string; trainerId: string; startedAt: Date }): Promise<TrainingSession>;
   complete(id: string, completedAt: Date, notes?: string): Promise<TrainingSession>;
   delete(id: string): Promise<void>;

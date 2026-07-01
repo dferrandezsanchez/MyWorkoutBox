@@ -5,10 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   ActionTile,
   Button,
+  ConfirmDialog,
   EmptyState,
   MetricCard,
   MetricChip,
-  MobileActionButton,
   PageHeader,
   Panel,
   SectionHeader,
@@ -50,25 +50,19 @@ describe('shared UI components', () => {
   it('triggers action buttons', async () => {
     const user = userEvent.setup();
     const onTileClick = vi.fn();
-    const onMobileClick = vi.fn();
 
     render(
       <>
         <ActionTile title="Registrar marca" description="Nueva marca" icon={Dumbbell} onClick={onTileClick} />
-        <MobileActionButton label="Nueva marca" onClick={onMobileClick} />
       </>,
     );
 
     await user.click(screen.getByRole('button', { name: /Registrar marca/ }));
-    await user.click(screen.getByRole('button', { name: 'Nueva marca' }));
 
     expect(onTileClick).toHaveBeenCalledOnce();
-    expect(onMobileClick).toHaveBeenCalledOnce();
   });
 
-  it('updates theme preference from compact and segmented theme toggles', async () => {
-    const user = userEvent.setup();
-
+  it('renders dark mode indicator instead of a theme selector', () => {
     render(
       <ThemeProvider>
         <ThemeToggle compact />
@@ -76,13 +70,29 @@ describe('shared UI components', () => {
       </ThemeProvider>,
     );
 
-    await user.click(screen.getByRole('button', { name: /Cambiar a modo/ }));
-    expect(localStorage.getItem('mwb_theme_preference')).toMatch(/dark|light/);
+    expect(screen.getByLabelText('Tema oscuro fijo')).toBeInTheDocument();
+    expect(screen.getByText('Modo oscuro')).toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Claro' }));
-    expect(localStorage.getItem('mwb_theme_preference')).toBe('light');
+  it('confirms and cancels destructive dialogs', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
 
-    await user.click(screen.getByRole('button', { name: 'Oscuro' }));
-    expect(localStorage.getItem('mwb_theme_preference')).toBe('dark');
+    render(
+      <ConfirmDialog
+        title="Eliminar serie"
+        description="La serie se eliminará."
+        confirmLabel="Eliminar"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await user.click(screen.getByRole('button', { name: 'Eliminar' }));
+
+    expect(onCancel).toHaveBeenCalledOnce();
+    expect(onConfirm).toHaveBeenCalledOnce();
   });
 });

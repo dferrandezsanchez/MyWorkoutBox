@@ -135,4 +135,40 @@ describe('PerformanceForm', () => {
     expect(screen.getByLabelText(/Repeticiones/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Prono' })).toBeInTheDocument();
   });
+
+  it('uses session copy context without exposing the date or previous notes', async () => {
+    const user = userEvent.setup();
+    render(
+      <PerformanceForm
+        context="session"
+        exerciseName="Dominadas"
+        copyMode
+        initialRecord={{
+          id: 'record-1',
+          clientId: 'client-1',
+          exerciseId: 'exercise-1',
+          trainerId: 'trainer-1',
+          trainerName: 'Roberto',
+          value: 8,
+          unit: 'repetitions',
+          repetitions: 8,
+          date: '2026-06-30T10:00:00.000Z',
+          notes: 'No copiar esta nota',
+          variantValues: JSON.stringify({ agarre: 'Prono' }),
+          createdAt: '2026-06-30T10:00:00.000Z',
+          updatedAt: '2026-06-30T10:00:00.000Z',
+        }}
+        onSave={onSave}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Nueva serie' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Fecha')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Repeticiones/)).toHaveValue(8);
+    expect(screen.getByLabelText('Notas')).toHaveValue('');
+
+    await user.click(screen.getByRole('button', { name: 'Guardar serie' }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ value: 8, repetitions: 8, notes: undefined }));
+  });
 });

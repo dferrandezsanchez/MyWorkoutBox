@@ -1,11 +1,12 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { CalendarDays, ChevronLeft, Dumbbell, History, Play, Trophy } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ClipboardList, Dumbbell, History, Play, Trophy } from 'lucide-react';
 import Avatar from '@shared/components/Avatar';
 import AppShell from '@app/layout/AppShell';
 import { Button, EmptyState, Panel, StatusBadge } from '@shared/components/ui';
 import { useClient } from '@features/clients/hooks/useClients';
 import { useCurrentPerformances } from '@features/performances/hooks/usePerformances';
 import { formatPerformance } from '@features/performances/utils/exerciseTemplates';
+import { getPerformanceTrend, getTrendBars } from '@features/performances/utils/performanceTrend';
 import { useActiveSession, useClientSessions, useStartSession } from '@features/training-sessions/hooks/useTrainingSessions';
 import type { CurrentMark } from '@shared/types/api';
 
@@ -65,9 +66,8 @@ export default function ClientProfilePage() {
   return (
     <AppShell title="Ficha cliente">
       <div className="mx-auto max-w-4xl space-y-4">
-        <Panel className="relative overflow-hidden p-4 sm:p-5">
-          <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/25 blur-3xl" />
-          <div className="relative">
+        <Panel className="p-4 sm:p-6">
+          <div>
             <div className="mb-4 flex items-center justify-between gap-3">
               <Button onClick={() => navigate(-1)} className="inline-flex min-h-10 items-center gap-2 px-3">
                 <ChevronLeft size={16} />
@@ -76,7 +76,7 @@ export default function ClientProfilePage() {
               <StatusBadge status={client.status} />
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-center sm:gap-4 sm:text-left">
               <Avatar
                 firstName={client.firstName}
                 lastName={client.lastName}
@@ -97,17 +97,19 @@ export default function ClientProfilePage() {
               </div>
             </div>
 
-            {client.notes && (
-              <p className="mt-4 rounded-2xl border border-border/70 bg-surface/60 p-3 text-sm leading-6 text-text-secondary">
-                {client.notes}
-              </p>
-            )}
-            <Button variant="primary" onClick={() => void openSession()} className="mt-4 inline-flex w-full items-center justify-center gap-2 sm:w-auto">
+            <Button variant="primary" onClick={() => void openSession()} className="mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 sm:w-auto">
               <Play size={17} fill="currentColor" />
               {activeSession ? `Continuar sesión de ${activeSession.client.firstName}` : 'Iniciar entrenamiento'}
             </Button>
           </div>
         </Panel>
+
+        <section>
+          <div className="mb-3 flex items-center gap-2"><ClipboardList size={18} className="text-primary" /><p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Notas importantes</p></div>
+          <Panel className="border-l-4 border-l-primary p-4 sm:p-5">
+            <p className="leading-7 text-text-secondary">{client.notes || 'No hay observaciones registradas para este cliente.'}</p>
+          </Panel>
+        </section>
 
         <section>
           <div className="mb-3 flex items-end justify-between gap-3">
@@ -156,10 +158,14 @@ function ExerciseMarkCard({
   clientId: string;
 }) {
   const navigate = useNavigate();
+  const records = item.recentRecords ?? [];
+  const trend = getPerformanceTrend(records, item.exercise.improvementDirection);
+  const bars = getTrendBars(records);
+  const trendLabel = trend === 'progressing' ? 'Progresando' : trend === 'stable' ? 'Estable' : 'Sin tendencia';
 
   return (
     <Panel className="max-w-full overflow-hidden p-4">
-      <div className="flex min-w-0 flex-col gap-3 min-[380px]:flex-row min-[380px]:items-start min-[380px]:justify-between">
+      <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="flex min-w-0 gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20">
             <Dumbbell size={20} />
@@ -173,10 +179,16 @@ function ExerciseMarkCard({
             </p>
           </div>
         </div>
-        <span className="w-fit max-w-full shrink-0 truncate rounded-full bg-primary/15 px-3 py-1 text-sm font-semibold text-primary ring-1 ring-primary/20">
-          {item.record ? formatPerformance(item.record) : '-'}
+        <span className={`w-fit shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${trend === 'progressing' ? 'bg-emerald-500/12 text-emerald-600' : 'bg-surface text-text-secondary'}`}>
+          {trendLabel}
         </span>
       </div>
+
+      {bars.length > 0 && (
+        <div className="mt-4 flex h-16 items-end gap-1.5 rounded-xl bg-surface/60 px-3 pt-3" aria-label={`Evolución de ${item.exerciseName}`}>
+          {bars.map((height, index) => <span key={`${item.exerciseId}-${index}`} className="min-w-0 flex-1 rounded-t-sm bg-primary/35 last:bg-primary" style={{ height: `${height}%` }} />)}
+        </div>
+      )}
 
       <div className="mt-4 grid grid-cols-1 gap-2 min-[380px]:grid-cols-2">
         <div className="min-w-0 rounded-2xl border border-border/70 bg-surface/60 p-3">

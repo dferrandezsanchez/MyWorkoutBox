@@ -14,8 +14,9 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthUser } from '@features/auth/hooks/useAuthUser';
+import { useActiveSession } from '@features/training-sessions/hooks/useTrainingSessions';
 import { getAuthUser, removeToken } from '@features/auth/model/auth-store';
-import { Button, MobileActionButton, ThemeToggle } from '@shared/components/ui';
+import { Button } from '@shared/components/ui';
 import { PLATFORM_BRAND } from '@shared/config/branding';
 import { useTheme } from '@shared/theme/ThemeProvider';
 
@@ -38,10 +39,11 @@ export function AppShell({
   const location = useLocation();
   const queryClient = useQueryClient();
   const user = getAuthUser();
+  const isAdmin = user?.role === 'ADMIN';
   const { data: fullUser } = useAuthUser();
+  const { data: activeSession } = useActiveSession(!isAdmin);
   const { brand } = useTheme();
   const displayUser = fullUser ?? user;
-  const isAdmin = user?.role === 'ADMIN';
 
   const logout = () => {
     removeToken();
@@ -59,10 +61,16 @@ export function AppShell({
       ]
     : [
         {
-          label: 'Clientes',
+          label: 'Inicio',
           path: '/trainer',
-          icon: Users,
+          icon: LayoutDashboard,
           active: location.pathname === '/trainer' || /^\/clients\/[^/]+$/.test(location.pathname),
+        },
+        {
+          label: activeSession ? 'Sesión activa' : 'Nueva sesión',
+          path: activeSession ? `/trainer/sessions/${activeSession.id}` : '/trainer/sessions/new',
+          icon: Dumbbell,
+          active: location.pathname.startsWith('/trainer/sessions'),
         },
         {
           label: 'Cuenta',
@@ -74,8 +82,6 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-background text-text-primary">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(var(--color-primary)/0.16),transparent_34%),radial-gradient(circle_at_88%_8%,rgba(99,102,241,0.12),transparent_28%)]" />
-
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[282px] border-r border-white/10 bg-[#07111f]/95 px-5 py-6 text-white shadow-2xl backdrop-blur-xl lg:flex lg:flex-col dark:bg-[#07111f]/95">
         <button
           onClick={() => navigate('/')}
@@ -152,18 +158,20 @@ export function AppShell({
       </aside>
 
       <div className="lg:pl-[282px]">
-        <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur-xl">
-          <div className="flex min-h-[78px] items-center justify-between gap-3 px-4 py-3 lg:px-8">
+        <header className="sticky top-0 z-30 bg-background/90 px-2 pt-2 backdrop-blur-xl lg:border-b lg:border-border/60 lg:px-0 lg:pt-0">
+          <div className="flex min-h-[68px] items-center justify-between gap-3 rounded-2xl border border-border/70 bg-elevated/70 px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.14)] lg:min-h-[78px] lg:rounded-none lg:border-0 lg:bg-transparent lg:px-8 lg:py-3 lg:shadow-none">
             <button
               onClick={() => navigate('/')}
               className="flex min-h-[44px] min-w-0 items-center gap-3 rounded-xl text-left focus-ring lg:hidden"
               aria-label="Ir al panel"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white shadow-[0_10px_24px_rgba(var(--color-primary)/0.34)]">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-xs font-bold text-white shadow-[0_10px_24px_rgba(var(--color-primary)/0.34)]">
                 {PLATFORM_BRAND.mark}
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-base font-semibold text-text-primary">{title}</span>
+                <span className="block truncate text-sm font-semibold text-text-primary">
+                  {isAdmin ? title : 'Modo entrenador'}
+                </span>
                 <span className="block truncate text-xs text-text-secondary">{brand.name}</span>
               </span>
             </button>
@@ -186,11 +194,14 @@ export function AppShell({
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              <ThemeToggle compact />
-              <span className="hidden h-10 w-px bg-border sm:block" />
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-text-primary text-sm font-bold text-background ring-2 ring-primary/20">
+              <button
+                type="button"
+                onClick={() => navigate(isAdmin ? '/admin/settings' : '/trainer/account')}
+                aria-label="Abrir cuenta"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-text-primary text-sm font-bold text-background ring-2 ring-primary/20 focus-ring lg:h-11 lg:w-11"
+              >
                 {(displayUser?.name || displayUser?.email || 'U').slice(0, 2).toUpperCase()}
-              </span>
+              </button>
               <div className="hidden text-left sm:block">
                 <p className="text-sm font-semibold text-text-primary">
                   {displayUser?.name || displayUser?.email || 'Usuario'}
@@ -199,15 +210,15 @@ export function AppShell({
                   {displayUser?.role === 'ADMIN' ? 'Administrador' : 'Entrenador'}
                 </p>
               </div>
-              <Button variant="ghost" onClick={logout} className="gap-2 px-3 sm:inline-flex sm:items-center">
+              <Button variant="ghost" onClick={logout} className="hidden gap-2 px-3 lg:inline-flex lg:items-center">
                 <LogOut size={16} />
-                <span className="hidden sm:inline">Salir</span>
+                <span>Salir</span>
               </Button>
             </div>
           </div>
         </header>
 
-        <main role="main" className="px-4 pb-28 pt-5 lg:px-8 lg:pb-8">
+        <main role="main" className="px-4 pb-24 pt-4 lg:px-8 lg:pb-8 lg:pt-5">
           {children}
         </main>
       </div>
@@ -215,7 +226,7 @@ export function AppShell({
       <nav
         aria-label="Navegación móvil"
         className={`fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-elevated/95 px-2 pb-[max(env(safe-area-inset-bottom),0.6rem)] pt-2 shadow-[0_-16px_42px_rgba(0,0,0,0.22)] backdrop-blur-xl lg:hidden ${
-          isAdmin ? 'grid grid-cols-5 gap-1' : 'grid grid-cols-[1fr_72px_1fr] gap-1'
+          isAdmin ? 'grid grid-cols-5 gap-1' : 'grid grid-cols-2 gap-1'
         }`}
       >
         {isAdmin ? (
@@ -236,32 +247,14 @@ export function AppShell({
           })
         ) : (
           <>
-            {navItems.slice(0, 1).map((item) => {
+            {[navItems[0], navItems[2]].map((item) => {
               const Icon = item.icon;
               return (
                 <button
                   key={`mobile-${item.label}-${item.path}`}
                   onClick={() => navigate(item.path)}
-                  className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-colors focus-ring ${
-                    item.active ? 'bg-primary/15 text-primary' : 'text-text-secondary hover:bg-surface'
-                  }`}
-                >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-            <div className="relative min-h-[58px]">
-              <MobileActionButton label="Buscar cliente" onClick={() => navigate('/trainer')} />
-            </div>
-            {navItems.slice(1).map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={`mobile-${item.label}-${item.path}`}
-                  onClick={() => navigate(item.path)}
-                  className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-colors focus-ring ${
-                    item.active ? 'bg-primary/15 text-primary' : 'text-text-secondary hover:bg-surface'
+                className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-colors focus-ring ${
+                    item.active ? 'text-primary' : 'text-text-secondary hover:bg-surface'
                   }`}
                 >
                   <Icon size={18} />

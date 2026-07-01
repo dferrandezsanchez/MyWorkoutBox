@@ -204,6 +204,14 @@ describe('production readiness API flow', () => {
       .expect(200)
       .expect(({ body }) => expect(body.status).toBe('COMPLETED'));
 
+    await request(app)
+      .get('/training-sessions?limit=4')
+      .set('Authorization', `Bearer ${trainerToken}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.some((session: { id: string }) => session.id === sessionId)).toBe(true);
+      });
+
     const discardableSession = await request(app)
       .post('/training-sessions')
       .set('Authorization', `Bearer ${trainerToken}`)

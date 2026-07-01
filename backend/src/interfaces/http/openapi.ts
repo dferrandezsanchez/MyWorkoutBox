@@ -296,6 +296,7 @@ export const openApiDocument: OpenApiDocument = {
           exerciseName: { type: 'string' },
           record: { $ref: '#/components/schemas/PerformanceRecord' },
           bestRecord: { $ref: '#/components/schemas/PerformanceRecord' },
+          recentRecords: { type: 'array', maxItems: 6, items: { $ref: '#/components/schemas/PerformanceRecord' } },
         },
       },
       Trainer: {
@@ -613,6 +614,11 @@ Object.assign(openApiDocument.paths, {
     },
   },
   '/training-sessions': {
+    get: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'List recent completed training sessions for the current trainer',
+      parameters: [{ name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 50, default: 10 } }],
+      responses: { 200: { description: 'Recent training sessions', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/TrainingSession' } } } } }, ...authResponses },
+    },
     post: {
       tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Start an individual training session',
       requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['clientId'], properties: { clientId: { type: 'string' } } } } } },

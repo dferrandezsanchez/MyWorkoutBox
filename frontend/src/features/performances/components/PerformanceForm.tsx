@@ -4,6 +4,7 @@ import { Button } from '@shared/components/ui';
 import { getExerciseTemplate } from '@features/performances/utils/exerciseTemplates';
 
 interface PerformanceFormProps {
+  context?: 'session' | 'history';
   exerciseName?: string;
   defaultUnit?: PerformanceUnit;
   exercise?: Exercise;
@@ -88,6 +89,7 @@ function getPlaceholder(field: MeasurementField): string {
 }
 
 export default function PerformanceForm({
+  context = 'history',
   exerciseName,
   defaultUnit,
   exercise,
@@ -123,6 +125,8 @@ export default function PerformanceForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const sessionContext = context === 'session';
+  const formTitle = initialRecord && !copyMode ? 'Editar serie' : sessionContext ? 'Nueva serie' : 'Nueva marca';
 
   const firstInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -201,14 +205,15 @@ export default function PerformanceForm({
       }}
       aria-modal="true"
       role="dialog"
-      aria-label="Formulario de nueva marca"
+      aria-label={formTitle}
     >
       <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-border/70 bg-elevated/95 p-5 shadow-[0_-18px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:rounded-2xl sm:p-6">
         <div className="mb-5 border-b border-border/70 pb-4">
-          <h2 className="text-lg font-semibold text-text-primary">Nueva marca</h2>
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">{sessionContext ? 'Registro de entrenamiento' : 'Histórico'}</p>
+          <h2 className="mt-1 text-xl font-semibold text-text-primary">{formTitle}</h2>
           <p className="mt-1 text-sm text-text-secondary">
             {exerciseName
-              ? `${exerciseName}: completa los campos definidos para este ejercicio.`
+              ? `${exerciseName}: registra los datos de esta serie.`
               : 'Registra el valor actual sin modificar el histórico anterior.'}
           </p>
         </div>
@@ -279,18 +284,20 @@ export default function PerformanceForm({
             </div>
           )}
 
-          <div className="mt-4 mb-4">
-            <label htmlFor="perf-date" className={labelClass}>
-              Fecha
-            </label>
-            <input
-              id="perf-date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={inputClass}
-            />
-          </div>
+          {!sessionContext && (
+            <div className="mb-4 mt-4">
+              <label htmlFor="perf-date" className={labelClass}>
+                Fecha
+              </label>
+              <input
+                id="perf-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          )}
 
           <div className="mb-6">
             <label htmlFor="perf-notes" className={labelClass}>
@@ -322,7 +329,7 @@ export default function PerformanceForm({
               variant="primary"
               className="flex-1 sm:flex-none"
             >
-              {isLoading ? 'Guardando...' : 'Guardar'}
+              {isLoading ? 'Guardando...' : sessionContext ? 'Guardar serie' : 'Guardar'}
             </Button>
           </div>
         </form>
