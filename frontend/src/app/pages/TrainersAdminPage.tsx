@@ -1,6 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { KeyRound, Pencil, Plus } from 'lucide-react';
+import { KeyRound, Pencil, Power, UserCheck, UserCog, UserX } from 'lucide-react';
 import {
   useCreateTrainer,
   useResetTrainerPassword,
@@ -10,7 +9,8 @@ import {
 } from '@features/trainers/hooks/useTrainers';
 import type { Trainer } from '@shared/types/api';
 import AppShell from '@app/layout/AppShell';
-import { Button, EmptyState, MetricChip, PageHeader, StatusBadge, TextInput } from '@shared/components/ui';
+import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary, RowIcon } from '@app/components/AdminManagement';
+import { Button, EmptyState, StatusBadge, TextInput } from '@shared/components/ui';
 
 interface TrainerFormState {
   name: string;
@@ -39,7 +39,6 @@ function getErrorMessage(error: unknown): string {
 }
 
 export default function TrainersAdminPage() {
-  const navigate = useNavigate();
   const { data: trainers, isLoading, isError } = useTrainers(true);
   const createMutation = useCreateTrainer();
   const updateMutation = useUpdateTrainer();
@@ -146,28 +145,22 @@ export default function TrainersAdminPage() {
 
   return (
     <AppShell>
-      <PageHeader
-        eyebrow="Administración"
+      <div className="mx-auto max-w-6xl space-y-6">
+      <AdminManagementHeader
+        eyebrow="Gestión del centro"
         title="Entrenadores"
         description="Gestiona accesos del equipo técnico que actualiza las marcas de clientes."
-        actions={
-          <>
-            <Button onClick={() => navigate('/admin')}>Dashboard</Button>
-            <Button variant="primary" onClick={openCreate} className="inline-flex items-center gap-2">
-              <Plus size={16} />
-              Nuevo entrenador
-            </Button>
-          </>
-        }
+        actionLabel="Nuevo entrenador"
+        onAction={openCreate}
       />
 
-      <section className="mb-5 grid grid-cols-3 gap-3">
-        <MetricChip label="Total" value={trainers?.length ?? 0} />
-        <MetricChip label="Activos" value={activeCount} />
-        <MetricChip label="Inactivos" value={inactiveCount} />
-      </section>
+      <ManagementSummary items={[
+        { label: 'Total', value: trainers?.length ?? 0, icon: UserCog, tone: 'primary' },
+        { label: 'Activos', value: activeCount, icon: UserCheck, tone: 'green' },
+        { label: 'Inactivos', value: inactiveCount, icon: UserX, tone: 'amber' },
+      ]} />
 
-      <section className="overflow-hidden rounded-2xl border border-border/70 bg-elevated/85 shadow-panel backdrop-blur">
+      <ManagementSection title="Equipo técnico" meta={`${trainers?.length ?? 0} accesos`}>
         {!trainers || trainers.length === 0 ? (
           <div className="p-4">
             <EmptyState title="No hay entrenadores" description="Crea el primer acceso para el equipo técnico." />
@@ -179,9 +172,7 @@ export default function TrainersAdminPage() {
               className="flex flex-col gap-3 border-b border-border/70 p-4 last:border-b-0 lg:flex-row lg:items-center lg:justify-between"
             >
               <div className="flex min-w-0 items-start gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-text-primary text-sm font-bold text-background">
-                  {trainer.name.slice(0, 2).toUpperCase()}
-                </span>
+                <RowIcon icon={UserCog} tone={trainer.active ? 'green' : 'amber'} />
                 <div className="min-w-0">
                   <p className="font-semibold text-text-primary">{trainer.name}</p>
                   <p className="mt-1 break-all text-sm text-text-secondary">{trainer.email}</p>
@@ -191,27 +182,18 @@ export default function TrainersAdminPage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center justify-between gap-2 sm:justify-end">
                 <StatusBadge status={trainer.active ? 'ACTIVE' : 'INACTIVE'} />
-                <Button onClick={() => openEdit(trainer)} className="inline-flex items-center gap-2">
-                  <Pencil size={15} />
-                  Editar
-                </Button>
-                <Button onClick={() => { setPasswordTrainer(trainer); setPassword(''); setError(null); }} className="inline-flex items-center gap-2">
-                  <KeyRound size={15} />
-                  Contraseña
-                </Button>
-                <Button
-                  variant={trainer.active ? 'danger' : 'secondary'}
-                  onClick={() => activeMutation.mutate({ id: trainer.id, active: !trainer.active })}
-                >
-                  {trainer.active ? 'Desactivar' : 'Activar'}
-                </Button>
+                <div className="flex gap-1.5">
+                  <IconAction label={`Editar ${trainer.name}`} onClick={() => openEdit(trainer)}><Pencil size={16} /></IconAction>
+                  <IconAction label={`Cambiar contraseña de ${trainer.name}`} onClick={() => { setPasswordTrainer(trainer); setPassword(''); setError(null); }}><KeyRound size={16} /></IconAction>
+                  <IconAction label={trainer.active ? `Desactivar ${trainer.name}` : `Activar ${trainer.name}`} tone={trainer.active ? 'danger' : 'default'} onClick={() => activeMutation.mutate({ id: trainer.id, active: !trainer.active })}><Power size={16} /></IconAction>
+                </div>
               </div>
             </div>
           ))
         )}
-      </section>
+      </ManagementSection>
 
       {(showCreate || editingTrainer) && (
         <div
@@ -334,6 +316,7 @@ export default function TrainersAdminPage() {
           </form>
         </div>
       )}
+      </div>
     </AppShell>
   );
 }

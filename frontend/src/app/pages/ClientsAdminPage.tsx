@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Download, Pencil, Power, ShieldX, UserCheck, UserRound, UserX } from 'lucide-react';
 import { useClients, useCreateClient, useSetClientStatus, useExportClient, useAnonymizeClient } from '@features/clients/hooks/useClients';
-import ClientCard from '@features/clients/components/ClientCard';
 import ClientForm from '@features/clients/components/ClientForm';
-import type { CreateClientData } from '@shared/types/api';
+import type { Client, CreateClientData } from '@shared/types/api';
 import AppShell from '@app/layout/AppShell';
-import { Button, EmptyState, MetricChip, PageHeader, StatusBadge } from '@shared/components/ui';
+import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary } from '@app/components/AdminManagement';
+import Avatar from '@shared/components/Avatar';
+import { Button, ConfirmDialog, EmptyState, StatusBadge } from '@shared/components/ui';
 
 export default function ClientsAdminPage() {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function ClientsAdminPage() {
   const anonymizeMutation = useAnonymizeClient();
 
   const [showCreate, setShowCreate] = useState(false);
+  const [clientToAnonymize, setClientToAnonymize] = useState<Client | null>(null);
 
   if (isLoading) {
     return (
@@ -38,51 +40,39 @@ export default function ClientsAdminPage() {
 
   return (
     <AppShell>
-      <PageHeader
-        eyebrow="Administración"
+      <div className="mx-auto max-w-6xl space-y-6">
+      <AdminManagementHeader
+        eyebrow="Gestión del centro"
         title="Clientes"
         description="Gestiona altas, estado y acciones RGPD."
-        actions={
-          <>
-            <Button onClick={() => navigate('/admin/exercises')}>Ejercicios</Button>
-            <Button variant="primary" onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2">
-              <Plus size={16} />
-              Nuevo cliente
-            </Button>
-          </>
-        }
+        actionLabel="Nuevo cliente"
+        onAction={() => setShowCreate(true)}
       />
 
-      <section className="mb-5 grid grid-cols-3 gap-3">
-        <MetricChip label="Total" value={clients?.length ?? 0} />
-        <MetricChip label="Activos" value={activeCount} />
-        <MetricChip label="Inactivos" value={inactiveCount} />
-      </section>
+      <ManagementSummary items={[
+        { label: 'Total', value: clients?.length ?? 0, icon: UserRound, tone: 'primary' },
+        { label: 'Activos', value: activeCount, icon: UserCheck, tone: 'green' },
+        { label: 'Inactivos', value: inactiveCount, icon: UserX, tone: 'amber' },
+      ]} />
 
-      <section className="overflow-hidden rounded-2xl border border-border/70 bg-elevated/85 shadow-panel backdrop-blur">
+      <ManagementSection title="Directorio de clientes" meta={`${clients?.length ?? 0} perfiles`}>
         {!clients || clients.length === 0 ? (
           <div className="p-4">
-            <EmptyState title="No hay clientes" />
+            <EmptyState title="No hay clientes" description="Crea el primer perfil para empezar a registrar sesiones." />
           </div>
         ) : (
           clients.map((c) => (
-            <div key={c.id} className="border-b border-border/70 p-3 last:border-b-0">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div className="min-w-0 flex-1">
-                  <ClientCard client={c} />
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
+            <div key={c.id} className="flex flex-col gap-3 border-b border-border/70 p-4 last:border-b-0 sm:flex-row sm:items-center">
+                <button type="button" onClick={() => navigate(`/clients/${c.id}`)} className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-ring">
+                  <Avatar firstName={c.firstName} lastName={c.lastName} size="md" />
+                  <span className="min-w-0"><span className="block truncate font-semibold text-text-primary group-hover:text-primary">{c.firstName} {c.lastName}</span><span className="mt-1 block text-xs text-text-secondary">Perfil, sesiones y marcas</span></span>
+                </button>
+                <div className="flex items-center justify-between gap-2 sm:justify-end">
                   <StatusBadge status={c.status} />
-                  <Button onClick={() => navigate(`/admin/clients/${c.id}`)}>
-                  Editar
-                  </Button>
-                  <Button
-                  onClick={() => statusMutation.mutate({ id: c.id, status: c.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}
-                >
-                  {c.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
-                  </Button>
-                  <Button
-                  onClick={async () => {
+                  <div className="flex gap-1.5">
+                  <IconAction label={`Editar ${c.firstName}`} onClick={() => navigate(`/admin/clients/${c.id}`)}><Pencil size={16} /></IconAction>
+                  <IconAction label={c.status === 'ACTIVE' ? `Desactivar ${c.firstName}` : `Activar ${c.firstName}`} onClick={() => statusMutation.mutate({ id: c.id, status: c.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}><Power size={16} /></IconAction>
+                  <IconAction label={`Exportar ${c.firstName}`} onClick={async () => {
                     const exported = await exportMutation.mutateAsync(c.id);
                     const blob = new Blob([JSON.stringify(exported, null, 2)], {
                       type: 'application/json',
@@ -93,26 +83,14 @@ export default function ClientsAdminPage() {
                     link.download = `cliente-${c.id}.json`;
                     link.click();
                     URL.revokeObjectURL(url);
-                  }}
-                >
-                  Exportar
-                  </Button>
-                  <Button
-                  variant="danger"
-                  onClick={() => {
-                    if (confirm('¿Anonimizar este cliente? Esta acción no se puede deshacer.')) {
-                      anonymizeMutation.mutate(c.id);
-                    }
-                  }}
-                >
-                  Anonimizar
-                  </Button>
+                  }}><Download size={16} /></IconAction>
+                  <IconAction label={`Anonimizar ${c.firstName}`} tone="danger" onClick={() => setClientToAnonymize(c)}><ShieldX size={16} /></IconAction>
+                  </div>
                 </div>
-              </div>
             </div>
           ))
         )}
-      </section>
+      </ManagementSection>
 
         {/* Create modal */}
         {showCreate && (
@@ -132,6 +110,8 @@ export default function ClientsAdminPage() {
             </div>
           </div>
         )}
+        {clientToAnonymize && <ConfirmDialog title="Anonimizar cliente" description={`Los datos personales de ${clientToAnonymize.firstName} ${clientToAnonymize.lastName} se eliminarán de forma irreversible.`} confirmLabel="Anonimizar" pending={anonymizeMutation.isPending} onCancel={() => setClientToAnonymize(null)} onConfirm={() => anonymizeMutation.mutate(clientToAnonymize.id, { onSuccess: () => setClientToAnonymize(null) })} />}
+      </div>
     </AppShell>
   );
 }
