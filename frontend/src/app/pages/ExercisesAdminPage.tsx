@@ -5,7 +5,7 @@ import ExerciseForm from '@features/exercises/components/ExerciseForm';
 import type { CreateExerciseData, Exercise } from '@shared/types/api';
 import AppShell from '@app/layout/AppShell';
 import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary, RowIcon } from '@app/components/AdminManagement';
-import { Button, EmptyState, StatusBadge } from '@shared/components/ui';
+import { Button, Dialog, EmptyState, StatusBadge } from '@shared/components/ui';
 
 const CATEGORY_LABELS: Record<string, string> = {
   strength: 'Fuerza',
@@ -114,20 +114,17 @@ export default function ExercisesAdminPage() {
       </ManagementSection>
 
         {showCreate && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Crear ejercicio" onClick={(e) => e.target === e.currentTarget && setShowCreate(false)}>
-            <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border/70 bg-elevated/95 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
+          <Dialog label="Crear ejercicio" onClose={() => setShowCreate(false)} className="max-w-3xl">
               <h2 className="text-lg font-semibold text-text-primary mb-4">Crear ejercicio</h2>
               <ExerciseForm onSubmit={async (data) => { await createMutation.mutateAsync(data as CreateExerciseData); setShowCreate(false); }} submitLabel="Crear" />
               <div className="flex justify-end gap-2 mt-4">
                 <Button onClick={() => setShowCreate(false)}>Cerrar</Button>
               </div>
-            </div>
-          </div>
+          </Dialog>
         )}
 
         {editingExercise && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Editar ejercicio" onClick={(e) => e.target === e.currentTarget && setEditingExercise(null)}>
-            <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border/70 bg-elevated/95 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
+          <Dialog label="Editar ejercicio" onClose={() => setEditingExercise(null)} className="max-w-3xl">
               <h2 className="text-lg font-semibold text-text-primary mb-4">Editar ejercicio</h2>
               <ExerciseForm
                 initial={editingExercise}
@@ -141,8 +138,7 @@ export default function ExercisesAdminPage() {
               <div className="flex justify-end gap-2 mt-4">
                 <Button onClick={() => setEditingExercise(null)}>Cerrar</Button>
               </div>
-            </div>
-          </div>
+          </Dialog>
         )}
       </div>
     </AppShell>

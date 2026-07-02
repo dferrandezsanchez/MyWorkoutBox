@@ -10,7 +10,7 @@ import {
 import type { Trainer } from '@shared/types/api';
 import AppShell from '@app/layout/AppShell';
 import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary, RowIcon } from '@app/components/AdminManagement';
-import { Button, EmptyState, StatusBadge, TextInput } from '@shared/components/ui';
+import { Button, Dialog, EmptyState, StatusBadge, TextInput } from '@shared/components/ui';
 
 interface TrainerFormState {
   name: string;
@@ -196,16 +196,9 @@ export default function TrainersAdminPage() {
       </ManagementSection>
 
       {(showCreate || editingTrainer) && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-label={showCreate ? 'Crear entrenador' : 'Editar entrenador'}
-          onClick={(event) => event.target === event.currentTarget && closeDialogs()}
-        >
+        <Dialog label={showCreate ? 'Crear entrenador' : 'Editar entrenador'} onClose={closeDialogs} className="max-w-md">
           <form
             onSubmit={showCreate ? handleCreate : handleUpdate}
-            className="w-full max-w-md rounded-2xl border border-border/70 bg-elevated/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.35)]"
           >
             <h2 className="text-lg font-semibold text-text-primary">
               {showCreate ? 'Crear entrenador' : 'Editar entrenador'}
@@ -272,20 +265,13 @@ export default function TrainersAdminPage() {
               </Button>
             </div>
           </form>
-        </div>
+        </Dialog>
       )}
 
       {passwordTrainer && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Cambiar contraseña"
-          onClick={(event) => event.target === event.currentTarget && closeDialogs()}
-        >
+        <Dialog label="Cambiar contraseña" onClose={closeDialogs} className="max-w-md">
           <form
             onSubmit={handlePasswordReset}
-            className="w-full max-w-md rounded-2xl border border-border/70 bg-elevated/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.35)]"
           >
             <h2 className="text-lg font-semibold text-text-primary">Cambiar contraseña</h2>
             <p className="mt-1 text-sm text-text-secondary">{passwordTrainer.name}</p>
@@ -314,7 +300,7 @@ export default function TrainersAdminPage() {
               </Button>
             </div>
           </form>
-        </div>
+        </Dialog>
       )}
       </div>
     </AppShell>

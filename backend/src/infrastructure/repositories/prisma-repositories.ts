@@ -25,6 +25,7 @@ import type {
   User,
 } from '../../domain/shared/entities';
 import { Role, Status } from '../../domain/shared/enums';
+import type { Prisma } from '@prisma/client';
 import prisma from '../prisma/prisma-client';
 
 export class PrismaUserRepository implements UserRepository {
@@ -339,7 +340,11 @@ const sessionDetailInclude = {
       },
     },
   },
-};
+} satisfies Prisma.TrainingSessionInclude;
+
+type TrainingSessionDetailRecord = Prisma.TrainingSessionGetPayload<{
+  include: typeof sessionDetailInclude;
+}>;
 
 export class PrismaTrainingSessionRepository implements TrainingSessionRepository {
   async findActiveByTrainer(tenantId: string, trainerId: string): Promise<TrainingSession | null> {
@@ -559,12 +564,12 @@ function toTrainingSession(session: {
   return { ...session, status: session.status as TrainingSession['status'] };
 }
 
-function toTrainingSessionDetail(session: any): TrainingSessionDetail {
+function toTrainingSessionDetail(session: TrainingSessionDetailRecord): TrainingSessionDetail {
   return {
     ...toTrainingSession(session),
     client: toClient(session.client),
     trainerName: session.trainer.name,
-    exercises: session.exercises.map((item: any) => ({
+    exercises: session.exercises.map((item) => ({
       id: item.id,
       sessionId: item.sessionId,
       exerciseId: item.exerciseId,
