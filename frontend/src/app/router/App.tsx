@@ -6,7 +6,7 @@ import { getAuthUser } from '@features/auth/model/auth-store';
 const LoginPage = React.lazy(() => import('@app/pages/LoginPage'));
 const DashboardPage = React.lazy(() => import('@app/pages/DashboardPage'));
 const TrainerPage = React.lazy(() => import('@app/pages/TrainerPage'));
-const TrainerAccountPage = React.lazy(() => import('@app/pages/TrainerAccountPage'));
+const AccountPage = React.lazy(() => import('@app/pages/TrainerAccountPage'));
 const ClientProfilePage = React.lazy(() => import('@app/pages/ClientProfilePage'));
 const ExerciseHistoryPage = React.lazy(() => import('@app/pages/ExerciseHistoryPage'));
 const ClientsAdminPage = React.lazy(() => import('@app/pages/ClientsAdminPage'));
@@ -39,7 +39,8 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<RoleRedirect />} />
           <Route path="/trainer" element={<TrainerPage />} />
-          <Route path="/trainer/account" element={<TrainerAccountPage />} />
+          <Route path="/account" element={<AccountPage />} />
+          <Route path="/trainer/account" element={<Navigate to="/account?mode=trainer" replace />} />
           <Route path="/trainer/sessions/:id" element={<TrainingSessionPage />} />
           <Route path="/trainer/sessions/new" element={<NewTrainingSessionPage />} />
           <Route path="/clients/:id" element={<ClientProfilePage />} />

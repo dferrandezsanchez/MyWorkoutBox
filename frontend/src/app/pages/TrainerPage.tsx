@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, AlertTriangle, CalendarDays, CheckCircle2, ChevronRight, CirclePlay, ClipboardCheck, Dumbbell } from 'lucide-react';
+import { Activity, AlertTriangle, CalendarDays, CheckCircle2, ChevronRight, CirclePlay, ClipboardCheck, Dumbbell, Users } from 'lucide-react';
 import Avatar from '@shared/components/Avatar';
 import AppShell from '@app/layout/AppShell';
-import { Button, EmptyState, Panel } from '@shared/components/ui';
+import { OperationalHero } from '@app/components/OperationalHero';
+import { Button, Panel } from '@shared/components/ui';
 import { useActiveSession, useTrainerSessions } from '@features/training-sessions/hooks/useTrainingSessions';
 import { useAuthUser } from '@features/auth/hooks/useAuthUser';
 import type { Client, TrainingSession } from '@shared/types/api';
-import trainerDumbbell from '../../assets/trainer-dumbbell.webp';
 
 const STALE_SESSION_MS = 3 * 60 * 60 * 1000;
 
@@ -117,30 +117,18 @@ export default function TrainerPage() {
 
 function DashboardHero({ onStart }: { onStart: () => void }) {
   return (
-    <Panel className="relative isolate overflow-hidden border border-primary/10 bg-surface shadow-[0_22px_60px_rgba(var(--color-primary-soft)/0.12)]">
-      <div className="absolute inset-x-0 top-0 h-px bg-primary/70" />
-      <div className="relative z-10 p-5 sm:p-6">
-        <div className="pr-16 sm:pr-24">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Listo para entrenar</p>
-          <h2 className="mt-2 text-xl font-semibold text-text-primary sm:text-2xl">Inicia una nueva sesión</h2>
-        </div>
-        <p className="mt-2 max-w-full text-sm leading-6 text-text-secondary sm:max-w-[55%]">
-          Selecciona un cliente y comienza a registrar ejercicios.
-        </p>
-        <Button variant="primary" onClick={onStart} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 sm:w-auto">
+    <OperationalHero
+      eyebrow="Listo para entrenar"
+      title="Inicia una nueva sesión"
+      description="Selecciona un cliente y comienza a registrar ejercicios."
+      action={
+        <Button variant="primary" onClick={onStart} className="inline-flex min-h-12 w-full items-center justify-center gap-2">
           <CirclePlay size={20} />
           Nuevo entrenamiento
           <ChevronRight size={18} />
         </Button>
-      </div>
-      <div className="pointer-events-none absolute -right-2 top-14 z-0 h-32 w-44 sm:right-2 sm:top-10 sm:h-36 sm:w-52">
-        <img src={trainerDumbbell} alt="" className="h-full w-full object-contain opacity-90 [filter:grayscale(1)_contrast(1.35)_brightness(0.38)_drop-shadow(0_16px_20px_rgb(0_0_0/0.6))]" />
-        <span
-          className="absolute inset-0 bg-primary opacity-30 mix-blend-color"
-          style={{ WebkitMaskImage: `url(${trainerDumbbell})`, maskImage: `url(${trainerDumbbell})`, WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskPosition: 'center' }}
-        />
-      </div>
-    </Panel>
+      }
+    />
   );
 }
 
@@ -181,30 +169,27 @@ function ActiveSessionPanel({ session, elapsedTime, isStale, onContinue }: { ses
 
 function TodaySummary({ sessions, exercises, series }: { sessions: number; exercises: number; series: number }) {
   return (
-    <Panel className="overflow-hidden bg-surface lg:col-start-2 lg:row-start-1">
-      <div className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-text-primary">
-        <CalendarDays size={17} className="text-primary" />
-        Hoy
-      </div>
-      <div className="grid grid-cols-3 divide-x divide-border/70 border-t border-border/70">
-        <SummaryValue label="Sesiones" value={sessions} />
-        <SummaryValue label="Ejercicios" value={exercises} />
-        <SummaryValue label="Series" value={series} />
-      </div>
-    </Panel>
+    <section className="min-w-0 lg:col-start-2 lg:row-start-1">
+      <SectionHeading title="Resumen de hoy" meta="Datos actuales" />
+      <Panel className="mt-3 grid grid-cols-3 divide-x divide-border/70 overflow-hidden bg-surface">
+        <SummaryValue label="Sesiones" value={sessions} icon={<CalendarDays size={16} />} tone="bg-primary/14 text-primary ring-primary/20" />
+        <SummaryValue label="Ejercicios" value={exercises} icon={<Dumbbell size={16} />} tone="bg-emerald-500/12 text-emerald-300 ring-emerald-500/20" />
+        <SummaryValue label="Series" value={series} icon={<Activity size={16} />} tone="bg-violet-500/12 text-violet-300 ring-violet-500/20" />
+      </Panel>
+    </section>
   );
 }
 
-function SummaryValue({ label, value }: { label: string; value: number }) {
-  return <div className="px-2 py-4 text-center"><strong className="block text-2xl font-semibold text-primary">{value}</strong><span className="mt-1 block text-[11px] text-text-secondary">{label}</span></div>;
+function SummaryValue({ label, value, icon, tone }: { label: string; value: number; icon: ReactNode; tone: string }) {
+  return <div className="grid grid-rows-[32px_22px_34px] justify-items-center px-1 py-3 text-center sm:grid-rows-[36px_24px_38px] sm:px-2"><span className={`flex h-8 w-8 items-center justify-center rounded-lg ring-1 ${tone}`}>{icon}</span><span className="self-end text-[11px] text-text-secondary">{label}</span><strong className="self-end text-2xl font-semibold text-text-primary">{value}</strong></div>;
 }
 
 function RecentClients({ clients, isLoading, onOpen }: { clients: { client: Client; lastSessionAt: string }[]; isLoading: boolean; onOpen: (id: string) => void }) {
   return (
     <section className="min-w-0 lg:col-start-2 lg:row-start-2">
-      <h2 className="px-1 text-sm font-semibold text-text-primary">Últimos clientes</h2>
+      <SectionHeading title="Últimos clientes" meta="Últimos accesos" />
       {isLoading && <p className="py-8 text-center text-text-secondary">Cargando clientes...</p>}
-      {!isLoading && clients.length === 0 && <div className="p-4"><EmptyState title="Aún no hay clientes recientes" /></div>}
+      {!isLoading && clients.length === 0 && <Panel className="mt-3"><EmptySection icon={<Users size={18} />} title="Aún no hay clientes recientes" tone="bg-sky-500/12 text-sky-300 ring-sky-500/20" /></Panel>}
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
         {clients.map(({ client, lastSessionAt }) => (
           <button key={client.id} onClick={() => onOpen(client.id)} className="flex min-h-[68px] min-w-[190px] flex-1 items-center justify-between gap-3 rounded-xl border border-border/70 bg-surface/70 px-3 py-2 text-left hover:border-primary/40 hover:bg-primary/10 focus-ring lg:min-w-0">
@@ -225,21 +210,28 @@ function RecentClients({ clients, isLoading, onOpen }: { clients: { client: Clie
 
 function RecentSessions({ sessions, isLoading, onOpen }: { sessions: TrainingSession[]; isLoading: boolean; onOpen: (id: string) => void }) {
   return (
-    <Panel className="overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border/70 px-4 py-3 sm:px-5">
-        <h2 className="text-base font-semibold text-text-primary">Actividad reciente</h2>
-        <ClipboardCheck className="text-primary" size={19} />
-      </div>
-      {isLoading && <p className="py-10 text-center text-text-secondary">Cargando sesiones...</p>}
-      {!isLoading && sessions.length === 0 && <div className="p-4"><EmptyState title="Aún no hay sesiones completadas" /></div>}
-      <div className="divide-y divide-border/70">
+    <section className="min-w-0">
+      <SectionHeading title="Actividad reciente" meta="Entrenamientos completados" />
+      <Panel className="mt-3 overflow-hidden">
+        {isLoading && <p className="py-10 text-center text-text-secondary">Cargando sesiones...</p>}
+        {!isLoading && sessions.length === 0 && <EmptySection icon={<ClipboardCheck size={18} />} title="Aún no hay sesiones completadas" tone="bg-emerald-500/12 text-emerald-300 ring-emerald-500/20" />}
+        <div className="divide-y divide-border/70">
         {sessions.map((session) => (
           <button key={session.id} onClick={() => onOpen(session.id)} className="flex min-h-[76px] w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-primary/10 focus-ring sm:px-5">
-            <span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary"><ClipboardCheck size={19} /></span><span className="min-w-0"><span className="block text-xs text-text-secondary">Entrenamiento completado</span><span className="mt-0.5 block truncate font-semibold text-text-primary">{session.client.firstName} {session.client.lastName}</span></span></span>
+            <span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-500/20"><ClipboardCheck size={19} /></span><span className="min-w-0"><span className="block text-xs text-text-secondary">Entrenamiento completado</span><span className="mt-0.5 block truncate font-semibold text-text-primary">{session.client.firstName} {session.client.lastName}</span></span></span>
             <span className="flex shrink-0 items-center gap-3"><span className="text-xs text-text-secondary">{formatRelativeDate(session.startedAt)}</span><CheckCircle2 size={20} className="text-success" /></span>
           </button>
         ))}
-      </div>
-    </Panel>
+        </div>
+      </Panel>
+    </section>
   );
+}
+
+function SectionHeading({ title, meta }: { title: string; meta: string }) {
+  return <div className="flex items-end justify-between gap-3 px-1"><h2 className="text-base font-semibold text-text-primary sm:text-lg">{title}</h2><span className="text-xs text-text-muted">{meta}</span></div>;
+}
+
+function EmptySection({ icon, title, tone }: { icon: ReactNode; title: string; tone: string }) {
+  return <div className="flex min-h-[104px] items-center gap-3 px-4 py-5"><span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${tone}`}>{icon}</span><p className="text-sm font-medium text-text-primary">{title}</p></div>;
 }

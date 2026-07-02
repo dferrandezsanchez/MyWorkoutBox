@@ -1,10 +1,9 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   Activity,
   Building2,
   Dumbbell,
   LayoutDashboard,
-  LogOut,
   Search,
   Settings,
   User,
@@ -12,13 +11,15 @@ import {
   Zap,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { useAuthUser } from '@features/auth/hooks/useAuthUser';
+import { useLogout } from '@features/auth/hooks/useLogout';
 import { useActiveSession } from '@features/training-sessions/hooks/useTrainingSessions';
-import { getAuthUser, removeToken } from '@features/auth/model/auth-store';
-import { Button } from '@shared/components/ui';
+import { getAuthUser } from '@features/auth/model/auth-store';
+import { ConfirmDialog } from '@shared/components/ui';
 import { PLATFORM_BRAND } from '@shared/config/branding';
 import { useTheme } from '@shared/theme/useTheme';
+import { getAppMode } from '@app/mode/app-mode';
+import { UserMenu } from '@app/layout/UserMenu';
 
 interface AppShellProps {
   children: ReactNode;
@@ -30,32 +31,36 @@ interface AppShellProps {
 
 export function AppShell({
   children,
-  title = 'Control de Marcas',
   searchValue,
   onSearchChange,
   searchPlaceholder = 'Buscar cliente',
 }: AppShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const queryClient = useQueryClient();
   const user = getAuthUser();
-  const isAdmin = user?.role === 'ADMIN';
+  const mode = getAppMode(`${location.pathname}${location.search}`);
+  const isAdminMode = mode === 'admin';
   const { data: fullUser } = useAuthUser();
-  const { data: activeSession } = useActiveSession(!isAdmin);
+  const { data: activeSession } = useActiveSession();
   const { brand } = useTheme();
+  const logout = useLogout();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false);
   const displayUser = fullUser ?? user;
 
-  const logout = () => {
-    removeToken();
-    queryClient.clear();
-    navigate('/login');
+  const requestLogout = () => {
+    if (activeSession) {
+      setLogoutConfirmationOpen(true);
+      return;
+    }
+    void logout.execute();
   };
 
-  const navItems = isAdmin
+  const navItems = isAdminMode
     ? [
-        { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, active: location.pathname === '/admin' },
+        { label: 'Dashboard', mobileLabel: 'Inicio', path: '/admin', icon: LayoutDashboard, active: location.pathname === '/admin' },
         { label: 'Clientes', path: '/admin/clients', icon: Users, active: location.pathname.startsWith('/admin/clients') },
-        { label: 'Entrenadores', path: '/admin/trainers', icon: User, active: location.pathname.startsWith('/admin/trainers') },
+        { label: 'Entrenadores', mobileLabel: 'Equipo', path: '/admin/trainers', icon: User, active: location.pathname.startsWith('/admin/trainers') },
         { label: 'Ejercicios', path: '/admin/exercises', icon: Dumbbell, active: location.pathname.startsWith('/admin/exercises') },
         { label: 'Ajustes', path: '/admin/settings', icon: Settings, active: location.pathname.startsWith('/admin/settings') },
       ]
@@ -74,9 +79,9 @@ export function AppShell({
         },
         {
           label: 'Cuenta',
-          path: '/trainer/account',
+          path: '/account',
           icon: User,
-          active: location.pathname.startsWith('/trainer/account'),
+          active: location.pathname === '/account',
         },
       ];
 
@@ -143,14 +148,14 @@ export function AppShell({
         <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.04] p-4">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              {isAdmin ? <Activity size={18} /> : <Zap size={18} />}
+              {isAdminMode ? <Activity size={18} /> : <Zap size={18} />}
             </span>
             <div>
               <p className="text-sm font-semibold text-white">
-                {isAdmin ? 'Control del centro' : 'Modo entrenador'}
+                {isAdminMode ? 'Control del centro' : 'Modo entrenador'}
               </p>
               <p className="text-xs text-white/50">
-                {isAdmin ? 'Gestión real del MVP' : 'Listo para registrar marcas'}
+                {isAdminMode ? 'Gestión real del MVP' : 'Listo para registrar marcas'}
               </p>
             </div>
           </div>
@@ -170,7 +175,7 @@ export function AppShell({
               </span>
               <span className="min-w-0">
                 <span className="block truncate text-sm font-semibold text-text-primary">
-                  {isAdmin ? title : 'Modo entrenador'}
+                  {isAdminMode ? 'Modo administración' : 'Modo entrenador'}
                 </span>
                 <span className="block truncate text-xs text-text-secondary">{brand.name}</span>
               </span>
@@ -196,7 +201,7 @@ export function AppShell({
             <div className="flex items-center gap-2 sm:gap-3">
               <button
                 type="button"
-                onClick={() => navigate(isAdmin ? '/admin/settings' : '/trainer/account')}
+                onClick={() => setUserMenuOpen(true)}
                 aria-label="Abrir cuenta"
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-text-primary text-sm font-bold text-background ring-2 ring-primary/20 focus-ring lg:h-11 lg:w-11"
               >
@@ -210,10 +215,6 @@ export function AppShell({
                   {displayUser?.role === 'ADMIN' ? 'Administrador' : 'Entrenador'}
                 </p>
               </div>
-              <Button variant="ghost" onClick={logout} className="hidden gap-2 px-3 lg:inline-flex lg:items-center">
-                <LogOut size={16} />
-                <span>Salir</span>
-              </Button>
             </div>
           </div>
         </header>
@@ -226,10 +227,10 @@ export function AppShell({
       <nav
         aria-label="Navegación móvil"
         className={`fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-elevated/95 px-2 pb-[max(env(safe-area-inset-bottom),0.6rem)] pt-2 shadow-[0_-16px_42px_rgba(0,0,0,0.22)] backdrop-blur-xl lg:hidden ${
-          isAdmin ? 'grid grid-cols-5 gap-1' : 'grid grid-cols-2 gap-1'
+          isAdminMode ? 'grid grid-cols-5 gap-1' : 'grid grid-cols-2 gap-1'
         }`}
       >
-        {isAdmin ? (
+        {isAdminMode ? (
           navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -241,7 +242,7 @@ export function AppShell({
                 }`}
               >
                 <Icon size={18} />
-                <span>{item.label}</span>
+                <span>{item.mobileLabel ?? item.label}</span>
               </button>
             );
           })
@@ -265,6 +266,29 @@ export function AppShell({
           </>
         )}
       </nav>
+
+      {displayUser && (
+        <UserMenu
+          open={userMenuOpen}
+          user={displayUser}
+          tenantName={brand.name}
+          mode={mode}
+          onClose={() => setUserMenuOpen(false)}
+          onNavigate={navigate}
+          onLogout={requestLogout}
+        />
+      )}
+
+      {logoutConfirmationOpen && (
+        <ConfirmDialog
+          title="Hay un entrenamiento en curso"
+          description="La sesión permanecerá guardada, pero tendrás que volver a iniciar sesión para continuarla."
+          confirmLabel="Cerrar sesión"
+          pending={logout.isPending}
+          onCancel={() => setLogoutConfirmationOpen(false)}
+          onConfirm={() => void logout.execute()}
+        />
+      )}
     </div>
   );
 }
