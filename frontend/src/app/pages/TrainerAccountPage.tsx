@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react';
-import { KeyRound, LogOut, UserCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { KeyRound, UserCircle } from 'lucide-react';
 import AppShell from '@app/layout/AppShell';
 import { Button, Panel, TextInput } from '@shared/components/ui';
 import { useAuthUser, useChangePassword, useUpdateAuthUser } from '@features/auth/hooks/useAuthUser';
-import { removeToken } from '@features/auth/model/auth-store';
 
-export default function TrainerAccountPage() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+export default function AccountPage() {
   const { data: user, isLoading, isError } = useAuthUser();
   const updateMutation = useUpdateAuthUser();
   const passwordMutation = useChangePassword();
@@ -29,12 +24,6 @@ export default function TrainerAccountPage() {
     }
   }, [user]);
 
-  const logout = () => {
-    removeToken();
-    queryClient.clear();
-    navigate('/login');
-  };
-
   return (
     <AppShell title="Cuenta">
       <div className="mx-auto max-w-2xl space-y-5">
@@ -44,7 +33,7 @@ export default function TrainerAccountPage() {
               <UserCircle size={30} />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Entrenador</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Perfil personal</p>
               <h1 className="mt-1 truncate text-3xl font-semibold tracking-tight text-text-primary">Cuenta</h1>
               <p className="mt-1 text-sm text-text-secondary">
                 Datos de contacto y seguridad.
@@ -102,17 +91,13 @@ export default function TrainerAccountPage() {
                 <p className="text-sm text-red-600">No se pudieron guardar los cambios.</p>
               )}
 
-              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <div>
                 <Button
                   type="submit"
                   variant="primary"
                   disabled={updateMutation.isPending || !name.trim() || !email.trim()}
                 >
                   {updateMutation.isPending ? 'Guardando...' : 'Guardar cambios'}
-                </Button>
-                <Button type="button" variant="secondary" onClick={logout} className="inline-flex items-center justify-center gap-2">
-                  <LogOut size={16} />
-                  Salir
                 </Button>
               </div>
             </form>
