@@ -25,14 +25,6 @@ vi.mock('@shared/state/query-client', () => ({
   queryClient: { clear: vi.fn() },
 }));
 
-vi.mock('@shared/components/ui', async () => {
-  const actual = await vi.importActual<typeof import('@shared/components/ui')>('@shared/components/ui');
-  return {
-    ...actual,
-    ThemeToggle: () => <button type="button">Tema</button>,
-  };
-});
-
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();

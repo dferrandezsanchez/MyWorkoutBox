@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { KeyRound, LogOut, Palette, UserCircle } from 'lucide-react';
+import { KeyRound, LogOut, UserCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import AppShell from '@app/layout/AppShell';
@@ -47,7 +47,7 @@ export default function TrainerAccountPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Entrenador</p>
               <h1 className="mt-1 truncate text-3xl font-semibold tracking-tight text-text-primary">Cuenta</h1>
               <p className="mt-1 text-sm text-text-secondary">
-                Datos de contacto, apariencia y seguridad.
+                Datos de contacto y seguridad.
               </p>
             </div>
           </div>
@@ -117,18 +117,6 @@ export default function TrainerAccountPage() {
               </div>
             </form>
           )}
-        </Panel>
-
-        <Panel className="p-4 sm:p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/12 text-primary">
-              <Palette size={20} />
-            </div>
-            <h2 className="text-lg font-semibold text-text-primary">Apariencia</h2>
-          </div>
-          <p className="mt-1 text-sm text-text-secondary">
-            MyWorkoutBox utiliza un tema oscuro fijo para una experiencia consistente.
-          </p>
         </Panel>
 
         <Panel className="p-4 sm:p-5">

@@ -1,13 +1,7 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { getDocumentTitle, PLATFORM_BRAND, type TenantBrand } from '@shared/config/branding';
 import { AUTH_CONTEXT_EVENT, getStoredTenantBrand, getToken, setStoredTenantBrand } from '@shared/auth/session-store';
-
-interface ThemeContextValue {
-  brand: TenantBrand;
-  resolvedTheme: 'dark';
-}
-
-const themeContext = createContext<ThemeContextValue | null>(null);
+import { ThemeContext } from './context';
 
 interface ThemeProviderProps {
   children: ReactNode;
@@ -40,7 +34,6 @@ function getContrastTriplet(hex: string): string {
 export function ThemeProvider({ children, loadTenantBrand }: ThemeProviderProps) {
   const fallbackBrand = useMemo(() => PLATFORM_BRAND, []);
   const [brand, setBrand] = useState<TenantBrand>(() => (getToken() ? getStoredTenantBrand() : null) ?? fallbackBrand);
-  const resolvedTheme = 'dark' as const;
 
   useEffect(() => {
     const syncBrand = () => {
@@ -89,30 +82,20 @@ export function ThemeProvider({ children, loadTenantBrand }: ThemeProviderProps)
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle('dark', resolvedTheme === 'dark');
+    root.classList.add('dark');
     root.style.setProperty('--color-primary', hexToRgbTriplet(brand.primary));
     root.style.setProperty('--color-primary-hover', hexToRgbTriplet(brand.primaryHover));
     root.style.setProperty('--color-primary-soft', hexToRgbTriplet(brand.primarySoft));
     root.style.setProperty('--color-primary-contrast', getContrastTriplet(brand.primary));
     document.title = getDocumentTitle(brand);
-  }, [brand, resolvedTheme]);
+  }, [brand]);
 
   const value = useMemo(
     () => ({
       brand,
-      resolvedTheme,
     }),
     [brand],
   );
 
-  return <themeContext.Provider value={value}>{children}</themeContext.Provider>;
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
-
-export function useTheme() {
-  const value = useContext(themeContext);
-  if (!value) {
-    throw new Error('useTheme must be used inside ThemeProvider');
-  }
-  return value;
-}
-
