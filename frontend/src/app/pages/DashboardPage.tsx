@@ -13,7 +13,7 @@ import { ActionTile, Button, EmptyState, MetricCard, Panel, SectionHeader, Statu
 import { useClients } from '@features/clients/hooks/useClients';
 import { useExercises } from '@features/exercises/hooks/useExercises';
 import { useTrainers } from '@features/trainers/hooks/useTrainers';
-import { useTheme } from '@shared/theme/ThemeProvider';
+import { useTheme } from '@shared/theme/useTheme';
 import type { Client } from '@shared/types/api';
 
 function calculateAge(birthDate: string): number {

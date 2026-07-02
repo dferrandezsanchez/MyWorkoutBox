@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ThemeProvider, useTheme } from './ThemeProvider';
+import { ThemeProvider } from './ThemeProvider';
+import { useTheme } from './useTheme';
 import { setStoredTenantBrand, setToken } from '@shared/auth/session-store';
 import type { TenantBrand } from '@shared/config/branding';
 
@@ -20,13 +21,8 @@ const tenantBrand: TenantBrand = {
 };
 
 function ThemeProbe() {
-  const { brand, resolvedTheme } = useTheme();
-  return (
-    <div>
-      <span>{brand.name}</span>
-      <span>{resolvedTheme}</span>
-    </div>
-  );
+  const { brand } = useTheme();
+  return <span>{brand.name}</span>;
 }
 
 describe('ThemeProvider', () => {
@@ -66,14 +62,13 @@ describe('ThemeProvider', () => {
     expect(await screen.findByText('Tenant Brand')).toBeInTheDocument();
   });
 
-  it('always resolves to dark theme', async () => {
+  it('always applies the dark theme identity', () => {
     render(
       <ThemeProvider>
         <ThemeProbe />
       </ThemeProvider>,
     );
 
-    expect(screen.getByText('dark')).toBeInTheDocument();
     expect(document.documentElement.classList.contains('dark')).toBe(true);
   });
 

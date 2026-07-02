@@ -14,9 +14,7 @@ import {
   SectionHeader,
   StatusBadge,
   TextInput,
-  ThemeToggle,
 } from './ui';
-import { ThemeProvider } from '@shared/theme/ThemeProvider';
 
 describe('shared UI components', () => {
   it('renders base controls and layout components', () => {
@@ -60,18 +58,6 @@ describe('shared UI components', () => {
     await user.click(screen.getByRole('button', { name: /Registrar marca/ }));
 
     expect(onTileClick).toHaveBeenCalledOnce();
-  });
-
-  it('renders dark mode indicator instead of a theme selector', () => {
-    render(
-      <ThemeProvider>
-        <ThemeToggle compact />
-        <ThemeToggle />
-      </ThemeProvider>,
-    );
-
-    expect(screen.getByLabelText('Tema oscuro fijo')).toBeInTheDocument();
-    expect(screen.getByText('Modo oscuro')).toBeInTheDocument();
   });
 
   it('confirms and cancels destructive dialogs', async () => {

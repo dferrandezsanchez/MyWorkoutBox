@@ -1,8 +1,5 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
-import {
-  Moon,
-  type LucideIcon,
-} from 'lucide-react';
+import { type LucideIcon } from 'lucide-react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -137,29 +134,6 @@ export function ActionTile({
       <span className="block text-sm font-semibold text-text-primary">{title}</span>
       {description && <span className="mt-1 block text-xs leading-5 text-text-secondary">{description}</span>}
     </button>
-  );
-}
-
-export function ThemeToggle({ compact = false }: { compact?: boolean }) {
-  if (compact) {
-    return (
-      <div
-        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-border/70 bg-elevated/85 text-text-secondary shadow-sm"
-        aria-label="Tema oscuro fijo"
-        title="Tema oscuro fijo"
-      >
-        <Moon size={18} />
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 rounded-xl border border-border/70 bg-surface/70 p-1">
-      <div className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-elevated px-3 text-sm font-semibold text-text-primary">
-        <Moon size={16} />
-        <span>Modo oscuro</span>
-      </div>
-    </div>
   );
 }
 
