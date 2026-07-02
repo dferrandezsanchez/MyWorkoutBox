@@ -23,7 +23,7 @@ const swaggerHtml = `<!doctype html>
     <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
     <script>
       window.ui = SwaggerUIBundle({
-        url: '/openapi.json',
+        url: './openapi.json',
         dom_id: '#swagger-ui',
         deepLinking: true,
         persistAuthorization: true
