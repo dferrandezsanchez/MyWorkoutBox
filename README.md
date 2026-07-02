@@ -61,10 +61,10 @@ Las cuentas utilizan datos de demostración y permiten revisar los flujos dispon
 ### 🚀 Infraestructura
 
 - GitHub Actions
+- Docker y Docker Compose
 - Servidor Linux/VPS
-- MariaDB/MySQL en producción
-- Reverse proxy para API y frontend
-- systemd para mantener viva la API
+- MariaDB 10.11 con volumen persistente
+- Nginx para frontend, proxy de API y fallback SPA
 
 ## 🏛️ Arquitectura
 
@@ -140,63 +140,44 @@ También existen tests de arquitectura para evitar regresiones:
 
 ### Requisitos
 
-- Node.js 20 o superior recomendado.
-- npm.
-- MySQL o MariaDB local.
+- Docker Desktop o Docker Engine con Compose.
 
-### 1. Instalar dependencias
+### 1. Configurar el entorno
 
 ```bash
-npm --prefix backend install
-npm --prefix frontend install
+cp .env.docker.example .env.docker
 ```
 
-### 2. Crear bases de datos locales
+Las credenciales del ejemplo son exclusivamente locales. Deben sustituirse en cualquier servidor compartido o productivo.
 
-Crea una base para desarrollo y otra para tests:
+### 2. Levantar la aplicación
 
-```sql
-CREATE DATABASE myworkoutbox_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE DATABASE myworkoutbox_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```bash
+docker compose --env-file .env.docker up --build -d
 ```
 
-El usuario configurado en `DATABASE_URL` debe tener permisos sobre ambas bases.
+Compose crea MariaDB, aplica las migraciones y levanta backend y frontend respetando sus health checks.
 
-### 3. Configurar variables de entorno
+### 3. Cargar datos demo
 
-Backend:
+```bash
+docker compose --env-file .env.docker --profile tools run --rm seed
+```
+
+La aplicación queda disponible en `http://localhost:8080`. La API, OpenAPI y Swagger se sirven respectivamente en `/api`, `/api/openapi.json` y `/api/docs`.
+
+Los datos permanecen al ejecutar `docker compose down`. No uses `down -v` salvo que quieras eliminar la base local.
+
+### Desarrollo sin Docker
+
+Para ejecutar Node y Vite directamente se necesitan Node.js 20 o superior, npm y MySQL/MariaDB:
 
 ```bash
 cp backend/.env.example backend/.env
 cp backend/.env.test.example backend/.env.test
-```
-
-Ejemplo de `backend/.env`:
-
-```txt
-DATABASE_URL="mysql://myworkoutbox_user:CHANGE_ME@localhost:3306/myworkoutbox_dev"
-JWT_SECRET="your-super-secret-jwt-key-change-in-production"
-JWT_EXPIRES_IN="7d"
-PORT=3000
-CORS_ORIGIN="http://localhost:5173"
-```
-
-Frontend:
-
-```bash
 cp frontend/.env.example frontend/.env
-```
-
-Ejemplo de `frontend/.env`:
-
-```txt
-VITE_API_URL=http://localhost:3000
-VITE_TENANT_ID=platform
-```
-
-### 4. Preparar Prisma y datos iniciales
-
-```bash
+npm --prefix backend install
+npm --prefix frontend install
 npm --prefix backend run prisma:generate
 npm --prefix backend run prisma:migrate
 npm --prefix backend run prisma:seed
@@ -270,28 +251,17 @@ La cobertura actual combina:
 
 ## 🚢 Despliegue
 
-El despliegue está pensado para un servidor Linux/VPS con MariaDB/MySQL, reverse proxy web y `systemd`.
+El despliegue usa el mismo stack Docker Compose en local y en un servidor Linux/VPS. MariaDB, backend y frontend se ejecutan en contenedores, y el reverse proxy público reenvía tráfico al Nginx local.
 
 Flujo recomendado:
 
 ```txt
 branch local -> merge a main -> tag de release -> push del tag
-  -> GitHub Actions ejecuta tests/build
+  -> GitHub Actions ejecuta quality gates y construye imágenes
   -> despliegue por SSH al VPS
-  -> Prisma migrate deploy
-  -> build frontend a public/
-  -> reinicio de la API con systemd
+  -> backup de MariaDB
+  -> migraciones y recreación con Docker Compose
+  -> health checks y rollback de aplicación si falla
 ```
 
-Variables principales en producción:
-
-```txt
-DATABASE_URL=mysql://USER:PASSWORD@HOST:3306/DATABASE
-JWT_SECRET=...
-JWT_EXPIRES_IN=7d
-CORS_ORIGIN=https://tu-dominio.com
-PORT=3000
-VITE_API_URL=https://tu-dominio.com/api
-```
-
-Para el detalle completo de servidor, systemd, GitHub Secrets, backups y reverse proxy, consulta [DEPLOYMENT.md](./doc/DEPLOYMENT.md).
+Para la configuración del servidor, primera migración, GitHub Secrets, backups, restauración y rollback, consulta [DEPLOYMENT.md](./doc/DEPLOYMENT.md).

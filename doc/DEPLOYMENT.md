@@ -1,297 +1,229 @@
 # 🚢 Despliegue de MyWorkoutBox
 
-Esta guía describe un despliegue de producción para MyWorkoutBox en un servidor Linux/VPS con MariaDB/MySQL, reverse proxy web y `systemd`.
+MyWorkoutBox utiliza el mismo stack Docker Compose en desarrollo y producción: MariaDB 10.11, API Node.js y frontend servido por Nginx. El servidor público solo necesita Docker, Git, un reverse proxy y acceso SSH desde GitHub Actions.
 
-El flujo está pensado para releases controladas desde GitHub tags: se mergea a `main`, se crea un tag, GitHub Actions valida el proyecto y publica la versión en el servidor por SSH.
+## 🧭 Arquitectura
 
-## 🧭 Flujo de release
-
-```txt
-rama local -> merge a main -> tag de release -> push del tag
-  -> GitHub Actions ejecuta tests y builds
-  -> GitHub Actions despliega por SSH al VPS
-  -> Prisma aplica migraciones
-  -> systemd reinicia la API
-  -> el reverse proxy sirve el frontend
+```mermaid
+flowchart LR
+  Internet --> Proxy[Reverse proxy HTTPS]
+  Proxy --> Frontend[Frontend Nginx :8080]
+  Frontend -->|/api/*| Backend[Node API :3000]
+  Backend --> Database[(MariaDB 10.11)]
+  Database --> Volume[(Docker volume)]
+  Migrate[Prisma migrate deploy] --> Database
 ```
 
-Ejemplo:
+- Solo Nginx publica un puerto, limitado a `127.0.0.1`.
+- Backend y MariaDB no son accesibles desde Internet.
+- La red de base de datos es interna.
+- Prisma se ejecuta antes de arrancar una nueva versión del backend.
+- MariaDB persiste en un volumen independiente de los contenedores.
+
+## 🛠️ Requisitos
+
+- Linux/VPS con Docker Engine y el plugin Docker Compose.
+- Git.
+- Reverse proxy con HTTPS.
+- Usuario de despliegue con acceso al repositorio y permiso para usar Docker.
+- Espacio fuera del repositorio para configuración y backups.
+
+Comprueba la instalación:
 
 ```bash
-git checkout main
-git pull
-git tag v0.1.0-alpha
-git push origin v0.1.0-alpha
+docker --version
+docker compose version
+git --version
 ```
 
-## 📁 Estructura recomendada en el VPS
+## 💻 Entorno local
 
-Usa rutas fuera del repositorio para backups y el build público del frontend.
+```bash
+cp .env.docker.example .env.docker
+docker compose --env-file .env.docker up --build -d
+docker compose --env-file .env.docker --profile tools run --rm seed
+```
+
+La aplicación queda disponible en `http://localhost:8080`. Para detenerla sin borrar datos:
+
+```bash
+docker compose --env-file .env.docker down
+```
+
+`docker compose down -v` elimina también la base local y debe utilizarse únicamente de forma intencionada.
+
+## 📁 Estructura recomendada en producción
 
 ```txt
 /var/www/myworkoutbox/
-  repo/       # Clon del repositorio
-  public/     # Build del frontend publicado por el despliegue
-  backups/    # Backups y exports fuera de Git
+├── repo/                         # Checkout Git
+├── .env.docker                   # Secretos, fuera del repositorio
+├── .last-successful-release      # Último tag desplegado
+└── backups/                      # Dumps comprimidos de MariaDB
 ```
-
-Variables de ejemplo:
-
-```txt
-APP_PATH=/var/www/myworkoutbox
-FRONTEND_PUBLIC_PATH=/var/www/myworkoutbox/public
-SYSTEMD_SERVICE_NAME=myworkoutbox-api
-DATABASE_URL=mysql://myworkoutbox_user:CHANGE_ME@localhost:3306/myworkoutbox_prod
-JWT_SECRET=CHANGE_ME
-JWT_EXPIRES_IN=7d
-CORS_ORIGIN=https://app.example.com
-PORT=3000
-VITE_API_URL=https://app.example.com/api
-```
-
-El branding del tenant se resuelve tras el login desde el tenant autenticado. `VITE_TENANT_ID` queda como fallback local o demo antes de la autenticación.
-
-## 🛠️ Preparación inicial del servidor
-
-### 1. Crear carpetas
 
 ```bash
-mkdir -p /var/www/myworkoutbox/{repo,public,backups}
+mkdir -p /var/www/myworkoutbox/backups
+git clone <REPOSITORY_URL> /var/www/myworkoutbox/repo
 ```
 
-### 2. Clonar el repositorio
+## 🔐 Variables de producción
+
+Crea `/var/www/myworkoutbox/.env.docker` tomando `.env.docker.example` como referencia:
+
+```dotenv
+COMPOSE_PROJECT_NAME=myworkoutbox
+IMAGE_TAG=production
+APP_PORT=8080
+
+MARIADB_DATABASE=myworkoutbox
+MARIADB_USER=myworkoutbox
+MARIADB_PASSWORD=CHANGE_ME
+MARIADB_ROOT_PASSWORD=CHANGE_ME
+DATABASE_URL=mysql://myworkoutbox:URL_ENCODED_PASSWORD@database:3306/myworkoutbox
+
+JWT_SECRET=CHANGE_ME_WITH_AT_LEAST_32_RANDOM_CHARACTERS
+JWT_EXPIRES_IN=7d
+CORS_ORIGIN=https://app.example.com
+VITE_TENANT_ID=platform
+```
+
+La contraseña dentro de `DATABASE_URL` debe estar codificada como URL. Por ejemplo, `%` se representa como `%25`. Protege el fichero:
+
+```bash
+chmod 600 /var/www/myworkoutbox/.env.docker
+```
+
+No guardes este fichero en Git ni lo envíes mediante GitHub Actions.
+
+## 🌐 Reverse proxy
+
+El proxy público termina HTTPS y reenvía todas las rutas al Nginx del contenedor:
+
+```nginx
+server {
+  server_name app.example.com;
+
+  location / {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+```
+
+La configuración equivalente depende del servidor web utilizado. No publiques directamente los puertos 3000 o 3306.
+
+## 💾 Backup y restauración
+
+Genera un dump consistente y comprimido:
 
 ```bash
 cd /var/www/myworkoutbox/repo
-git clone git@github.com:YOUR_ORG/YOUR_REPO.git .
+DOCKER_ENV_FILE=/var/www/myworkoutbox/.env.docker \
+BACKUP_DIR=/var/www/myworkoutbox/backups \
+./scripts/docker-backup.sh
 ```
 
-### 3. Configurar systemd
-
-Crea el servicio como `root`:
+Verifica periódicamente la restauración en un entorno aislado. Para restaurar intencionadamente la base configurada:
 
 ```bash
-cat > /etc/systemd/system/myworkoutbox-api.service <<'EOF'
-[Unit]
-Description=MyWorkoutBox API
-After=network.target
-
-[Service]
-Type=simple
-User=deploy-myworkoutbox
-Group=deploy-myworkoutbox
-WorkingDirectory=/var/www/myworkoutbox/repo/backend
-Environment=NODE_ENV=production
-ExecStart=/usr/bin/node /var/www/myworkoutbox/repo/backend/dist/index.js
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable myworkoutbox-api
+CONFIRM_DATABASE_RESTORE=yes \
+DOCKER_ENV_FILE=/var/www/myworkoutbox/.env.docker \
+./scripts/docker-restore.sh /path/to/backup.sql.gz
 ```
 
-### 4. Permitir reinicio controlado del servicio
-
-El usuario de despliegue debe poder reiniciar solo este servicio sin contraseña.
+Durante una restauración productiva detén antes frontend y backend para evitar escrituras concurrentes:
 
 ```bash
-cat > /etc/sudoers.d/myworkoutbox-deploy <<'EOF'
-deploy-myworkoutbox ALL=(root) NOPASSWD: /bin/systemctl restart myworkoutbox-api
-deploy-myworkoutbox ALL=(root) NOPASSWD: /usr/bin/systemctl restart myworkoutbox-api
-EOF
-
-chmod 440 /etc/sudoers.d/myworkoutbox-deploy
-visudo -cf /etc/sudoers.d/myworkoutbox-deploy
+docker compose --env-file /var/www/myworkoutbox/.env.docker stop frontend backend
 ```
 
-### 5. Comprobar dependencias del servidor
+## 🔁 Primera migración al stack Docker
+
+La transición desde una MariaDB gestionada fuera de Docker se realiza una sola vez:
+
+1. Detén temporalmente escrituras en la aplicación actual.
+2. Genera un `mariadb-dump` de la base existente y verifica que no esté vacío.
+3. Mantén la base y el servicio actuales disponibles como rollback.
+4. Levanta únicamente la nueva MariaDB Docker.
+5. Restaura el dump mediante `docker-restore.sh`.
+6. Levanta el stack completo y comprueba health, login, tenants y datos históricos.
+7. Cambia el reverse proxy a `127.0.0.1:8080`.
+8. Detén el servicio anterior solo después de validar el tráfico real.
+
+Ejemplo de arranque previo a la restauración:
 
 ```bash
-APP_PATH=/var/www/myworkoutbox \
-FRONTEND_PUBLIC_PATH=/var/www/myworkoutbox/public \
-bash scripts/check-server.sh
+cd /var/www/myworkoutbox/repo
+docker compose --env-file /var/www/myworkoutbox/.env.docker up -d --wait database
 ```
 
-## 🔐 GitHub Secrets
+No elimines la base anterior hasta conservar varios backups verificados de la nueva instalación.
 
-Configura estos secrets en el repositorio de GitHub:
+## 🤖 GitHub Actions
+
+El workflow de release se activa con tags `v*`. Requiere estos secrets:
 
 ```txt
 VPS_HOST
 VPS_USER
 VPS_SSH_KEY
 APP_PATH
-FRONTEND_PUBLIC_PATH
-SYSTEMD_SERVICE_NAME
-DATABASE_URL
-JWT_SECRET
-JWT_EXPIRES_IN
-CORS_ORIGIN
-PORT
+DOCKER_ENV_FILE
 VITE_API_URL
 ```
 
-`VPS_SSH_KEY` debe ser una clave privada con permisos para acceder al VPS y al directorio del repositorio.
+- `APP_PATH`: por ejemplo `/var/www/myworkoutbox`.
+- `DOCKER_ENV_FILE`: por ejemplo `/var/www/myworkoutbox/.env.docker`.
+- `VITE_API_URL` solo se utiliza en el quality gate; la imagen productiva usa `/api`.
 
-## 🗄️ MariaDB/MySQL
+El job verifica que el tag pertenece a `main`, ejecuta quality gates, construye ambas imágenes y despliega por SSH.
 
-Crea la base de datos de producción en el servidor o en tu proveedor de base de datos:
-
-```txt
-Database: myworkoutbox_prod
-User: myworkoutbox_user
-Host: localhost si la API corre en el mismo VPS
-```
-
-Formato de `DATABASE_URL`:
-
-```txt
-mysql://USER:PASSWORD@HOST:3306/DATABASE
-```
-
-Ejemplo genérico:
-
-```txt
-DATABASE_URL=mysql://myworkoutbox_user:CHANGE_ME@localhost:3306/myworkoutbox_prod
-```
-
-En local también se usa MySQL/MariaDB:
-
-```txt
-DATABASE_URL=mysql://myworkoutbox_user:CHANGE_ME@localhost:3306/myworkoutbox_dev
-```
-
-Para tests usa una base separada:
-
-```txt
-DATABASE_URL=mysql://myworkoutbox_user:CHANGE_ME@localhost:3306/myworkoutbox_test
-```
-
-## 🌐 Reverse proxy y frontend estático
-
-### 1. Crear dominio o subdominio
-
-Ejemplo:
-
-```txt
-app.example.com
-```
-
-### 2. Configurar document root
-
-El document root debe apuntar al build público del frontend:
-
-```txt
-/var/www/myworkoutbox/public
-```
-
-### 3. Configurar proxy para la API
-
-Ejemplo de configuración Nginx para exponer la API bajo `/api/`:
-
-```nginx
-location /api/ {
-  proxy_http_version 1.1;
-  proxy_set_header Host $host;
-  proxy_set_header X-Real-IP $remote_addr;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto $scheme;
-  proxy_pass http://127.0.0.1:3000/;
-}
-
-```
-
-### 4. Servir frontend y configurar fallback de React Router
-
-React Router usa rutas cliente como `/trainer`, `/admin` o `/clients/:id`. Si el usuario recarga una de esas rutas, el servidor debe devolver `index.html`.
-
-Ejemplo Nginx:
-
-```nginx
-location / {
-  root /var/www/myworkoutbox/public;
-  try_files $uri $uri/ /index.html;
-}
-```
-
-Si usas otro servidor web, configura el equivalente: servir el build estático y devolver `index.html` cuando la ruta no sea un fichero real. No apliques este fallback a `/api/`; esa ruta debe mantener su regla de proxy.
-
-## ✅ Primera release
-
-Publica un tag:
+## 🏷️ Publicar una release
 
 ```bash
-git tag v0.1.0-alpha
-git push origin v0.1.0-alpha
+git checkout main
+git pull --ff-only origin main
+git tag -a v1.0.0-rc.1 -m "Release v1.0.0-rc.1"
+git push origin v1.0.0-rc.1
 ```
 
-Verifica:
+En el servidor, `deploy-release.sh`:
 
-```txt
-https://app.example.com
-https://app.example.com/api/health
-```
+1. Crea un backup si MariaDB Docker ya está activa.
+2. Descarga la imagen base de MariaDB.
+3. Construye imágenes con el tag de release.
+4. Ejecuta migraciones Prisma.
+5. Espera los health checks.
+6. Comprueba frontend y API a través del proxy interno.
+7. Registra la release como última versión correcta.
 
-## 💾 Backups
+## ↩️ Rollback
 
-El script de despliegue aplica migraciones de Prisma, pero no realiza importaciones destructivas automáticas.
+Si falla un despliegue y existe una release Docker anterior, el script intenta reconstruir y arrancar automáticamente esa versión. Las migraciones no se revierten automáticamente.
 
-Antes de migraciones de producción o importaciones manuales, genera un backup:
+Para un rollback manual de aplicación:
 
 ```bash
-mysqldump -u myworkoutbox_user -p myworkoutbox_prod > "$APP_PATH/backups/myworkoutbox-$(date +%Y%m%d%H%M%S).sql"
+cd /var/www/myworkoutbox/repo
+git checkout <PREVIOUS_TAG>
+IMAGE_TAG=<PREVIOUS_TAG> docker compose \
+  --env-file /var/www/myworkoutbox/.env.docker \
+  up --build -d --remove-orphans --wait
 ```
 
-### Retirada de fotos de versiones anteriores
+Restaura la base únicamente cuando el cambio de esquema lo exija y después de preservar un backup del estado actual.
 
-La aplicación ya no almacena ni publica fotos de clientes. Tras realizar el backup de base de datos, desplegar la migración y verificar la aplicación, elimina manualmente los ficheros heredados:
+## ✅ Comprobaciones
 
 ```bash
-rm -rf "$APP_PATH/uploads"
+docker compose --env-file /var/www/myworkoutbox/.env.docker ps
+curl --fail https://app.example.com/api/health
+curl --fail https://app.example.com/api/openapi.json
 ```
 
-Retira también cualquier regla `/uploads/` que permanezca en el reverse proxy. Esta limpieza es deliberadamente manual y no forma parte del script de despliegue.
-
-## 🔁 Migración manual desde SQLite
-
-Si existen datos piloto en una base SQLite antigua, mígralos manualmente antes de cambiar tráfico a producción.
-
-1. Congela escrituras en la aplicación actual.
-2. Exporta la base SQLite:
-
-```bash
-cd backend
-npm run migration:export-sqlite -- /path/to/source.sqlite "$APP_PATH/backups/sqlite-export.json"
-```
-
-3. Aplica migraciones MySQL/MariaDB:
-
-```bash
-cd backend
-npm run prisma:generate
-npx prisma migrate deploy
-```
-
-4. Importa el JSON en la base vacía:
-
-```bash
-cd backend
-npm run migration:import-sqlite-export -- "$APP_PATH/backups/sqlite-export.json"
-```
-
-5. Verifica conteos, login, clientes, ejercicios, histórico de marcas, auditoría y endpoints RGPD.
-
-## 🧪 Checklist post-despliegue
-
-- `/api/health` responde correctamente.
-- El login funciona con usuarios reales configurados.
-- El panel admin carga sin errores.
-- La vista trainer carga clientes y permite registrar marcas.
-- Los antiguos endpoints y rutas `/uploads/` ya no están disponibles.
-- Las rutas frontend funcionan al recargar la página.
-- No hay escrituras contra SQLite.
-- `systemd` deja la API en estado `active`.
+Además, comprueba login, cambio de tenant, dashboard, clientes, ejercicios, entrenadores, creación/finalización de sesiones y persistencia tras recrear los contenedores.

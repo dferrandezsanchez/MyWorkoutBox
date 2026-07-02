@@ -74,3 +74,9 @@ jobs:
         env:
           VITE_API_URL: http://localhost:3000
         run: npm run quality
+
+      - name: Validate Docker runtime
+        run: |
+          docker compose --env-file .env.docker.example config --quiet
+          docker build --tag myworkoutbox-backend:ci backend
+          docker build --tag myworkoutbox-frontend:ci frontend
