@@ -17,3 +17,5 @@ backend/prisma/dev.db-*
 *.log
 backups/
 .vscode/
+.kiro/
+.continue/
