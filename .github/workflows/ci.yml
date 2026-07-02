@@ -80,3 +80,5 @@ jobs:
           docker compose --env-file .env.docker.example config --quiet
           docker build --tag myworkoutbox-backend:ci backend
           docker build --tag myworkoutbox-frontend:ci frontend
+          docker run --rm --entrypoint sh myworkoutbox-frontend:ci \
+            -c 'test "$(stat -c %a /etc/nginx/conf.d/default.conf)" = 644 && test -r /etc/nginx/conf.d/default.conf'
