@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Dumbbell, Pencil, Power, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useExercises, useCreateExercise, useUpdateExercise, useSetExerciseStatus } from '@features/exercises/hooks/useExercises';
 import ExerciseForm from '@features/exercises/components/ExerciseForm';
 import type { CreateExerciseData, Exercise } from '@shared/types/api';
 import AppShell from '@app/layout/AppShell';
-import { Button, EmptyState, MetricChip, PageHeader, StatusBadge } from '@shared/components/ui';
+import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary, RowIcon } from '@app/components/AdminManagement';
+import { Button, EmptyState, StatusBadge } from '@shared/components/ui';
 
 const CATEGORY_LABELS: Record<string, string> = {
   strength: 'Fuerza',
@@ -38,7 +38,6 @@ function countJsonItems(value?: string) {
 }
 
 export default function ExercisesAdminPage() {
-  const navigate = useNavigate();
   const { data: exercises, isLoading, isError } = useExercises(true);
   const createMutation = useCreateExercise();
   const updateMutation = useUpdateExercise();
@@ -67,30 +66,22 @@ export default function ExercisesAdminPage() {
 
   return (
     <AppShell>
-      <PageHeader
-        eyebrow="Administración"
+      <div className="mx-auto max-w-6xl space-y-6">
+      <AdminManagementHeader
+        eyebrow="Gestión del centro"
         title="Ejercicios"
         description="Mantén el catálogo que se muestra en los perfiles de cliente."
-        actions={
-          <>
-            <Button onClick={() => navigate('/admin/clients')}>
-              Clientes
-            </Button>
-            <Button variant="primary" onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2">
-              <Plus size={16} />
-              Nuevo ejercicio
-            </Button>
-          </>
-        }
+        actionLabel="Nuevo ejercicio"
+        onAction={() => setShowCreate(true)}
       />
 
-      <section className="mb-5 grid grid-cols-3 gap-3">
-        <MetricChip label="Total" value={exercises?.length ?? 0} />
-        <MetricChip label="Activos" value={activeCount} />
-        <MetricChip label="Inactivos" value={inactiveCount} />
-      </section>
+      <ManagementSummary items={[
+        { label: 'Total', value: exercises?.length ?? 0, icon: Dumbbell, tone: 'primary' },
+        { label: 'Activos', value: activeCount, icon: ToggleRight, tone: 'green' },
+        { label: 'Inactivos', value: inactiveCount, icon: ToggleLeft, tone: 'amber' },
+      ]} />
 
-      <section className="overflow-hidden rounded-2xl border border-border/70 bg-elevated/85 shadow-panel backdrop-blur">
+      <ManagementSection title="Catálogo de ejercicios" meta={`${exercises?.length ?? 0} ejercicios`}>
         {!exercises || exercises.length === 0 ? (
           <div className="p-4">
             <EmptyState title="No hay ejercicios" />
@@ -98,7 +89,9 @@ export default function ExercisesAdminPage() {
         ) : (
           exercises.map((ex) => (
             <div key={ex.id} className="flex flex-col gap-3 border-b border-border/70 p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
+              <div className="flex min-w-0 items-start gap-3">
+                <RowIcon icon={Dumbbell} tone={ex.status === 'ACTIVE' ? 'violet' : 'amber'} />
+                <div className="min-w-0">
                 <p className="font-semibold text-text-primary">{ex.name}</p>
                 <p className="mt-1 text-sm text-text-secondary">
                   {CATEGORY_LABELS[ex.category] ?? ex.category} · {EVALUATION_LABELS[ex.evaluationType] ?? ex.evaluationType} · {ex.defaultUnit}
@@ -106,18 +99,19 @@ export default function ExercisesAdminPage() {
                 <p className="mt-1 text-xs text-text-secondary">
                   {countJsonItems(ex.measurementFields)} campos de marca · {countJsonItems(ex.variantGroups)} grupos de variantes
                 </p>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center justify-between gap-2 sm:justify-end">
                 <StatusBadge status={ex.status} />
-                <Button onClick={() => setEditingExercise(ex)}>Editar</Button>
-                <Button onClick={() => statusMutation.mutate({ id: ex.id, status: ex.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}>
-                  {ex.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
-                </Button>
+                <div className="flex gap-1.5">
+                  <IconAction label={`Editar ${ex.name}`} onClick={() => setEditingExercise(ex)}><Pencil size={16} /></IconAction>
+                  <IconAction label={ex.status === 'ACTIVE' ? `Desactivar ${ex.name}` : `Activar ${ex.name}`} tone={ex.status === 'ACTIVE' ? 'danger' : 'default'} onClick={() => statusMutation.mutate({ id: ex.id, status: ex.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}><Power size={16} /></IconAction>
+                </div>
               </div>
             </div>
           ))
         )}
-      </section>
+      </ManagementSection>
 
         {showCreate && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Crear ejercicio" onClick={(e) => e.target === e.currentTarget && setShowCreate(false)}>
@@ -150,6 +144,7 @@ export default function ExercisesAdminPage() {
             </div>
           </div>
         )}
+      </div>
     </AppShell>
   );
 }
