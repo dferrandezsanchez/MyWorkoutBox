@@ -121,7 +121,8 @@ Directrices:
 - No acoples endpoints a necesidades puntuales de una pantalla si puede evitarse.
 - Mantén MariaDB/MySQL como base de datos real del proyecto.
 - No recuperes dependencias de SQLite salvo para scripts explícitos de migración.
-- Mantén despliegue portable para servidor Linux/VPS con reverse proxy y `systemd`.
+- Mantén el mismo stack Docker Compose en local y en servidor Linux/VPS, con reverse proxy externo.
+- Conserva MariaDB en un volumen persistente y no publiques directamente backend ni base de datos.
 - No ejecutes migraciones destructivas ni importaciones de datos automáticamente en deploy.
 
 ## Seguridad y configuración
@@ -189,5 +190,5 @@ Usar antes de releases o cambios de infraestructura.
 - Revisar variables de entorno.
 - Revisar migraciones Prisma.
 - Revisar backups y datos persistentes.
-- Revisar health check, reverse proxy, CORS y systemd.
+- Revisar health checks, reverse proxy, CORS, imágenes, redes y volúmenes Docker.
 - Confirmar que no hay dependencias accidentales de entorno local.

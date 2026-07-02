@@ -1,0 +1,129 @@
+name: ${COMPOSE_PROJECT_NAME:-myworkoutbox}
+
+services:
+  database:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE:?Set MARIADB_DATABASE in .env.docker}
+      MARIADB_USER: ${MARIADB_USER:?Set MARIADB_USER in .env.docker}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?Set MARIADB_PASSWORD in .env.docker}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Set MARIADB_ROOT_PASSWORD in .env.docker}
+    volumes:
+      - database_data:/var/lib/mysql
+    networks:
+      - database
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  migrate:
+    image: myworkoutbox-backend:${IMAGE_TAG:-local}
+    build:
+      context: ./backend
+      target: runtime
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.docker}
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - database
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: "no"
+
+  backend:
+    image: myworkoutbox-backend:${IMAGE_TAG:-local}
+    build:
+      context: ./backend
+      target: runtime
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.docker}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.docker}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:?Set CORS_ORIGIN in .env.docker}
+      PORT: 3000
+    depends_on:
+      database:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - application
+      - database
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  frontend:
+    image: myworkoutbox-frontend:${IMAGE_TAG:-local}
+    build:
+      context: ./frontend
+      target: runtime
+      args:
+        VITE_API_URL: /api
+        VITE_TENANT_ID: ${VITE_TENANT_ID:-platform}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - application
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  seed:
+    profiles: ["tools"]
+    build:
+      context: ./backend
+      target: build
+    command: ["npm", "run", "prisma:seed"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.docker}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - database
+    user: node
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: "no"
+
+volumes:
+  database_data:
+
+networks:
+  application:
+  database:
+    internal: true
