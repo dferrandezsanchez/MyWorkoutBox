@@ -7,7 +7,7 @@ import type { Client, CreateClientData } from '@shared/types/api';
 import AppShell from '@app/layout/AppShell';
 import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary } from '@app/components/AdminManagement';
 import Avatar from '@shared/components/Avatar';
-import { Button, ConfirmDialog, EmptyState, StatusBadge } from '@shared/components/ui';
+import { Button, ConfirmDialog, Dialog, EmptyState, StatusBadge } from '@shared/components/ui';
 
 export default function ClientsAdminPage() {
   const navigate = useNavigate();
@@ -94,8 +94,7 @@ export default function ClientsAdminPage() {
 
         {/* Create modal */}
         {showCreate && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Crear cliente" onClick={(e) => e.target === e.currentTarget && setShowCreate(false)}>
-            <div className="w-full max-w-md rounded-2xl border border-border/70 bg-elevated/95 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
+          <Dialog label="Crear cliente" onClose={() => setShowCreate(false)} className="max-w-md">
               <h2 className="text-lg font-semibold text-text-primary mb-4">Crear cliente</h2>
               <ClientForm
                 onSubmit={async (data) => {
@@ -107,8 +106,7 @@ export default function ClientsAdminPage() {
               <div className="flex justify-end gap-2 mt-4">
                 <Button onClick={() => setShowCreate(false)}>Cerrar</Button>
               </div>
-            </div>
-          </div>
+          </Dialog>
         )}
         {clientToAnonymize && <ConfirmDialog title="Anonimizar cliente" description={`Los datos personales de ${clientToAnonymize.firstName} ${clientToAnonymize.lastName} se eliminarán de forma irreversible.`} confirmLabel="Anonimizar" pending={anonymizeMutation.isPending} onCancel={() => setClientToAnonymize(null)} onConfirm={() => anonymizeMutation.mutate(clientToAnonymize.id, { onSuccess: () => setClientToAnonymize(null) })} />}
       </div>

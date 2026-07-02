@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
+import { useEffect, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
 import { type LucideIcon } from 'lucide-react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -193,6 +193,47 @@ export function EmptyState({ title, description }: { title: string; description?
     <div className="rounded-2xl border border-dashed border-border/80 bg-elevated/70 px-6 py-10 text-center">
       <p className="font-medium text-text-primary">{title}</p>
       {description && <p className="mt-1 text-sm text-text-secondary">{description}</p>}
+    </div>
+  );
+}
+
+export function Dialog({
+  label,
+  onClose,
+  children,
+  className = '',
+}: {
+  label: string;
+  onClose: () => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    dialogRef.current?.focus();
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        tabIndex={-1}
+        className={`max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-border/70 bg-elevated/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.35)] outline-none sm:rounded-2xl ${className}`}
+      >
+        {children}
+      </div>
     </div>
   );
 }

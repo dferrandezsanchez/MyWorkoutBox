@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Dumbbell } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
@@ -6,6 +6,7 @@ import {
   ActionTile,
   Button,
   ConfirmDialog,
+  Dialog,
   EmptyState,
   MetricCard,
   MetricChip,
@@ -80,5 +81,20 @@ describe('shared UI components', () => {
 
     expect(onCancel).toHaveBeenCalledOnce();
     expect(onConfirm).toHaveBeenCalledOnce();
+  });
+
+  it('focuses and closes shared dialogs with Escape or the overlay', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const view = render(<Dialog label="Crear cliente" onClose={onClose}>Contenido</Dialog>);
+    const dialog = screen.getByRole('dialog', { name: 'Crear cliente' });
+
+    expect(dialog).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledOnce();
+
+    fireEvent.mouseDown(dialog.parentElement!);
+    expect(onClose).toHaveBeenCalledTimes(2);
+    view.unmount();
   });
 });
