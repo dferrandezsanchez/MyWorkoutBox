@@ -66,25 +66,30 @@ MyWorkoutBox no pretende ser una aplicación genérica de reservas o planificaci
 
 Las siguientes capturas muestran el estado actual de la aplicación en su versión mobile-first, con modo oscuro forzado y branding configurable por tenant.
 
-### Login
-
-![Login](doc/assets/screenshots/01-login.png)
-
-### Dashboard administrador
-
-![Dashboard administrador](doc/assets/screenshots/02-admin-dashboard.png)
-
-### Gestión de clientes
-
-![Gestión de clientes](doc/assets/screenshots/03-admin-clients.png)
-
-### Inicio entrenador
-
-![Inicio entrenador](doc/assets/screenshots/04-trainer-home.png)
-
-### Sesión activa
-
-![Sesión activa](doc/assets/screenshots/05-active-session.png)
+<table>
+  <tr>
+    <td align="center" width="20%">
+      <img src="doc/assets/screenshots/01-login.png" width="180" alt="Login" /><br />
+      <sub>Login</sub>
+    </td>
+    <td align="center" width="20%">
+      <img src="doc/assets/screenshots/02-admin-dashboard.png" width="180" alt="Dashboard administrador" /><br />
+      <sub>Dashboard administrador</sub>
+    </td>
+    <td align="center" width="20%">
+      <img src="doc/assets/screenshots/03-admin-clients.png" width="180" alt="Gestión de clientes" /><br />
+      <sub>Gestión de clientes</sub>
+    </td>
+    <td align="center" width="20%">
+      <img src="doc/assets/screenshots/04-trainer-home.png" width="180" alt="Inicio entrenador" /><br />
+      <sub>Inicio entrenador</sub>
+    </td>
+    <td align="center" width="20%">
+      <img src="doc/assets/screenshots/05-active-session.png" width="180" alt="Sesión activa" /><br />
+      <sub>Sesión activa</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
