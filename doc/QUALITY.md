@@ -6,8 +6,8 @@ Last local audit: 2026-07-03.
 
 | Area | Status |
 | --- | --- |
-| Backend tests | 19 files, 67 tests passing |
-| Frontend tests | 20 files, 66 tests passing |
+| Backend tests | 19 files, 72 tests passing |
+| Frontend tests | 23 files, 82 tests passing |
 | Backend lint | Passing |
 | Frontend lint | Passing |
 | Backend build | Passing |
@@ -19,8 +19,8 @@ Last local audit: 2026-07-03.
 
 | Package | Statements | Branches | Functions | Lines |
 | --- | ---: | ---: | ---: | ---: |
-| Backend | 86.34% | 71.61% | 95.86% | 91.21% |
-| Frontend | 94.59% | 82.44% | 95.93% | 96.49% |
+| Backend | 87.61% | 74.00% | 95.86% | 91.71% |
+| Frontend | 94.11% | 83.60% | 96.64% | 95.81% |
 
 ## Commands
 
@@ -54,16 +54,21 @@ ESLint with SonarJS is enforced in CI. Errors block the gate; warnings are allow
 
 ## Main Gaps
 
-- Backend branch coverage can be improved around authentication errors, repository edge cases and session rules.
-- Some low-frequency trainer and training-session use-case branches have limited direct coverage.
-- Frontend page branches remain weaker around login failures and complex session interactions.
-- HTTP client fallback handlers have limited direct unit coverage.
+- Some backend optional input normalization and low-frequency trainer branches still have limited direct coverage.
+- Active-session mutation failures do not yet expose explicit recoverable feedback in the UI; covering them properly requires a product behavior change rather than test-only work.
 - Product-level flows are not yet covered with browser end-to-end tests.
 
 ## Recommended Next Tests
 
-- Authentication: expired tokens, unavailable tenants and failed tenant selection.
-- Training-session use cases: invalid state transitions and repository failures.
-- Login and session pages: recoverable API errors and uncommon interaction branches.
-- HTTP client: missing request metadata and unauthorized fallback handling.
+- Active-session mutations: add visible retry/error behavior, then cover failed add, save, delete, complete and discard operations.
+- Trainer use cases: optional update fields and inactive membership combinations.
 - Browser E2E: login, role/mode switching and completion of a full training session.
+
+## Closed Coverage Gaps
+
+The 2026-07-03 audit added targeted edge-case coverage for:
+
+- expired tenant-selection tokens, users without available tenants and failed tenant selection;
+- invalid training-session transitions after completion and simulated repository read/write failures;
+- recoverable login tenant-selection errors, session load recovery, completed-session controls and destructive-dialog cancellation;
+- HTTP `401` fallback without request metadata, auth endpoint exclusions and `403` propagation without forced logout.

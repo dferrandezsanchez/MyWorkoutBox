@@ -160,6 +160,46 @@ describe('auth use cases', () => {
     });
   });
 
+  it('rejects expired tenant selection tokens', async () => {
+    const useCase = new SelectTenantUseCase(
+      createUserRepository(),
+      createMembershipRepository(),
+      createTokenService({ verify: vi.fn(() => { throw new Error('jwt expired'); }) }),
+    );
+
+    await expect(useCase.execute('expired-token', tenant.id)).rejects.toMatchObject({
+      code: 'UNAUTHENTICATED',
+      message: 'Token de selección inválido',
+    });
+  });
+
+  it('rejects login when the user has no available tenant', async () => {
+    const useCase = new LoginUseCase(
+      createUserRepository(),
+      createMembershipRepository({ findActiveByUser: vi.fn(async () => []) }),
+      createPasswordHasher(),
+      createTokenService(),
+    );
+
+    await expect(useCase.execute(user.email, 'Current1234!')).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+      message: 'No tienes acceso a ningún centro activo',
+    });
+  });
+
+  it('rejects selection when the requested tenant is no longer available', async () => {
+    const useCase = new SelectTenantUseCase(
+      createUserRepository(),
+      createMembershipRepository({ findActiveByUserAndTenant: vi.fn(async () => null) }),
+      createTokenService(),
+    );
+
+    await expect(useCase.execute('selection-token', 'unavailable-tenant')).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+      message: 'Tenant no disponible',
+    });
+  });
+
   it('changes password only when current password is valid', async () => {
     const users = createUserRepository();
     const hasher = createPasswordHasher();

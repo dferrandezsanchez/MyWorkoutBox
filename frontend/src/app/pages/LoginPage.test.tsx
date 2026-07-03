@@ -111,4 +111,30 @@ describe('LoginPage', () => {
     await waitFor(() => expect(selectTenant).toHaveBeenCalledWith('selection-token', 'tenant-1'));
     expect(navigate).toHaveBeenCalledWith('/admin', { replace: true });
   });
+
+  it('keeps tenant selection recoverable when access fails', async () => {
+    vi.mocked(login).mockResolvedValueOnce({
+      tenantSelectionRequired: true,
+      selectionToken: 'selection-token',
+      tenants: [{
+        id: 'tenant-1', organizationId: 'org-1', name: 'Demo Center',
+        organizationName: 'Demo Org', role: 'ADMIN',
+      }],
+    });
+    vi.mocked(selectTenant).mockRejectedValueOnce(new Error('Tenant unavailable'));
+    const user = userEvent.setup();
+    render(<LoginPage />);
+
+    await user.type(screen.getByLabelText('Email'), 'admin-demo@gym.com');
+    await user.type(screen.getByLabelText('Contraseña'), 'Admin1234!');
+    await user.click(screen.getByRole('button', { name: 'Entrar' }));
+    await user.click(await screen.findByRole('button', { name: /Demo Center/ }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo acceder a ese centro');
+    expect(screen.getByRole('button', { name: /Demo Center/ })).toBeEnabled();
+    expect(navigate).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Volver al login' }));
+    expect(screen.getByLabelText('Email')).toBeInTheDocument();
+  });
 });
