@@ -135,4 +135,60 @@ describe('training session use cases', () => {
     await expect(new StartTrainingSessionUseCase(deps.sessions, deps.clients, deps.auditLogs, deps.clock).execute('tenant-1', 'trainer-1', client.id)).rejects.toMatchObject({ code: 'CONFLICT' });
     await expect(new CompleteTrainingSessionUseCase(deps.sessions, deps.auditLogs, deps.clock).execute('tenant-1', 'trainer-1', 'session-1', {})).rejects.toMatchObject({ code: 'BAD_REQUEST' });
   });
+
+  it('rejects mutations after a session has been completed', async () => {
+    const deps = dependencies(detail({
+      status: TrainingSessionStatus.COMPLETED,
+      completedAt: now,
+    }));
+
+    await expect(
+      new AddSessionExerciseUseCase(deps.sessions, deps.exercises).execute(
+        'tenant-1',
+        'trainer-1',
+        'session-1',
+        exercise.id,
+      ),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST', message: 'La sesión ya está finalizada' });
+
+    await expect(
+      new DiscardTrainingSessionUseCase(deps.sessions, deps.auditLogs).execute(
+        'tenant-1',
+        'trainer-1',
+        'session-1',
+      ),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST', message: 'La sesión ya está finalizada' });
+  });
+
+  it('propagates repository failures without masking them', async () => {
+    const deps = dependencies();
+    const lookupFailure = new Error('repository unavailable');
+    vi.mocked(deps.sessions.findDetail).mockRejectedValueOnce(lookupFailure);
+
+    await expect(
+      new GetTrainingSessionUseCase(deps.sessions).execute('tenant-1', 'trainer-1', 'session-1'),
+    ).rejects.toBe(lookupFailure);
+
+    const writeFailure = new Error('write failed');
+    vi.mocked(deps.sessions.complete).mockRejectedValueOnce(writeFailure);
+    const record = await deps.performances.create({
+      tenantId: 'tenant-1', clientId: client.id, exerciseId: exercise.id,
+      trainerId: 'trainer-1', value: '40', unit: 'kg', date: now,
+      sessionExerciseId: 'item-1', seriesNumber: 1,
+    });
+    vi.mocked(deps.sessions.findDetail).mockResolvedValueOnce(detail({
+      exercises: [{
+        id: 'item-1', sessionId: 'session-1', exerciseId: exercise.id,
+        position: 1, createdAt: now, exercise,
+        series: [{ ...record, trainerName: 'Trainer' }],
+      }],
+    }));
+
+    await expect(
+      new CompleteTrainingSessionUseCase(deps.sessions, deps.auditLogs, deps.clock).execute(
+        'tenant-1', 'trainer-1', 'session-1', {},
+      ),
+    ).rejects.toBe(writeFailure);
+    expect(deps.auditLogs.create).not.toHaveBeenCalled();
+  });
 });

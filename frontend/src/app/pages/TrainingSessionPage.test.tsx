@@ -177,6 +177,30 @@ describe('TrainingSessionPage', () => {
     expect(mocks.discard).toHaveBeenCalledOnce();
   });
 
+  it('cancels destructive dialogs without calling their APIs', async () => {
+    const user = userEvent.setup();
+    render(<TrainingSessionPage />);
+
+    await user.click(screen.getByRole('button', { name: 'Eliminar serie 1' }));
+    await user.click(within(screen.getByRole('dialog', { name: 'Eliminar serie' })).getByRole('button', { name: 'Cancelar' }));
+
+    expect(mocks.deleteSeries).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Eliminar serie' })).not.toBeInTheDocument();
+  });
+
+  it('renders a completed session without mutation controls', () => {
+    mocks.useTrainingSession.mockReturnValue({
+      data: { ...sessionWithSeries, status: 'COMPLETED', completedAt: '2026-07-01T11:00:00.000Z' },
+      isLoading: false,
+      isError: false,
+    });
+    render(<TrainingSessionPage />);
+
+    expect(screen.getByText('Finalizada')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Añadir serie' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Finalizar' })).not.toBeInTheDocument();
+  });
+
   it('renders loading and error states', () => {
     mocks.useTrainingSession.mockReturnValue({ data: undefined, isLoading: true, isError: false });
     const loading = render(<TrainingSessionPage />);
@@ -184,7 +208,12 @@ describe('TrainingSessionPage', () => {
     loading.unmount();
 
     mocks.useTrainingSession.mockReturnValue({ data: undefined, isLoading: false, isError: true });
-    render(<TrainingSessionPage />);
+    const failed = render(<TrainingSessionPage />);
     expect(screen.getByText('No se pudo cargar la sesión')).toBeInTheDocument();
+
+    mocks.useTrainingSession.mockReturnValue({ data: sessionWithSeries, isLoading: false, isError: false });
+    failed.rerender(<TrainingSessionPage />);
+    expect(screen.getByText('Alex Molina')).toBeInTheDocument();
+    expect(screen.queryByText('No se pudo cargar la sesión')).not.toBeInTheDocument();
   });
 });

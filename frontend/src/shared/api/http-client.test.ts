@@ -70,6 +70,41 @@ describe('apiClient', () => {
     expect(onUnauthorized).not.toHaveBeenCalled();
   });
 
+  it('does not call the unauthorized handler for tenant selection 401 responses', async () => {
+    const onUnauthorized = vi.fn();
+    apiClient.defaults.adapter = async (config) => {
+      throw { config, response: { status: 401 } };
+    };
+    configureApiClient({ onUnauthorized });
+
+    await expect(apiClient.post('/auth/select-tenant', {})).rejects.toMatchObject({
+      response: { status: 401 },
+    });
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it('uses the unauthorized fallback when a 401 has no request metadata', async () => {
+    const onUnauthorized = vi.fn();
+    apiClient.defaults.adapter = async () => {
+      throw { response: { status: 401 } };
+    };
+    configureApiClient({ onUnauthorized });
+
+    await expect(apiClient.get('/clients')).rejects.toMatchObject({ response: { status: 401 } });
+    expect(onUnauthorized).toHaveBeenCalledOnce();
+  });
+
+  it('propagates forbidden responses without treating them as an expired session', async () => {
+    const onUnauthorized = vi.fn();
+    apiClient.defaults.adapter = async (config) => {
+      throw { config, response: { status: 403 } };
+    };
+    configureApiClient({ onUnauthorized });
+
+    await expect(apiClient.get('/admin/settings')).rejects.toMatchObject({ response: { status: 403 } });
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
   it('does not add authorization when no token is configured', async () => {
     let capturedAuthorization: unknown = 'unset';
     const adapter: AxiosAdapter = async (config) => {
