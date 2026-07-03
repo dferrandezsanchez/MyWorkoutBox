@@ -66,8 +66,6 @@ MyWorkoutBox no pretende ser una aplicación genérica de reservas o planificaci
 
 Las siguientes capturas muestran el estado actual de la aplicación en su versión mobile-first, con modo oscuro forzado y branding configurable por tenant.
 
-> Las imágenes deben ubicarse en `doc/assets/screenshots/`.
-
 ### Login
 
 ![Login](doc/assets/screenshots/01-login.png)
@@ -92,130 +90,35 @@ Las siguientes capturas muestran el estado actual de la aplicación en su versi�
 
 ## ✨ Funcionalidades principales
 
-### Seguridad y acceso
-
-- Autenticación con JWT.
-- Control de acceso por roles.
-- Roles principales: administrador y entrenador.
-- Separación entre permisos de usuario y modo operativo.
-- Soporte para usuarios que pueden actuar como administrador y entrenador.
-
-### SaaS multi-tenant
-
-- Modelo multi-tenant por centro.
-- Datos aislados por tenant.
-- Branding configurable por centro mediante color primario.
-- Interfaz en modo oscuro forzado para mantener una apariencia premium y consistente.
-
-### Administración del centro
-
-- Dashboard administrador.
-- Gestión de clientes.
-- Gestión de entrenadores.
-- Gestión del catálogo de ejercicios evaluables.
-- Activación/desactivación de entidades.
-- Cambio de contraseña para entrenadores.
-- Auditoría básica de acciones relevantes del sistema.
-
-### Clientes
-
-- Alta y edición de clientes.
-- Estado activo/inactivo.
-- Ficha individual de cliente.
-- Consulta de histórico asociado.
-- Consulta de sesiones completadas.
-- Acciones básicas orientadas a RGPD:
-  - exportación de datos;
-  - anonimización de datos.
-
-### Ejercicios y rendimiento
-
-- Catálogo de ejercicios evaluables.
-- Plantillas de medición configurables según el ejercicio.
-- Registro de marcas y rendimiento vinculado a cliente, ejercicio y sesión.
-- Consulta de último registro.
-- Consulta de mejores marcas.
-- Histórico de progreso.
-
-### Flujo entrenador
-
-- Vista operativa para entrenadores.
-- Inicio de sesión de entrenamiento sin planificación previa obligatoria.
-- Selección de cliente activo.
-- Sesión activa única por entrenador.
-- Incorporación dinámica de ejercicios durante la sesión.
-- Registro rápido de varias series por ejercicio.
-- Edición y eliminación de series durante la sesión.
-- Numeración automática de series.
-- Finalización de sesión.
-- Cierre inmutable de sesiones completadas.
-
-### API y documentación técnica
-
-- API REST preparada para consumo desde frontend web y futuros clientes móviles.
-- Documentación OpenAPI.
-- Swagger UI disponible en local y producción.
-- Preparación para despliegue productivo con MariaDB, Docker, Nginx y GitHub Actions.
+- **Seguridad y acceso:** autenticación JWT, control de acceso por rol y selección de tenant.
+- **SaaS multi-tenant:** aislamiento de datos y branding por centro mediante color primario.
+- **Administración:** dashboard operativo y gestión de clientes, entrenadores y ejercicios evaluables.
+- **Clientes:** ficha individual, estado, histórico, sesiones completadas, exportación y anonimización RGPD.
+- **Rendimiento:** plantillas de medición, marcas actuales, mejores registros e histórico de progreso.
+- **Sesiones:** selección de cliente, sesión activa única por entrenador, ejercicios dinámicos y múltiples series editables.
+- **Auditoría:** registro básico de acciones relevantes.
+- **API:** contrato OpenAPI y Swagger UI para frontend web y futuros clientes móviles.
+- **Producción:** MariaDB, Docker Compose, Nginx y despliegue automatizado con GitHub Actions.
 
 ---
 
 ## 👥 Roles de usuario
 
-La aplicación contempla dos roles principales.
+Cada membresía tiene un único rol dentro de su tenant:
 
-### Administrador
+| Rol | Permisos y modos disponibles |
+|---|---|
+| `ADMIN` | Gestión del centro y acceso a los modos administración y entrenador. |
+| `TRAINER` | Acceso exclusivo al modo entrenador para registrar sesiones y consultar rendimiento. |
 
-El administrador gestiona el centro de entrenamiento.
-
-Puede administrar:
-
-- clientes;
-- entrenadores;
-- ejercicios evaluables;
-- configuración básica del tenant;
-- datos administrativos del centro.
-
-### Entrenador
-
-El entrenador trabaja con clientes durante sesiones reales.
-
-Puede:
-
-- acceder al modo entrenador;
-- seleccionar clientes activos;
-- iniciar sesiones de entrenamiento;
-- añadir ejercicios conforme se realizan;
-- registrar series y marcas;
-- consultar histórico y referencias de rendimiento;
-- finalizar sesiones.
-
-Un mismo usuario puede tener permisos de administrador y entrenador. En ese caso, la aplicación permite cambiar el modo operativo sin cerrar sesión.
+El modo activo determina la interfaz mostrada, pero no modifica el rol ni los permisos del usuario. Un administrador puede cambiar al modo entrenador sin cerrar sesión.
 
 ---
 
 ## 🧭 Flujo principal de uso
 
-### Flujo administrador
-
-1. Iniciar sesión como administrador.
-2. Acceder al dashboard del centro.
-3. Revisar el estado operativo general.
-4. Gestionar clientes activos e inactivos.
-5. Gestionar entrenadores.
-6. Mantener el catálogo de ejercicios evaluables.
-7. Revisar información asociada a clientes y sesiones.
-
-### Flujo entrenador
-
-1. Iniciar sesión como entrenador.
-2. Acceder al modo entrenador.
-3. Seleccionar un cliente activo.
-4. Iniciar una sesión de entrenamiento.
-5. Añadir ejercicios conforme se realizan.
-6. Registrar una o varias series por ejercicio.
-7. Editar o eliminar registros si es necesario.
-8. Finalizar la sesión.
-9. Conservar la sesión y las marcas en el historial del cliente.
+- **Administración:** iniciar sesión, revisar el estado del centro y gestionar clientes, entrenadores, ejercicios y configuración del tenant.
+- **Entrenamiento:** seleccionar un cliente activo, iniciar una sesión, incorporar ejercicios, registrar o corregir series y finalizarla para conservar su histórico.
 
 ---
 
@@ -400,7 +303,7 @@ Una vez levantado:
 Los datos permanecen al ejecutar:
 
 ```bash
-docker compose down
+docker compose --env-file .env.docker down
 ```
 
 No uses `down -v` salvo que quieras eliminar la base local.
