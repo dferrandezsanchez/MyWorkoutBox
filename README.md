@@ -68,23 +68,27 @@ Las siguientes capturas muestran el estado actual de la aplicaci처n en su versi�
 
 <table>
   <tr>
-    <td align="center" width="20%">
+    <td align="center" width="16%">
+      <img src="doc/assets/screenshots/00-landing.png" width="180" alt="Landing" /><br />
+      <sub>Landing</sub>
+    </td>
+    <td align="center" width="16%">
       <img src="doc/assets/screenshots/01-login.png" width="180" alt="Login" /><br />
       <sub>Login</sub>
     </td>
-    <td align="center" width="20%">
+    <td align="center" width="16%">
       <img src="doc/assets/screenshots/02-admin-dashboard.png" width="180" alt="Dashboard administrador" /><br />
       <sub>Dashboard administrador</sub>
     </td>
-    <td align="center" width="20%">
+    <td align="center" width="16%">
       <img src="doc/assets/screenshots/03-admin-clients.png" width="180" alt="Gesti처n de clientes" /><br />
       <sub>Gesti처n de clientes</sub>
     </td>
-    <td align="center" width="20%">
+    <td align="center" width="16%">
       <img src="doc/assets/screenshots/04-trainer-home.png" width="180" alt="Inicio entrenador" /><br />
       <sub>Inicio entrenador</sub>
     </td>
-    <td align="center" width="20%">
+    <td align="center" width="16%">
       <img src="doc/assets/screenshots/05-active-session.png" width="180" alt="Sesi처n activa" /><br />
       <sub>Sesi처n activa</sub>
     </td>
