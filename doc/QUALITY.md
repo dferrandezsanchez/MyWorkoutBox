@@ -2,14 +2,14 @@
 
 ## Current Status
 
-Last local audit: 2026-06-30.
+Last local audit: 2026-07-03.
 
 | Area | Status |
 | --- | --- |
-| Backend tests | 19 files, 63 tests passing |
-| Frontend tests | 11 files, 35 tests passing |
+| Backend tests | 19 files, 67 tests passing |
+| Frontend tests | 20 files, 66 tests passing |
 | Backend lint | Passing |
-| Frontend lint | Passing with 2 non-blocking warnings |
+| Frontend lint | Passing |
 | Backend build | Passing |
 | Frontend build | Passing |
 | Backend audit | 0 vulnerabilities |
@@ -19,8 +19,8 @@ Last local audit: 2026-06-30.
 
 | Package | Statements | Branches | Functions | Lines |
 | --- | ---: | ---: | ---: | ---: |
-| Backend | 86.02% | 71.07% | 95.79% | 91.05% |
-| Frontend | 93.10% | 76.67% | 95.14% | 94.67% |
+| Backend | 86.34% | 71.61% | 95.86% | 91.21% |
+| Frontend | 94.59% | 82.44% | 95.93% | 96.49% |
 
 ## Commands
 
@@ -54,16 +54,16 @@ ESLint with SonarJS is enforced in CI. Errors block the gate; warnings are allow
 
 ## Main Gaps
 
-- Backend line and branch coverage can be improved around error paths and repository edge cases.
-- Backend time adapters still have low direct unit coverage.
-- Auth use cases are covered for critical paths, but more profile and tenant edge cases can be added.
-- Frontend coverage is still low in theme provider, shared UI components and complex page flows.
-- Product-level frontend flows are not covered end-to-end yet.
+- Backend branch coverage can be improved around authentication errors, repository edge cases and session rules.
+- Some low-frequency trainer and training-session use-case branches have limited direct coverage.
+- Frontend page branches remain weaker around login failures and complex session interactions.
+- HTTP client fallback handlers have limited direct unit coverage.
+- Product-level flows are not yet covered with browser end-to-end tests.
 
 ## Recommended Next Tests
 
-- Protected route: missing token, expired token and role-based redirects.
-- Theme provider: stored preference, system preference and tenant branding persistence.
-- Shared UI components: status badges, action tiles, theme toggle and empty states.
-- Training session page: exercise search, series copy/edit/delete and completion confirmation.
-- Backend route handlers: auth, clients, trainers and exercises controller-level error paths.
+- Authentication: expired tokens, unavailable tenants and failed tenant selection.
+- Training-session use cases: invalid state transitions and repository failures.
+- Login and session pages: recoverable API errors and uncommon interaction branches.
+- HTTP client: missing request metadata and unauthorized fallback handling.
+- Browser E2E: login, role/mode switching and completion of a full training session.
