@@ -223,6 +223,8 @@ También existen tests de arquitectura para evitar regresiones de dependencias e
 - Backend: `backend/src/architecture-clean-boundaries.test.ts`
 - Frontend: `frontend/src/architecture-feature-boundaries.test.ts`
 
+El sistema visual (tokens, principios de diseño y componentes) está documentado en [`doc/DESIGN_SYSTEM.md`](./doc/DESIGN_SYSTEM.md).
+
 ---
 
 ## 📁 Estructura del proyecto
@@ -251,6 +253,8 @@ También existen tests de arquitectura para evitar regresiones de dependencias e
 └── doc/                         # Documentación técnica adicional
     ├── DEPLOYMENT.md            # Guía detallada de despliegue
     ├── QUALITY.md               # Auditoría y quality gates
+    ├── DESIGN_SYSTEM.md         # Sistema visual: tokens, principios y componentes
+    ├── AI_ASSISTED_UX_DECISIONS.md # Decisiones de UX tomadas con apoyo de IA
     └── assets/screenshots/      # Capturas para documentación
 ```
 
@@ -460,6 +464,8 @@ Durante el proyecto se utilizaron herramientas como:
 - Auditoría y revisión final del proyecto.
 
 El criterio técnico final, la revisión del código, la integración, las decisiones de alcance y la validación funcional fueron responsabilidad del desarrollador.
+
+Las decisiones de UX del flujo de entrenador tomadas con apoyo de IA están documentadas en [`doc/AI_ASSISTED_UX_DECISIONS.md`](./doc/AI_ASSISTED_UX_DECISIONS.md).
 
 ---
 
