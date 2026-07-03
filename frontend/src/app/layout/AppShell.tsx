@@ -18,7 +18,7 @@ import { getAuthUser } from '@features/auth/model/auth-store';
 import { ConfirmDialog } from '@shared/components/ui';
 import { PLATFORM_BRAND } from '@shared/config/branding';
 import { useTheme } from '@shared/theme/useTheme';
-import { getAppMode } from '@app/mode/app-mode';
+import { getAppMode, getModePath } from '@app/mode/app-mode';
 import { UserMenu } from '@app/layout/UserMenu';
 
 interface AppShellProps {
@@ -40,6 +40,7 @@ export function AppShell({
   const user = getAuthUser();
   const mode = getAppMode(`${location.pathname}${location.search}`);
   const isAdminMode = mode === 'admin';
+  const modeHome = getModePath(mode);
   const { data: fullUser } = useAuthUser();
   const { data: activeSession } = useActiveSession();
   const { brand } = useTheme();
@@ -89,7 +90,7 @@ export function AppShell({
     <div className="min-h-screen bg-background text-text-primary">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[282px] border-r border-white/10 bg-[#07111f]/95 px-5 py-6 text-white shadow-2xl backdrop-blur-xl lg:flex lg:flex-col dark:bg-[#07111f]/95">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate(modeHome)}
           className="mb-7 flex min-h-[58px] items-center gap-3 rounded-xl text-left focus-ring"
           aria-label="Ir al panel"
         >
@@ -166,7 +167,7 @@ export function AppShell({
         <header className="sticky top-0 z-30 bg-background/90 px-2 pt-2 backdrop-blur-xl lg:border-b lg:border-border/60 lg:px-0 lg:pt-0">
           <div className="flex min-h-[68px] items-center justify-between gap-3 rounded-2xl border border-border/70 bg-elevated/70 px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.14)] lg:min-h-[78px] lg:rounded-none lg:border-0 lg:bg-transparent lg:px-8 lg:py-3 lg:shadow-none">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate(modeHome)}
               className="flex min-h-[44px] min-w-0 items-center gap-3 rounded-xl text-left focus-ring lg:hidden"
               aria-label="Ir al panel"
             >

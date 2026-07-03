@@ -1,9 +1,9 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@features/auth/components/ProtectedRoute';
-import { getAuthUser } from '@features/auth/model/auth-store';
 
 const LoginPage = React.lazy(() => import('@app/pages/LoginPage'));
+const LandingPage = React.lazy(() => import('@app/pages/LandingPage'));
 const DashboardPage = React.lazy(() => import('@app/pages/DashboardPage'));
 const TrainerPage = React.lazy(() => import('@app/pages/TrainerPage'));
 const AccountPage = React.lazy(() => import('@app/pages/TrainerAccountPage'));
@@ -23,21 +23,16 @@ const LoadingFallback = (
   </div>
 );
 
-function RoleRedirect() {
-  const user = getAuthUser();
-  return <Navigate to={user?.role === 'ADMIN' ? '/admin' : '/trainer'} replace />;
-}
-
 export default function App() {
   return (
     <Suspense fallback={LoadingFallback}>
       <Routes>
         {/* Public routes */}
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
 
         {/* Protected routes — any authenticated user */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<RoleRedirect />} />
           <Route path="/trainer" element={<TrainerPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/trainer/account" element={<Navigate to="/account?mode=trainer" replace />} />

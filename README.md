@@ -99,6 +99,7 @@ Las siguientes capturas muestran el estado actual de la aplicación en su versi�
 - **Auditoría:** registro básico de acciones relevantes.
 - **API:** contrato OpenAPI y Swagger UI para frontend web y futuros clientes móviles.
 - **Producción:** MariaDB, Docker Compose, Nginx y despliegue automatizado con GitHub Actions.
+- **Presentación pública:** landing comercial responsive con acceso a la demo y a la plataforma.
 
 ---
 
