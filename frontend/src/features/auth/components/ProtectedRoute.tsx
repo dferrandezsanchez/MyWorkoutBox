@@ -67,7 +67,7 @@ export default function ProtectedRoute({ requiredRole }: ProtectedRouteProps) {
 
   // Role check → redirect to home if insufficient role
   if (requiredRole && payload.role !== requiredRole) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/trainer" replace />;
   }
 
   return <Outlet />;
