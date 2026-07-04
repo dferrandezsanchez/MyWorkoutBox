@@ -514,10 +514,8 @@ Algunas líneas futuras son:
 
 ## 🎞️ Slides y vídeo
 
-- **Slides:** pendiente de añadir URL pública.
+- **Slides:** [Presentación de MyWorkoutBox](https://docs.google.com/presentation/d/1PxjHM-cyDEzp0gIJ9u25vc24eEiW1sFR1qdzg_yYbOI/edit?usp=sharing) (en elaboración).
 - **Vídeo explicativo:** pendiente de añadir URL pública.
-
-Estos enlaces se incorporarán antes de la entrega final del TFM.
 
 ---
 
