@@ -2,11 +2,11 @@
 
 ## Current Status
 
-Last local audit: 2026-07-03.
+Last local audit: 2026-07-04.
 
 | Area | Status |
 | --- | --- |
-| Backend tests | 19 files, 72 tests passing |
+| Backend tests | 21 files, 85 tests passing |
 | Frontend tests | 23 files, 82 tests passing |
 | Backend lint | Passing |
 | Frontend lint | Passing |
@@ -19,7 +19,7 @@ Last local audit: 2026-07-03.
 
 | Package | Statements | Branches | Functions | Lines |
 | --- | ---: | ---: | ---: | ---: |
-| Backend | 87.61% | 74.00% | 95.86% | 91.71% |
+| Backend | 87.96% | 78.24% | 95.86% | 91.84% |
 | Frontend | 94.11% | 83.60% | 96.64% | 95.81% |
 
 ## Commands
@@ -54,14 +54,12 @@ ESLint with SonarJS is enforced in CI. Errors block the gate; warnings are allow
 
 ## Main Gaps
 
-- Some backend optional input normalization and low-frequency trainer branches still have limited direct coverage.
 - Active-session mutation failures do not yet expose explicit recoverable feedback in the UI; covering them properly requires a product behavior change rather than test-only work.
 - Product-level flows are not yet covered with browser end-to-end tests.
 
 ## Recommended Next Tests
 
 - Active-session mutations: add visible retry/error behavior, then cover failed add, save, delete, complete and discard operations.
-- Trainer use cases: optional update fields and inactive membership combinations.
 - Browser E2E: login, role/mode switching and completion of a full training session.
 
 ## Closed Coverage Gaps
@@ -72,3 +70,12 @@ The 2026-07-03 audit added targeted edge-case coverage for:
 - invalid training-session transitions after completion and simulated repository read/write failures;
 - recoverable login tenant-selection errors, session load recovery, completed-session controls and destructive-dialog cancellation;
 - HTTP `401` fallback without request metadata, auth endpoint exclusions and `403` propagation without forced logout.
+
+The 2026-07-04 audit added targeted backend coverage for:
+
+- empty and partial trainer updates, including independent name, email and active-state changes;
+- inactive memberships, inactive users and role/state fallback when no membership is supplied;
+- adding an existing user to another tenant without creating a duplicate account;
+- missing required trainer values after optional input parsing;
+- omitted and pre-parsed client birth dates;
+- default, omitted, empty and explicit-null exercise configuration collections.
