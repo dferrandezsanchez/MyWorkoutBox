@@ -282,6 +282,76 @@ async function seedDemoTenant() {
       bodyFatPercentage: 17.5,
       notes: 'Cliente demo. Objetivo: técnica de peso muerto y core.',
     },
+    {
+      id: 'demo_client_laura',
+      firstName: 'Laura',
+      lastName: 'Gómez',
+      birthDate: new Date('1993-02-17T00:00:00.000Z'),
+      height: 170,
+      weight: 64.2,
+      bodyFatPercentage: 21.4,
+      notes: 'Cliente demo. Objetivo: resistencia y acondicionamiento general.',
+    },
+    {
+      id: 'demo_client_carlos',
+      firstName: 'Carlos',
+      lastName: 'Herrera',
+      birthDate: new Date('1990-11-09T00:00:00.000Z'),
+      height: 176,
+      weight: 82.3,
+      bodyFatPercentage: 18.6,
+      notes: 'Cliente demo. Objetivo: fuerza general y sentadilla.',
+    },
+    {
+      id: 'demo_client_elena',
+      firstName: 'Elena',
+      lastName: 'Torres',
+      birthDate: new Date('1996-06-21T00:00:00.000Z'),
+      height: 163,
+      weight: 58.9,
+      bodyFatPercentage: 20.1,
+      notes: 'Cliente demo. Objetivo: composición corporal y core.',
+    },
+    {
+      id: 'demo_client_david',
+      firstName: 'David',
+      lastName: 'Navarro',
+      birthDate: new Date('1987-08-30T00:00:00.000Z'),
+      height: 184,
+      weight: 91.4,
+      bodyFatPercentage: 22.8,
+      notes: 'Cliente demo. Objetivo: pérdida de peso y capacidad aeróbica.',
+    },
+    {
+      id: 'demo_client_sara',
+      firstName: 'Sara',
+      lastName: 'Iglesias',
+      birthDate: new Date('1994-12-05T00:00:00.000Z'),
+      height: 168,
+      weight: 60.5,
+      bodyFatPercentage: 19.2,
+      notes: 'Cliente demo. Objetivo: fuerza de tren superior.',
+    },
+    {
+      id: 'demo_client_diego',
+      firstName: 'Diego',
+      lastName: 'Campos',
+      birthDate: new Date('1985-03-14T00:00:00.000Z'),
+      height: 179,
+      weight: 88.7,
+      bodyFatPercentage: 24.5,
+      notes: 'Cliente demo. Objetivo: reacondicionamiento tras parón prolongado.',
+    },
+    {
+      id: 'demo_client_nuria',
+      firstName: 'Nuria',
+      lastName: 'Vidal',
+      birthDate: new Date('1992-07-22T00:00:00.000Z'),
+      height: 165,
+      weight: 61.8,
+      bodyFatPercentage: 20.9,
+      notes: 'Cliente demo. Objetivo: técnica de peso muerto y consistencia.',
+    },
   ];
 
   for (const client of clients) {
@@ -354,6 +424,139 @@ async function seedDemoTenant() {
     });
   }
   console.log(`✓ Demo performance records ready: ${records.length}`);
+
+  const sessionCount = await seedTrainingSessions(
+    tenant.id,
+    trainer.id,
+    clients.map((client) => client.id),
+  );
+  console.log(`✓ Demo training sessions ready: ${sessionCount}`);
+}
+
+const SESSION_EXERCISE_SLUGS = BASE_EXERCISES.map((exercise) => exercise.slug);
+const EXERCISES_PER_SESSION = 3;
+const SERIES_PER_EXERCISE = 3;
+const SESSIONS_PER_CLIENT = 3;
+const SESSION_DURATION_MINUTES = 45;
+
+function seriesValues(slug: (typeof SESSION_EXERCISE_SLUGS)[number], sessionIndex: number, seriesIndex: number) {
+  const progress = sessionIndex;
+  switch (slug) {
+    case 'dominadas': {
+      const reps = 6 + progress + seriesIndex;
+      return { value: String(reps), unit: PerformanceUnit.repetitions, repetitions: reps };
+    }
+    case 'peso_muerto': {
+      const weight = 90 + progress * 10 + seriesIndex * 2.5;
+      return { value: String(weight), unit: PerformanceUnit.kg, weight, repetitions: 5 };
+    }
+    case 'sentadilla': {
+      const weight = 70 + progress * 8 + seriesIndex * 2.5;
+      return { value: String(weight), unit: PerformanceUnit.kg, weight, repetitions: 6 };
+    }
+    case 'zancadas': {
+      const weight = 18 + progress * 3 + seriesIndex;
+      return { value: String(weight), unit: PerformanceUnit.kg, weight, repetitions: 10 };
+    }
+    case 'plancha_frontal': {
+      const seconds = 45 + progress * 10 + seriesIndex * 5;
+      return { value: String(seconds), unit: PerformanceUnit.seconds };
+    }
+    case 'burpees': {
+      const reps = 10 + progress * 2 + seriesIndex;
+      return { value: String(reps), unit: PerformanceUnit.repetitions, repetitions: reps };
+    }
+    case 'carrera': {
+      const seconds = Math.max(180, 300 - progress * 10 - seriesIndex * 2);
+      return { value: String(seconds), unit: PerformanceUnit.seconds, distance: 1000 };
+    }
+    default:
+      return { value: '10', unit: PerformanceUnit.repetitions, repetitions: 10 };
+  }
+}
+
+async function seedTrainingSessions(tenantId: string, trainerId: string, clientIds: string[]): Promise<number> {
+  let created = 0;
+
+  for (const [clientIndex, clientId] of clientIds.entries()) {
+    for (let sessionIndex = 0; sessionIndex < SESSIONS_PER_CLIENT; sessionIndex += 1) {
+      const weeksAgo = (SESSIONS_PER_CLIENT - sessionIndex) * 2;
+      const startedAt = new Date('2026-07-04T09:00:00.000Z');
+      startedAt.setUTCDate(startedAt.getUTCDate() - weeksAgo * 7);
+      startedAt.setUTCMinutes(startedAt.getUTCMinutes() + clientIndex * 20);
+      const completedAt = new Date(startedAt.getTime() + SESSION_DURATION_MINUTES * 60 * 1000);
+
+      const sessionId = `demo_session_${clientIndex}_${sessionIndex}`;
+      await prisma.trainingSession.upsert({
+        where: { id: sessionId },
+        update: {
+          tenantId,
+          clientId,
+          trainerId,
+          status: 'COMPLETED',
+          startedAt,
+          completedAt,
+        },
+        create: {
+          id: sessionId,
+          tenantId,
+          clientId,
+          trainerId,
+          status: 'COMPLETED',
+          startedAt,
+          completedAt,
+        },
+      });
+      created += 1;
+
+      for (let exercisePosition = 0; exercisePosition < EXERCISES_PER_SESSION; exercisePosition += 1) {
+        const slugIndex = (clientIndex + sessionIndex + exercisePosition) % SESSION_EXERCISE_SLUGS.length;
+        const slug = SESSION_EXERCISE_SLUGS[slugIndex];
+        const exerciseId = `demo_ex_${slug}`;
+        const sessionExerciseId = `demo_sessionex_${clientIndex}_${sessionIndex}_${exercisePosition}`;
+
+        await prisma.trainingSessionExercise.upsert({
+          where: { id: sessionExerciseId },
+          update: { sessionId, exerciseId, position: exercisePosition },
+          create: { id: sessionExerciseId, sessionId, exerciseId, position: exercisePosition },
+        });
+
+        for (let seriesIndex = 0; seriesIndex < SERIES_PER_EXERCISE; seriesIndex += 1) {
+          const seriesNumber = seriesIndex + 1;
+          const values = seriesValues(slug, sessionIndex, seriesIndex);
+          const recordDate = new Date(startedAt.getTime() + (exercisePosition * SERIES_PER_EXERCISE + seriesIndex) * 3 * 60 * 1000);
+          const recordId = `demo_perf_session_${clientIndex}_${sessionIndex}_${exercisePosition}_${seriesNumber}`;
+
+          await prisma.performanceRecord.upsert({
+            where: { id: recordId },
+            update: {
+              tenantId,
+              clientId,
+              exerciseId,
+              trainerId,
+              sessionExerciseId,
+              seriesNumber,
+              date: recordDate,
+              ...values,
+            },
+            create: {
+              id: recordId,
+              tenantId,
+              clientId,
+              exerciseId,
+              trainerId,
+              sessionExerciseId,
+              seriesNumber,
+              date: recordDate,
+              ...values,
+            },
+          });
+        }
+      }
+    }
+  }
+
+  return created;
 }
 
 async function seedTuMetaTenant() {
