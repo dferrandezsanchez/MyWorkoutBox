@@ -238,9 +238,9 @@ export default function TenantSettingsPage() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <ColorField label="Principal" value={form.primary} hasError={hasFieldError('primary')} onChange={(value) => setValue('primary', value)} />
-                <ColorField label="Hover" value={form.primaryHover} hasError={hasFieldError('primaryHover')} onChange={(value) => setValue('primaryHover', value)} />
-                <ColorField label="Suave" value={form.primarySoft} hasError={hasFieldError('primarySoft')} onChange={(value) => setValue('primarySoft', value)} />
+                <ColorField label="Principal" hint="Botones y acciones destacadas" value={form.primary} hasError={hasFieldError('primary')} onChange={(value) => setValue('primary', value)} />
+                <ColorField label="Hover" hint="Al pasar el ratón por encima" value={form.primaryHover} hasError={hasFieldError('primaryHover')} onChange={(value) => setValue('primaryHover', value)} />
+                <ColorField label="Suave" hint="Detalles e iconos secundarios" value={form.primarySoft} hasError={hasFieldError('primarySoft')} onChange={(value) => setValue('primarySoft', value)} />
               </div>
             </div>
 
@@ -320,11 +320,13 @@ export default function TenantSettingsPage() {
 
 function ColorField({
   label,
+  hint,
   value,
   hasError = false,
   onChange,
 }: {
   label: string;
+  hint?: string;
   value: string;
   hasError?: boolean;
   onChange: (value: string) => void;
@@ -332,6 +334,7 @@ function ColorField({
   return (
     <label className={`block rounded-2xl border bg-surface/70 p-3 ${hasError ? 'border-red-400/70' : 'border-border/70'}`}>
       <span className="text-sm font-semibold text-text-primary">{label}</span>
+      {hint && <span className="mt-0.5 block text-xs text-text-secondary">{hint}</span>}
       <span className="mt-3 flex items-center gap-2">
         <input
           type="color"

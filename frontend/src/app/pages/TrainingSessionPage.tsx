@@ -5,6 +5,7 @@ import AppShell from '@app/layout/AppShell';
 import PerformanceForm from '@features/performances/components/PerformanceForm';
 import { formatPerformance } from '@features/performances/utils/exerciseTemplates';
 import { useExercises } from '@features/exercises/hooks/useExercises';
+import { CATEGORY_LABELS } from '@features/exercises/utils/labels';
 import { useSessionActions, useTrainerSessions, useTrainingSession } from '@features/training-sessions/hooks/useTrainingSessions';
 import { Button, ConfirmDialog, EmptyState, Panel, TextInput } from '@shared/components/ui';
 import type { CreatePerformanceData, PerformanceRecord, TrainingSessionExercise } from '@shared/types/api';
@@ -178,7 +179,7 @@ function ExercisePickerSection({ title, exercises, onSelect }: { title?: string;
     <section className="mt-4">
       {title && <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-text-secondary">{title}</h3>}
       <div className="divide-y divide-border/60">
-        {exercises.map((exercise) => <button key={exercise.id} onClick={() => void onSelect(exercise.id)} className="flex min-h-14 w-full items-center justify-between py-3 text-left focus-ring"><span><span className="block font-semibold">{exercise.name}</span><span className="text-xs text-text-secondary">{exercise.category}</span></span><Plus size={18} className="text-primary" /></button>)}
+        {exercises.map((exercise) => <button key={exercise.id} onClick={() => void onSelect(exercise.id)} className="flex min-h-14 w-full items-center justify-between py-3 text-left focus-ring"><span><span className="block font-semibold">{exercise.name}</span><span className="text-xs text-text-secondary">{CATEGORY_LABELS[exercise.category] ?? exercise.category}</span></span><Plus size={18} className="text-primary" /></button>)}
       </div>
     </section>
   );

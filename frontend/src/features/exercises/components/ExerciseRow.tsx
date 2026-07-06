@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import type { PerformanceRecord } from '@shared/types/api';
+import { UNIT_LABELS } from '@features/exercises/utils/labels';
 
 interface ExerciseRowProps {
   exerciseName: string;
@@ -39,7 +40,7 @@ export default function ExerciseRow({
       <div className="flex min-w-0 items-center gap-2">
         {currentMark ? (
           <span className="max-w-[8rem] truncate rounded-full bg-primary/10 px-2.5 py-1 text-sm font-semibold text-primary">
-            {currentMark.value} {currentMark.unit}
+            {currentMark.value} {UNIT_LABELS[currentMark.unit] ?? currentMark.unit}
           </span>
         ) : (
           <span className="hidden text-sm text-text-muted min-[380px]:inline">Sin marca registrada</span>

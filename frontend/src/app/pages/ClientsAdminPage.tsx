@@ -7,7 +7,7 @@ import type { Client, CreateClientData } from '@shared/types/api';
 import AppShell from '@app/layout/AppShell';
 import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary } from '@app/components/AdminManagement';
 import Avatar from '@shared/components/Avatar';
-import { Button, ConfirmDialog, Dialog, EmptyState, StatusBadge } from '@shared/components/ui';
+import { ConfirmDialog, Dialog, EmptyState, StatusBadge } from '@shared/components/ui';
 
 export default function ClientsAdminPage() {
   const navigate = useNavigate();
@@ -63,7 +63,7 @@ export default function ClientsAdminPage() {
         ) : (
           clients.map((c) => (
             <div key={c.id} className="flex flex-col gap-3 border-b border-border/70 p-4 last:border-b-0 sm:flex-row sm:items-center">
-                <button type="button" onClick={() => navigate(`/clients/${c.id}`)} className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-ring">
+                <button type="button" onClick={() => navigate(`/clients/${c.id}?mode=admin`)} className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-ring">
                   <Avatar firstName={c.firstName} lastName={c.lastName} size="md" />
                   <span className="min-w-0"><span className="block truncate font-semibold text-text-primary group-hover:text-primary">{c.firstName} {c.lastName}</span><span className="mt-1 block text-xs text-text-secondary">Perfil, sesiones y marcas</span></span>
                 </button>
@@ -103,9 +103,6 @@ export default function ClientsAdminPage() {
                 }}
                 submitLabel="Crear"
               />
-              <div className="flex justify-end gap-2 mt-4">
-                <Button onClick={() => setShowCreate(false)}>Cerrar</Button>
-              </div>
           </Dialog>
         )}
         {clientToAnonymize && <ConfirmDialog title="Anonimizar cliente" description={`Los datos personales de ${clientToAnonymize.firstName} ${clientToAnonymize.lastName} se eliminarán de forma irreversible.`} confirmLabel="Anonimizar" pending={anonymizeMutation.isPending} onCancel={() => setClientToAnonymize(null)} onConfirm={() => anonymizeMutation.mutate(clientToAnonymize.id, { onSuccess: () => setClientToAnonymize(null) })} />}
