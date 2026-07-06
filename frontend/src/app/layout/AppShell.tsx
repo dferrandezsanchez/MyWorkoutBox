@@ -61,7 +61,7 @@ export function AppShell({
     ? [
         { label: 'Dashboard', mobileLabel: 'Inicio', path: '/admin', icon: LayoutDashboard, active: location.pathname === '/admin' },
         { label: 'Clientes', path: '/admin/clients', icon: Users, active: location.pathname.startsWith('/admin/clients') },
-        { label: 'Entrenadores', mobileLabel: 'Equipo', path: '/admin/trainers', icon: User, active: location.pathname.startsWith('/admin/trainers') },
+        { label: 'Entrenadores', path: '/admin/trainers', icon: User, active: location.pathname.startsWith('/admin/trainers') },
         { label: 'Ejercicios', path: '/admin/exercises', icon: Dumbbell, active: location.pathname.startsWith('/admin/exercises') },
         { label: 'Ajustes', path: '/admin/settings', icon: Settings, active: location.pathname.startsWith('/admin/settings') },
       ]

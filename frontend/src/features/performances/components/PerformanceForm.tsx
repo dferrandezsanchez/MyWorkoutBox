@@ -129,15 +129,24 @@ export default function PerformanceForm({
   const formTitle = initialRecord && !copyMode ? 'Editar serie' : sessionContext ? 'Nueva serie' : 'Nueva marca';
 
   const firstInputRef = useRef<HTMLInputElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', onKey);
     firstInputRef.current?.focus();
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+    // Mount-only: re-running on every onClose identity change (a fresh
+    // inline arrow function from the parent on every render, e.g. driven by
+    // the session page's elapsed-time ticker) was stealing focus back to the
+    // first field whenever the user typed into a later one.
+  }, []);
 
   const setFieldValue = (key: MeasurementField['key'], value: string) => {
     setValues((current) => ({ ...current, [key]: value }));

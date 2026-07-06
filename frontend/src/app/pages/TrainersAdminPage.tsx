@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { KeyRound, Pencil, Power, UserCheck, UserCog, UserX } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, Pencil, Power, UserCheck, UserCog, UserX } from 'lucide-react';
 import {
   useCreateTrainer,
   useResetTrainerPassword,
@@ -26,6 +26,18 @@ const emptyForm: TrainerFormState = {
   active: true,
 };
 
+const TEMPORARY_PASSWORD_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+
+function generateTemporaryPassword(length = 12): string {
+  const randomValues = new Uint32Array(length);
+  crypto.getRandomValues(randomValues);
+  let result = '';
+  for (let i = 0; i < length; i += 1) {
+    result += TEMPORARY_PASSWORD_CHARS[randomValues[i] % TEMPORARY_PASSWORD_CHARS.length];
+  }
+  return result;
+}
+
 function getErrorMessage(error: unknown): string {
   if (
     typeof error === 'object' &&
@@ -51,6 +63,8 @@ export default function TrainersAdminPage() {
   const [form, setForm] = useState<TrainerFormState>(emptyForm);
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   const activeCount = trainers?.filter((trainer) => trainer.active).length ?? 0;
   const inactiveCount = trainers?.filter((trainer) => !trainer.active).length ?? 0;
@@ -78,6 +92,8 @@ export default function TrainersAdminPage() {
     setPasswordTrainer(null);
     setPassword('');
     setError(null);
+    setShowCreatePassword(false);
+    setShowResetPassword(false);
   };
 
   const handleCreate = async (event: FormEvent) => {
@@ -233,13 +249,38 @@ export default function TrainersAdminPage() {
                   <span className="mb-1 block text-sm font-medium text-text-primary">
                     Contraseña temporal
                   </span>
-                  <TextInput
-                    type="password"
-                    value={form.password}
-                    onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-                    minLength={8}
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <TextInput
+                        type={showCreatePassword ? 'text' : 'password'}
+                        value={form.password}
+                        onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                        minLength={8}
+                        className="pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCreatePassword((current) => !current)}
+                        aria-label={showCreatePassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                      >
+                        {showCreatePassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setForm((current) => ({ ...current, password: generateTemporaryPassword() }));
+                        setShowCreatePassword(true);
+                      }}
+                    >
+                      Generar
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-xs text-text-secondary">
+                    Es una contraseña temporal: compártesela tú mismo con el entrenador. Podrá cambiarla después desde su cuenta.
+                  </p>
                 </label>
               )}
 
@@ -284,13 +325,38 @@ export default function TrainersAdminPage() {
               <span className="mb-1 block text-sm font-medium text-text-primary">
                 Nueva contraseña
               </span>
-              <TextInput
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                minLength={8}
-                required
-              />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <TextInput
+                    type={showResetPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    minLength={8}
+                    className="pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPassword((current) => !current)}
+                    aria-label={showResetPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                  >
+                    {showResetPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setPassword(generateTemporaryPassword());
+                    setShowResetPassword(true);
+                  }}
+                >
+                  Generar
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-text-secondary">
+                Es una contraseña temporal: compártesela tú mismo con el entrenador. Podrá cambiarla después desde su cuenta.
+              </p>
             </label>
 
             <div className="mt-5 flex justify-end gap-2">

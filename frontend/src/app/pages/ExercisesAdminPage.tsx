@@ -2,30 +2,11 @@ import { useState } from 'react';
 import { Dumbbell, Pencil, Power, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useExercises, useCreateExercise, useUpdateExercise, useSetExerciseStatus } from '@features/exercises/hooks/useExercises';
 import ExerciseForm from '@features/exercises/components/ExerciseForm';
+import { CATEGORY_LABELS, EVALUATION_LABELS, UNIT_LABELS } from '@features/exercises/utils/labels';
 import type { CreateExerciseData, Exercise } from '@shared/types/api';
 import AppShell from '@app/layout/AppShell';
 import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary, RowIcon } from '@app/components/AdminManagement';
-import { Button, Dialog, EmptyState, StatusBadge } from '@shared/components/ui';
-
-const CATEGORY_LABELS: Record<string, string> = {
-  strength: 'Fuerza',
-  functional: 'Funcional',
-  core: 'Core',
-  endurance: 'Resistencia',
-  mobility: 'Movilidad',
-  technique: 'Técnica',
-};
-
-const EVALUATION_LABELS: Record<string, string> = {
-  repetitions: 'Repeticiones',
-  weight_reps: 'Peso + reps',
-  max_time: 'Tiempo máximo',
-  distance: 'Distancia',
-  time_to_complete: 'Tiempo para completar',
-  amrap: 'AMRAP',
-  rounds_reps: 'Rondas + reps',
-  qualitative: 'Cualitativo',
-};
+import { Dialog, EmptyState, StatusBadge } from '@shared/components/ui';
 
 function countJsonItems(value?: string) {
   if (!value) return 0;
@@ -94,7 +75,7 @@ export default function ExercisesAdminPage() {
                 <div className="min-w-0">
                 <p className="font-semibold text-text-primary">{ex.name}</p>
                 <p className="mt-1 text-sm text-text-secondary">
-                  {CATEGORY_LABELS[ex.category] ?? ex.category} · {EVALUATION_LABELS[ex.evaluationType] ?? ex.evaluationType} · {ex.defaultUnit}
+                  {CATEGORY_LABELS[ex.category] ?? ex.category} · {EVALUATION_LABELS[ex.evaluationType] ?? ex.evaluationType} · {UNIT_LABELS[ex.defaultUnit] ?? ex.defaultUnit}
                 </p>
                 <p className="mt-1 text-xs text-text-secondary">
                   {countJsonItems(ex.measurementFields)} campos de marca · {countJsonItems(ex.variantGroups)} grupos de variantes
@@ -117,9 +98,6 @@ export default function ExercisesAdminPage() {
           <Dialog label="Crear ejercicio" onClose={() => setShowCreate(false)} className="max-w-3xl">
               <h2 className="text-lg font-semibold text-text-primary mb-4">Crear ejercicio</h2>
               <ExerciseForm onSubmit={async (data) => { await createMutation.mutateAsync(data as CreateExerciseData); setShowCreate(false); }} submitLabel="Crear" />
-              <div className="flex justify-end gap-2 mt-4">
-                <Button onClick={() => setShowCreate(false)}>Cerrar</Button>
-              </div>
           </Dialog>
         )}
 
@@ -135,9 +113,6 @@ export default function ExercisesAdminPage() {
                 submitLabel="Guardar"
                 showStatus
               />
-              <div className="flex justify-end gap-2 mt-4">
-                <Button onClick={() => setEditingExercise(null)}>Cerrar</Button>
-              </div>
           </Dialog>
         )}
       </div>

@@ -40,7 +40,7 @@ describe('exerciseTemplates', () => {
     expect(extractVariant({ ...baseRecord, notes: 'Agarre: Prono | buena técnica' })).toBe('Prono');
     expect(extractVariant({ ...baseRecord, notes: undefined })).toBeNull();
     expect(formatPerformance(baseRecord)).toBe('100 kg x 5 · Sumo');
-    expect(formatPerformance({ ...baseRecord, unit: 'repetitions', weight: 12 })).toBe('100 repetitions x 5 +12 kg · Sumo');
+    expect(formatPerformance({ ...baseRecord, unit: 'repetitions', weight: 12 })).toBe('100 Repeticiones x 5 +12 kg · Sumo');
     expect(formatPerformance(null)).toBe('Sin marca');
   });
 

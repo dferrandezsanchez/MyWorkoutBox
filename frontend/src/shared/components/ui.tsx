@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react';
-import { type LucideIcon } from 'lucide-react';
+import { X, type LucideIcon } from 'lucide-react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -209,15 +209,24 @@ export function Dialog({
   className?: string;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', onKeyDown);
     dialogRef.current?.focus();
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+    // Mount-only: focusing and attaching the Escape listener must not re-run
+    // when a parent passes a new onClose reference on every render (that
+    // previously stole focus back from inputs inside the dialog on each
+    // keystroke). onCloseRef always calls the latest onClose regardless.
+  }, []);
 
   return (
     <div
@@ -230,8 +239,16 @@ export function Dialog({
         aria-modal="true"
         aria-label={label}
         tabIndex={-1}
-        className={`max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-border/70 bg-elevated/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.35)] outline-none sm:rounded-2xl ${className}`}
+        className={`relative max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-border/70 bg-elevated/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.35)] outline-none sm:rounded-2xl ${className}`}
       >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar"
+          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-white/5 hover:text-text-primary focus-ring"
+        >
+          <X size={18} />
+        </button>
         {children}
       </div>
     </div>

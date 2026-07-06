@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CalendarDays, ChevronLeft, ClipboardList, Dumbbell, History, Play, Trophy } from 'lucide-react';
 import Avatar from '@shared/components/Avatar';
 import AppShell from '@app/layout/AppShell';
@@ -158,6 +158,7 @@ function ExerciseMarkCard({
   clientId: string;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const records = item.recentRecords ?? [];
   const trend = getPerformanceTrend(records, item.exercise.improvementDirection);
   const bars = getTrendBars(records);
@@ -210,7 +211,7 @@ function ExerciseMarkCard({
       <div className="mt-4">
         <Button
           variant="secondary"
-          onClick={() => navigate(`/clients/${clientId}/exercises/${item.exerciseId}`)}
+          onClick={() => navigate(`/clients/${clientId}/exercises/${item.exerciseId}${location.search}`)}
           className="inline-flex w-full items-center justify-center gap-2"
         >
           <History size={16} />

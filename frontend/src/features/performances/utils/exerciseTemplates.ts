@@ -1,4 +1,5 @@
 import type { Exercise, PerformanceRecord, PerformanceUnit } from '@shared/types/api';
+import { UNIT_LABELS } from '@features/exercises/utils/labels';
 
 export type ExerciseTemplateKind = 'pullups' | 'strength' | 'time' | 'distance' | 'reps';
 
@@ -114,7 +115,8 @@ export function formatPerformance(record?: PerformanceRecord | null): string {
   const variant = extractVariant(record);
   const reps = record.repetitions ? ` x ${record.repetitions}` : '';
   const weight = record.weight && record.unit !== 'kg' ? ` +${record.weight} kg` : '';
-  const base = `${record.value} ${record.unit}${reps}${weight}`;
+  const unitLabel = UNIT_LABELS[record.unit] ?? record.unit;
+  const base = `${record.value} ${unitLabel}${reps}${weight}`;
 
   return variant ? `${base} · ${variant}` : base;
 }
