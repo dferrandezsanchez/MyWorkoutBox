@@ -104,7 +104,12 @@ export default function TrainerPage() {
 
           <TodaySummary sessions={todaySessions.length} exercises={todayExerciseCount} series={todaySeriesCount} />
 
-          <RecentClients clients={recentClients} isLoading={sessionsLoading} onOpen={(id) => navigate(`/clients/${id}`)} />
+          <RecentClients
+            clients={recentClients}
+            isLoading={sessionsLoading}
+            onOpen={(id) => navigate(`/clients/${id}`)}
+            onViewAll={() => navigate('/trainer/clients')}
+          />
 
           <div className="lg:col-start-1 lg:row-start-2 lg:row-span-2">
             <RecentSessions sessions={visibleSessions} isLoading={sessionsLoading} onOpen={(id) => navigate(`/trainer/sessions/${id}`)} />
@@ -184,10 +189,15 @@ function SummaryValue({ label, value, icon, tone }: { label: string; value: numb
   return <div className="grid grid-rows-[32px_22px_34px] justify-items-center px-1 py-3 text-center sm:grid-rows-[36px_24px_38px] sm:px-2"><span className={`flex h-8 w-8 items-center justify-center rounded-lg ring-1 ${tone}`}>{icon}</span><span className="self-end text-[11px] text-text-secondary">{label}</span><strong className="self-end text-2xl font-semibold text-text-primary">{value}</strong></div>;
 }
 
-function RecentClients({ clients, isLoading, onOpen }: { clients: { client: Client; lastSessionAt: string }[]; isLoading: boolean; onOpen: (id: string) => void }) {
+function RecentClients({ clients, isLoading, onOpen, onViewAll }: { clients: { client: Client; lastSessionAt: string }[]; isLoading: boolean; onOpen: (id: string) => void; onViewAll: () => void }) {
   return (
     <section className="min-w-0 lg:col-start-2 lg:row-start-2">
-      <SectionHeading title="Últimos clientes" meta="Últimos accesos" />
+      <div className="flex items-end justify-between gap-3 px-1">
+        <h2 className="text-base font-semibold text-text-primary sm:text-lg">Últimos clientes</h2>
+        <button type="button" onClick={onViewAll} className="text-xs font-semibold text-primary hover:underline focus-ring">
+          Ver todos
+        </button>
+      </div>
       {isLoading && <p className="py-8 text-center text-text-secondary">Cargando clientes...</p>}
       {!isLoading && clients.length === 0 && <Panel className="mt-3"><EmptySection icon={<Users size={18} />} title="Aún no hay clientes recientes" tone="bg-sky-500/12 text-sky-300 ring-sky-500/20" /></Panel>}
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
