@@ -16,6 +16,7 @@ const TrainersAdminPage = React.lazy(() => import('@app/pages/TrainersAdminPage'
 const TenantSettingsPage = React.lazy(() => import('@app/pages/TenantSettingsPage'));
 const TrainingSessionPage = React.lazy(() => import('@app/pages/TrainingSessionPage'));
 const NewTrainingSessionPage = React.lazy(() => import('@app/pages/NewTrainingSessionPage'));
+const TrainerClientsPage = React.lazy(() => import('@app/pages/TrainerClientsPage'));
 
 const LoadingFallback = (
   <div className="flex min-h-screen items-center justify-center">
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/trainer/account" element={<Navigate to="/account?mode=trainer" replace />} />
           <Route path="/trainer/sessions/:id" element={<TrainingSessionPage />} />
           <Route path="/trainer/sessions/new" element={<NewTrainingSessionPage />} />
+          <Route path="/trainer/clients" element={<TrainerClientsPage />} />
           <Route path="/clients/:id" element={<ClientProfilePage />} />
           <Route
             path="/clients/:id/exercises/:exerciseId"

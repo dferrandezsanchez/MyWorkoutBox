@@ -115,4 +115,13 @@ describe('TrainerPage', () => {
     expect(mocks.navigate).toHaveBeenNthCalledWith(1, '/clients/client-1');
     expect(mocks.navigate).toHaveBeenNthCalledWith(2, '/trainer/sessions/session-1');
   });
+
+  it('lets the trainer browse every client, not just recent ones', async () => {
+    const user = userEvent.setup();
+    render(<TrainerPage />);
+
+    await user.click(screen.getByRole('button', { name: 'Ver todos' }));
+
+    expect(mocks.navigate).toHaveBeenCalledWith('/trainer/clients');
+  });
 });
