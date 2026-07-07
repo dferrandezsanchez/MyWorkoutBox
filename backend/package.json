@@ -38,7 +38,7 @@
     "@types/jsonwebtoken": "9.0.10",
     "@types/node": "^22.20.0",
     "@types/supertest": "6.0.3",
-    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^10.6.0",
     "eslint-plugin-sonarjs": "^4.1.0",
     "fast-check": "3.23.2",
@@ -46,7 +46,7 @@
     "supertest": "^7.2.2",
     "ts-node": "10.9.2",
     "typescript": "5.9.3",
-    "typescript-eslint": "^8.62.1",
+    "typescript-eslint": "^8.63.0",
     "vitest": "^4.1.9"
   }
 }
