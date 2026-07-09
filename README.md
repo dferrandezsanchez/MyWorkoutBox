@@ -515,7 +515,7 @@ Algunas líneas futuras son:
 ## 🎞️ Slides y vídeo
 
 - **Slides:** [Presentación de MyWorkoutBox](https://docs.google.com/presentation/d/1Y1xkaN5FHbI3c2Gnds4hKRXLrvnICVmDvPTVz_5zbsE/edit?usp=sharing).
-- **Vídeo explicativo:** pendiente de añadir URL pública.
+- **Vídeo explicativo:** [Demostración de MyWorkoutBox](https://drive.google.com/file/d/19sBBqKB1WKyDasB2WIhm7aIG1qhrYKlk/view?usp=sharing).
 
 ---
 
