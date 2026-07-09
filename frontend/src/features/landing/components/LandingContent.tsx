@@ -269,7 +269,7 @@ export function LandingContent({ appPath, authenticated }: LandingContentProps) 
               <h2 className="mt-3 text-3xl font-bold sm:text-4xl">Menos gestión. Más tiempo para entrenar.</h2>
               <p className="mt-4 leading-7 text-slate-400">Toda la información que necesitas para dirigir el centro y acompañar a tus clientes, conectada y lista cuando empieza la sesión.</p>
             </div>
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               {benefits.map(({ title, description, icon: Icon, tone }) => (
                 <article key={title} className="rounded-lg border border-white/10 bg-[#0c1727] p-5">
                   <span className={`flex h-11 w-11 items-center justify-center rounded-lg border ${tone}`}><Icon size={21} /></span>
