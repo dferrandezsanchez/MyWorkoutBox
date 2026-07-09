@@ -453,6 +453,7 @@ La IA no se plantea como una funcionalidad interna de prescripción deportiva, s
 Durante el proyecto se utilizaron herramientas como:
 
 - ChatGPT;
+- Claude;
 - Codex;
 - Kiro;
 - Gemini;
