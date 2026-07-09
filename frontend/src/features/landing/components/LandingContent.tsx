@@ -6,6 +6,7 @@ import {
   Clock3,
   Dumbbell,
   GitFork,
+  Lock,
   Menu,
   Palette,
   PlayCircle,
@@ -52,6 +53,12 @@ const benefits = [
     description: 'Haz que la plataforma se sienta propia con el nombre y los colores de tu centro.',
     icon: Palette,
     tone: 'text-fuchsia-300 bg-fuchsia-400/10 border-fuchsia-400/25',
+  },
+  {
+    title: 'RGPD desde el diseño',
+    description: 'Exporta o anonimiza los datos de un cliente cuando lo necesites, con cada acción registrada en la auditoría.',
+    icon: Lock,
+    tone: 'text-sky-300 bg-sky-400/10 border-sky-400/25',
   },
 ];
 
@@ -332,6 +339,7 @@ export function LandingContent({ appPath, authenticated }: LandingContentProps) 
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-400">Una experiencia que habla de ti</p>
               <h2 className="mt-3 text-3xl font-bold">Tu centro, tu identidad</h2>
               <p className="mt-3 max-w-2xl leading-7 text-slate-400">Personaliza el nombre y el color principal para que tu equipo trabaje en un espacio reconocible, coherente con la imagen de tu centro.</p>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">Y ese espacio es solo tuyo: los datos, clientes y sesiones de tu centro permanecen completamente separados de cualquier otro centro en la plataforma.</p>
             </div>
             <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-[#0c1727] p-4" aria-label="Ejemplos de colores de marca">
               {['#2563EB', '#7C3AED', '#0D9488', '#16A34A', '#ED702D', '#DB2777'].map((color) => (

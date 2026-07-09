@@ -42,6 +42,14 @@ describe('LandingContent', () => {
     expect(screen.queryByText('admin-demo@gym.com')).not.toBeInTheDocument();
   });
 
+  it('highlights RGPD and multi-tenant data isolation as product differentiators', () => {
+    renderLanding();
+
+    expect(screen.getByRole('heading', { name: 'RGPD desde el diseño' })).toBeInTheDocument();
+    expect(screen.getByText(/Exporta o anonimiza los datos de un cliente/i)).toBeInTheDocument();
+    expect(screen.getByText(/permanecen completamente separados de cualquier otro centro/i)).toBeInTheDocument();
+  });
+
   it('logs into the selected demo mode and stores its session', async () => {
     const user = userEvent.setup();
     mocks.login.mockResolvedValue({
