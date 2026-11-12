@@ -1,6 +1,6 @@
-# 🚢 Despliegue de MyWorkoutBox
+# 🚢 Despliegue de STELIOS
 
-MyWorkoutBox utiliza el mismo stack Docker Compose en desarrollo y producción: MariaDB 10.11, API Node.js y frontend servido por Nginx. El servidor público solo necesita Docker, Git, un reverse proxy y acceso SSH desde GitHub Actions.
+STELIOS utiliza el mismo stack Docker Compose en desarrollo y producción: MariaDB 10.11, API Node.js y frontend servido por Nginx. El servidor público solo necesita Docker, Git, un reverse proxy y acceso SSH desde GitHub Actions.
 
 ## 🧭 Arquitectura
 
@@ -55,7 +55,7 @@ docker compose --env-file .env.docker down
 ## 📁 Estructura recomendada en producción
 
 ```txt
-/var/www/myworkoutbox/
+/var/www/stelios/
 ├── repo/                         # Checkout Git
 ├── .env.docker                   # Secretos, fuera del repositorio
 ├── .last-successful-release      # Último tag desplegado
@@ -63,35 +63,37 @@ docker compose --env-file .env.docker down
 ```
 
 ```bash
-mkdir -p /var/www/myworkoutbox/backups
-git clone <REPOSITORY_URL> /var/www/myworkoutbox/repo
+mkdir -p /var/www/stelios/backups
+git clone <REPOSITORY_URL> /var/www/stelios/repo
 ```
 
 ## 🔐 Variables de producción
 
-Crea `/var/www/myworkoutbox/.env.docker` tomando `.env.docker.example` como referencia:
+Crea `/var/www/stelios/.env.docker` tomando `.env.docker.example` como referencia:
 
 ```dotenv
-COMPOSE_PROJECT_NAME=myworkoutbox
+COMPOSE_PROJECT_NAME=stelios
 IMAGE_TAG=production
 APP_PORT=8080
 
-MARIADB_DATABASE=myworkoutbox
-MARIADB_USER=myworkoutbox
+MARIADB_DATABASE=stelios
+MARIADB_USER=stelios
 MARIADB_PASSWORD=CHANGE_ME
 MARIADB_ROOT_PASSWORD=CHANGE_ME
-DATABASE_URL=mysql://myworkoutbox:URL_ENCODED_PASSWORD@database:3306/myworkoutbox
+DATABASE_URL=mysql://stelios:URL_ENCODED_PASSWORD@database:3306/stelios
 
 JWT_SECRET=CHANGE_ME_WITH_AT_LEAST_32_RANDOM_CHARACTERS
 JWT_EXPIRES_IN=7d
 CORS_ORIGIN=https://app.example.com
-VITE_TENANT_ID=platform
+VITE_MARKETING_URL=https://www.example.com
 ```
+
+`VITE_MARKETING_URL` es opcional: si se define, el login muestra un enlace de vuelta a la web comercial. Se inyecta en la imagen del frontend durante el build, así que cambiarla requiere un nuevo despliegue.
 
 La contraseña dentro de `DATABASE_URL` debe estar codificada como URL. Por ejemplo, `%` se representa como `%25`. Protege el fichero:
 
 ```bash
-chmod 600 /var/www/myworkoutbox/.env.docker
+chmod 600 /var/www/stelios/.env.docker
 ```
 
 No guardes este fichero en Git ni lo envíes mediante GitHub Actions.
@@ -122,9 +124,9 @@ La configuración equivalente depende del servidor web utilizado. No publiques d
 Genera un dump consistente y comprimido:
 
 ```bash
-cd /var/www/myworkoutbox/repo
-DOCKER_ENV_FILE=/var/www/myworkoutbox/.env.docker \
-BACKUP_DIR=/var/www/myworkoutbox/backups \
+cd /var/www/stelios/repo
+DOCKER_ENV_FILE=/var/www/stelios/.env.docker \
+BACKUP_DIR=/var/www/stelios/backups \
 ./scripts/docker-backup.sh
 ```
 
@@ -132,14 +134,14 @@ Verifica periódicamente la restauración en un entorno aislado. Para restaurar 
 
 ```bash
 CONFIRM_DATABASE_RESTORE=yes \
-DOCKER_ENV_FILE=/var/www/myworkoutbox/.env.docker \
+DOCKER_ENV_FILE=/var/www/stelios/.env.docker \
 ./scripts/docker-restore.sh /path/to/backup.sql.gz
 ```
 
 Durante una restauración productiva detén antes frontend y backend para evitar escrituras concurrentes:
 
 ```bash
-docker compose --env-file /var/www/myworkoutbox/.env.docker stop frontend backend
+docker compose --env-file /var/www/stelios/.env.docker stop frontend backend
 ```
 
 ## 🔁 Primera migración al stack Docker
@@ -158,11 +160,53 @@ La transición desde una MariaDB gestionada fuera de Docker se realiza una sola 
 Ejemplo de arranque previo a la restauración:
 
 ```bash
-cd /var/www/myworkoutbox/repo
-docker compose --env-file /var/www/myworkoutbox/.env.docker up -d --wait database
+cd /var/www/stelios/repo
+docker compose --env-file /var/www/stelios/.env.docker up -d --wait database
 ```
 
 No elimines la base anterior hasta conservar varios backups verificados de la nueva instalación.
+
+## 🔀 Migración desde la instalación MyWorkoutBox
+
+El producto pasó a llamarse STELIOS y cambiaron los nombres internos por defecto: proyecto Compose `stelios`, imágenes `stelios-backend`/`stelios-frontend`, base de datos y usuario `stelios`. Una instalación existente con `COMPOSE_PROJECT_NAME=myworkoutbox` sigue funcionando con su `.env.docker`, pero para adoptar los nombres nuevos (y un dominio nuevo) se monta un stack paralelo y se migran los datos:
+
+1. Prepara `/var/www/stelios/{repo,backups}` y `/var/www/stelios/.env.docker` con los nombres nuevos, contraseñas nuevas, el nuevo `CORS_ORIGIN` y un `APP_PORT` libre (por ejemplo `8081`) para convivir con el stack anterior.
+2. Crea el DNS y el vhost del nuevo dominio en el reverse proxy apuntando a ese puerto, con su certificado TLS.
+3. Levanta solo la nueva base:
+
+   ```bash
+   cd /var/www/stelios/repo
+   docker compose --env-file /var/www/stelios/.env.docker up -d --wait database
+   ```
+
+4. Detén las escrituras del stack anterior y genera el dump final con su propio fichero de entorno:
+
+   ```bash
+   docker compose -p myworkoutbox --env-file /var/www/myworkoutbox/.env.docker stop frontend backend
+   DOCKER_ENV_FILE=/var/www/myworkoutbox/.env.docker \
+   BACKUP_DIR=/var/www/stelios/backups \
+   ./scripts/docker-backup.sh
+   ```
+
+   El dump no incluye `CREATE DATABASE`, así que puede restaurarse en una base con otro nombre.
+
+5. Restaura el dump y aplica el cambio de marca en los datos (solo nombres visibles; los slugs no cambian):
+
+   ```bash
+   CONFIRM_DATABASE_RESTORE=yes \
+   DOCKER_ENV_FILE=/var/www/stelios/.env.docker \
+   ./scripts/docker-restore.sh /var/www/stelios/backups/<DUMP>.sql.gz
+
+   docker compose --env-file /var/www/stelios/.env.docker exec -T database \
+     sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' \
+     < scripts/sql/rename-platform-brand.sql
+   ```
+
+6. Actualiza los secrets `APP_PATH` y `DOCKER_ENV_FILE` y publica un tag nuevo. El workflow despliega el stack `stelios`.
+7. Valida health, login, tenants y datos históricos en el nuevo dominio. Después redirige el dominio anterior con un `301` al nuevo.
+8. Hasta validar varios backups de la nueva instalación, conserva el stack anterior detenido y su volumen como rollback. El volumen `myworkoutbox_database_data` se elimina al final, de forma intencionada.
+
+El cambio de dominio invalida las sesiones guardadas en el navegador, porque el almacenamiento es por origen: los usuarios tienen que volver a iniciar sesión.
 
 ## 🤖 GitHub Actions
 
@@ -177,8 +221,8 @@ DOCKER_ENV_FILE
 VITE_API_URL
 ```
 
-- `APP_PATH`: por ejemplo `/var/www/myworkoutbox`.
-- `DOCKER_ENV_FILE`: por ejemplo `/var/www/myworkoutbox/.env.docker`.
+- `APP_PATH`: por ejemplo `/var/www/stelios`.
+- `DOCKER_ENV_FILE`: por ejemplo `/var/www/stelios/.env.docker`.
 - `VITE_API_URL` solo se utiliza en el quality gate; la imagen productiva usa `/api`.
 
 El job verifica que el tag pertenece a `main`, ejecuta quality gates, construye ambas imágenes y despliega por SSH.
@@ -209,10 +253,10 @@ Si falla un despliegue y existe una release Docker anterior, el script intenta r
 Para un rollback manual de aplicación:
 
 ```bash
-cd /var/www/myworkoutbox/repo
+cd /var/www/stelios/repo
 git checkout <PREVIOUS_TAG>
 IMAGE_TAG=<PREVIOUS_TAG> docker compose \
-  --env-file /var/www/myworkoutbox/.env.docker \
+  --env-file /var/www/stelios/.env.docker \
   up --build -d --remove-orphans --wait
 ```
 
@@ -221,7 +265,7 @@ Restaura la base únicamente cuando el cambio de esquema lo exija y después de 
 ## ✅ Comprobaciones
 
 ```bash
-docker compose --env-file /var/www/myworkoutbox/.env.docker ps
+docker compose --env-file /var/www/stelios/.env.docker ps
 curl --fail https://app.example.com/api/health
 curl --fail https://app.example.com/api/openapi.json
 ```

@@ -1,4 +1,4 @@
-name: ${COMPOSE_PROJECT_NAME:-myworkoutbox}
+name: ${COMPOSE_PROJECT_NAME:-stelios}
 
 services:
   database:
@@ -21,7 +21,7 @@ services:
       start_period: 20s
 
   migrate:
-    image: myworkoutbox-backend:${IMAGE_TAG:-local}
+    image: stelios-backend:${IMAGE_TAG:-local}
     build:
       context: ./backend
       target: runtime
@@ -43,7 +43,7 @@ services:
     restart: "no"
 
   backend:
-    image: myworkoutbox-backend:${IMAGE_TAG:-local}
+    image: stelios-backend:${IMAGE_TAG:-local}
     build:
       context: ./backend
       target: runtime
@@ -73,13 +73,13 @@ services:
       - ALL
 
   frontend:
-    image: myworkoutbox-frontend:${IMAGE_TAG:-local}
+    image: stelios-frontend:${IMAGE_TAG:-local}
     build:
       context: ./frontend
       target: runtime
       args:
         VITE_API_URL: /api
-        VITE_TENANT_ID: ${VITE_TENANT_ID:-platform}
+        VITE_MARKETING_URL: ${VITE_MARKETING_URL:-}
     restart: unless-stopped
     ports:
       - "127.0.0.1:${APP_PORT:-8080}:8080"

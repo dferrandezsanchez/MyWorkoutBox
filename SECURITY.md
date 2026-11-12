@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-MyWorkoutBox is currently in alpha. Security fixes are applied to the latest version on `main` and the latest published release only.
+STELIOS is currently in alpha. Security fixes are applied to the latest version on `main` and the latest published release only.
 
 ## Reporting A Vulnerability
 

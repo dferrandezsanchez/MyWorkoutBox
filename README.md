@@ -1,10 +1,10 @@
-# 🏋️ MyWorkoutBox
+# 🏋️ STELIOS
 
-**MyWorkoutBox** es una aplicación web para centros de entrenamiento que necesitan gestionar clientes, entrenadores, ejercicios evaluables y marcas de rendimiento desde una plataforma propia.
+**STELIOS** es una aplicación web para centros de entrenamiento que necesitan gestionar clientes, entrenadores, ejercicios evaluables y marcas de rendimiento desde una plataforma propia.
 
-El proyecto nació inicialmente como una solución específica para un centro de entrenamiento, pero durante el desarrollo evolucionó hacia una arquitectura **SaaS multi-tenant**. Cada centro puede operar dentro de su propio tenant, con usuarios, clientes, entrenadores, ejercicios y personalización visual mediante color primario de marca.
+El proyecto nació inicialmente como una solución específica para un centro de entrenamiento, pero durante el desarrollo evolucionó hacia una arquitectura **SaaS multi-tenant**. Cada centro puede operar dentro de su propio tenant, con sus propios usuarios, clientes, entrenadores y ejercicios, siempre bajo la identidad visual común de STELIOS.
 
-MyWorkoutBox está desarrollado como una solución **web full-stack mobile-first**, priorizando una experiencia cómoda en dispositivos móviles. Además, el backend expone una API preparada para que en futuras fases puedan desarrollarse aplicaciones nativas para Android e iOS consumiendo los mismos servicios.
+STELIOS está desarrollado como una solución **web full-stack mobile-first**, priorizando una experiencia cómoda en dispositivos móviles. Además, el backend expone una API preparada para que en futuras fases puedan desarrollarse aplicaciones nativas para Android e iOS consumiendo los mismos servicios.
 
 Este proyecto se ha desarrollado como **Trabajo de Fin de Máster** del **Máster en Desarrollo con IA E.II**, utilizando inteligencia artificial como apoyo transversal durante el ciclo de desarrollo.
 
@@ -35,21 +35,21 @@ Este proyecto se ha desarrollado como **Trabajo de Fin de Máster** del **Máste
 
 ## 🎯 Objetivo del proyecto
 
-El objetivo de MyWorkoutBox es construir una solución real para centros de entrenamiento y entrenadores personales, centrada en la gestión de clientes, entrenadores, ejercicios evaluables y registro de marcas durante sesiones de entrenamiento.
+El objetivo de STELIOS es construir una solución real para centros de entrenamiento y entrenadores personales, centrada en la gestión de clientes, entrenadores, ejercicios evaluables y registro de marcas durante sesiones de entrenamiento.
 
 El proyecto se ha desarrollado con un doble propósito:
 
 - aplicar conocimientos de desarrollo full-stack adquiridos durante el máster;
 - demostrar cómo la inteligencia artificial puede integrarse en el ciclo de desarrollo de software para acelerar tareas de análisis, arquitectura, implementación, testing, diseño, documentación y despliegue.
 
-MyWorkoutBox no pretende ser una aplicación genérica de reservas o planificación deportiva. El foco del MVP está en el seguimiento operativo del entrenamiento: registrar lo que ocurre en una sesión real y conservar un histórico útil para tomar mejores decisiones.
+STELIOS no pretende ser una aplicación genérica de reservas o planificación deportiva. El foco del MVP está en el seguimiento operativo del entrenamiento: registrar lo que ocurre en una sesión real y conservar un histórico útil para tomar mejores decisiones.
 
 ---
 
 ## 🚀 Demo
 
 - **Aplicación en producción:** [https://tumeta.danielferrandez.dev](https://tumeta.danielferrandez.dev)
-- **Tenant demo:** MyWorkoutBox Demo Center
+- **Tenant demo:** STELIOS Demo Center
 
 ### Credenciales de prueba
 
@@ -64,31 +64,27 @@ MyWorkoutBox no pretende ser una aplicación genérica de reservas o planificaci
 
 ## 🖼️ Capturas
 
-Las siguientes capturas muestran el estado actual de la aplicación en su versión mobile-first, con modo oscuro forzado y branding configurable por tenant.
+Las siguientes capturas muestran el estado actual de la aplicación en su versión mobile-first, con modo oscuro forzado. Las capturas corresponden a la versión anterior a la identidad STELIOS.
 
 <table>
   <tr>
-    <td align="center" width="16%">
-      <img src="doc/assets/screenshots/00-landing.png" width="180" alt="Landing" /><br />
-      <sub>Landing</sub>
-    </td>
-    <td align="center" width="16%">
+    <td align="center" width="20%">
       <img src="doc/assets/screenshots/01-login.png" width="180" alt="Login" /><br />
       <sub>Login</sub>
     </td>
-    <td align="center" width="16%">
+    <td align="center" width="20%">
       <img src="doc/assets/screenshots/02-admin-dashboard.png" width="180" alt="Dashboard administrador" /><br />
       <sub>Dashboard administrador</sub>
     </td>
-    <td align="center" width="16%">
+    <td align="center" width="20%">
       <img src="doc/assets/screenshots/03-admin-clients.png" width="180" alt="Gestión de clientes" /><br />
       <sub>Gestión de clientes</sub>
     </td>
-    <td align="center" width="16%">
+    <td align="center" width="20%">
       <img src="doc/assets/screenshots/04-trainer-home.png" width="180" alt="Inicio entrenador" /><br />
       <sub>Inicio entrenador</sub>
     </td>
-    <td align="center" width="16%">
+    <td align="center" width="20%">
       <img src="doc/assets/screenshots/05-active-session.png" width="180" alt="Sesión activa" /><br />
       <sub>Sesión activa</sub>
     </td>
@@ -100,15 +96,15 @@ Las siguientes capturas muestran el estado actual de la aplicación en su versi�
 ## ✨ Funcionalidades principales
 
 - **Seguridad y acceso:** autenticación JWT, control de acceso por rol y selección de tenant.
-- **SaaS multi-tenant:** aislamiento de datos y branding por centro mediante color primario.
-- **Administración:** dashboard operativo y gestión de clientes, entrenadores y ejercicios evaluables.
+- **SaaS multi-tenant:** aislamiento de datos por centro con una identidad visual única de producto.
+- **Administración:** dashboard de actividad del centro (sesiones y series de los últimos 28 días frente a los 28 anteriores, sesiones en curso, ranking del equipo y clientes a reactivar) y gestión de clientes, entrenadores y ejercicios evaluables.
 - **Clientes:** ficha individual, estado, histórico, sesiones completadas, exportación y anonimización RGPD.
 - **Rendimiento:** plantillas de medición, marcas actuales, mejores registros e histórico de progreso.
 - **Sesiones:** selección de cliente, sesión activa única por entrenador, ejercicios dinámicos y múltiples series editables.
 - **Auditoría:** registro básico de acciones relevantes.
 - **API:** contrato OpenAPI y Swagger UI para frontend web y futuros clientes móviles.
 - **Producción:** MariaDB, Docker Compose, Nginx y despliegue automatizado con GitHub Actions.
-- **Presentación pública:** landing comercial responsive con acceso a la demo y a la plataforma.
+- **Presentación pública:** la web comercial vive en un proyecto independiente; la raíz de la aplicación lleva al login y este enlaza de vuelta a la web mediante `VITE_MARKETING_URL`.
 
 ---
 
@@ -173,7 +169,7 @@ El modo activo determina la interfaz mostrada, pero no modifica el rol ni los pe
 
 ## 🏗️ Arquitectura
 
-MyWorkoutBox está organizado como un monorepo con dos aplicaciones principales:
+STELIOS está organizado como un monorepo con dos aplicaciones principales:
 
 - `backend`: API REST desarrollada con Node.js, Express, TypeScript, Prisma y MariaDB/MySQL.
 - `frontend`: aplicación web mobile-first desarrollada con React, TypeScript, Vite y Tailwind CSS.
@@ -446,7 +442,7 @@ El proyecto incluye despliegue automatizado mediante GitHub Actions. La informac
 
 ## 🤖 Uso de inteligencia artificial durante el desarrollo
 
-MyWorkoutBox se ha desarrollado utilizando inteligencia artificial como apoyo transversal durante el ciclo de desarrollo.
+STELIOS se ha desarrollado utilizando inteligencia artificial como apoyo transversal durante el ciclo de desarrollo.
 
 La IA no se plantea como una funcionalidad interna de prescripción deportiva, sino como una herramienta de asistencia al desarrollador para acelerar análisis, implementación, testing, diseño, documentación y revisión.
 
@@ -487,7 +483,7 @@ Las decisiones de UX del flujo de entrenador tomadas con apoyo de IA están docu
 - Evolución de SQLite a MariaDB para acercar el proyecto a un entorno de producción real.
 - Prisma como ORM y sistema de migraciones.
 - Autenticación mediante JWT y control de roles.
-- Modelo SaaS multi-tenant con personalización visual por centro.
+- Modelo SaaS multi-tenant con identidad de producto única: los centros no personalizan la marca.
 - Frontend mobile-first con React, TypeScript y Tailwind CSS.
 - Interfaz en modo oscuro forzado para mantener una apariencia premium y consistente.
 - Despliegue automatizado mediante GitHub Actions, Docker y Nginx.
@@ -498,7 +494,7 @@ Las decisiones de UX del flujo de entrenador tomadas con apoyo de IA están docu
 
 ## 🔮 Evolución futura
 
-MyWorkoutBox está planteado como un MVP funcional sobre una arquitectura preparada para evolucionar.
+STELIOS está planteado como un MVP funcional sobre una arquitectura preparada para evolucionar.
 
 Algunas líneas futuras son:
 
@@ -508,15 +504,14 @@ Algunas líneas futuras son:
 - modo offline para entrenadores durante sesiones;
 - notificaciones y recordatorios;
 - integración con otros sistemas o dispositivos;
-- evolución de la personalización visual por tenant;
 - ampliación del módulo de reporting y dashboards analíticos.
 
 ---
 
 ## 🎞️ Slides y vídeo
 
-- **Slides:** [Presentación de MyWorkoutBox](https://docs.google.com/presentation/d/1Y1xkaN5FHbI3c2Gnds4hKRXLrvnICVmDvPTVz_5zbsE/edit?usp=sharing).
-- **Vídeo explicativo:** [Demostración de MyWorkoutBox](https://drive.google.com/file/d/19sBBqKB1WKyDasB2WIhm7aIG1qhrYKlk/view?usp=sharing).
+- **Slides:** [Presentación de STELIOS](https://docs.google.com/presentation/d/1Y1xkaN5FHbI3c2Gnds4hKRXLrvnICVmDvPTVz_5zbsE/edit?usp=sharing).
+- **Vídeo explicativo:** [Demostración de STELIOS](https://drive.google.com/file/d/19sBBqKB1WKyDasB2WIhm7aIG1qhrYKlk/view?usp=sharing).
 
 ---
 
