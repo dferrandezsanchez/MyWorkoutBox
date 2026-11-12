@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { KeyRound, UserCircle } from 'lucide-react';
+import { Check, KeyRound, UserCircle } from 'lucide-react';
 import AppShell from '@app/layout/AppShell';
-import { Button, Panel, TextInput } from '@shared/components/ui';
+import { Button, PageHeader, Panel, SectionHeader, TextInput } from '@shared/components/ui';
 import { useAuthUser, useChangePassword, useUpdateAuthUser } from '@features/auth/hooks/useAuthUser';
 
 export default function AccountPage() {
@@ -26,28 +26,22 @@ export default function AccountPage() {
 
   return (
     <AppShell title="Cuenta">
-      <div className="mx-auto max-w-2xl space-y-5">
-        <Panel className="overflow-hidden p-5">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary shadow-[0_14px_34px_rgba(var(--color-primary)/0.18)]">
-              <UserCircle size={30} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Perfil personal</p>
-              <h1 className="mt-1 truncate text-3xl font-semibold tracking-tight text-text-primary">Cuenta</h1>
-              <p className="mt-1 text-sm text-text-secondary">
-                Datos de contacto y seguridad.
-              </p>
-            </div>
-          </div>
-        </Panel>
+      <div className="mx-auto max-w-2xl">
+        <PageHeader eyebrow="Perfil personal" title="Cuenta" description="Datos de contacto y seguridad." />
 
-        <Panel className="p-4 sm:p-5">
-          {isLoading && <p className="text-text-secondary">Cargando cuenta...</p>}
-          {isError && <p className="text-red-500">Error al cargar la cuenta</p>}
+        <div className="space-y-5">
+        <Panel className="p-5 sm:p-6">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary-soft">
+              <UserCircle size={20} />
+            </span>
+            <SectionHeader title="Datos personales" className="flex-1" />
+          </div>
+          {isLoading && <p className="mt-5 text-text-secondary">Cargando cuenta...</p>}
+          {isError && <p className="mt-5 text-danger">Error al cargar la cuenta</p>}
           {user && (
             <form
-              className="space-y-4"
+              className="mt-6 space-y-4"
               onSubmit={async (event) => {
                 event.preventDefault();
                 setSaved(false);
@@ -56,7 +50,7 @@ export default function AccountPage() {
               }}
             >
               <div>
-                <label htmlFor="account-name" className="mb-1 block text-sm font-medium text-text-primary">
+                <label htmlFor="account-name" className="mb-1.5 block text-sm font-medium text-text-secondary">
                   Nombre
                 </label>
                 <TextInput
@@ -69,7 +63,7 @@ export default function AccountPage() {
               </div>
 
               <div>
-                <label htmlFor="account-email" className="mb-1 block text-sm font-medium text-text-primary">
+                <label htmlFor="account-email" className="mb-1.5 block text-sm font-medium text-text-secondary">
                   Email
                 </label>
                 <TextInput
@@ -82,13 +76,14 @@ export default function AccountPage() {
                 />
               </div>
 
-              <div className="rounded-2xl border border-border/70 bg-surface/70 p-3 text-sm text-text-secondary">
-                Rol: {user.role === 'ADMIN' ? 'Administrador' : 'Entrenador'}
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-background/60 px-3.5 py-3 text-sm">
+                <span className="text-text-muted">Rol</span>
+                <span className="font-semibold text-text-primary">{user.role === 'ADMIN' ? 'Administrador' : 'Entrenador'}</span>
               </div>
 
-              {saved && <p className="text-sm text-emerald-700">Datos guardados.</p>}
+              {saved && <p role="status" className="inline-flex items-center gap-1.5 text-sm text-primary-soft"><Check size={16} />Datos guardados.</p>}
               {updateMutation.isError && (
-                <p className="text-sm text-red-600">No se pudieron guardar los cambios.</p>
+                <p role="alert" className="text-sm text-danger">No se pudieron guardar los cambios.</p>
               )}
 
               <div>
@@ -104,19 +99,16 @@ export default function AccountPage() {
           )}
         </Panel>
 
-        <Panel className="p-4 sm:p-5">
+        <Panel className="p-5 sm:p-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/12 text-primary">
-              <KeyRound size={20} />
-            </div>
-            <h2 className="text-lg font-semibold text-text-primary">Cambiar contraseña</h2>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary-soft">
+              <KeyRound size={19} />
+            </span>
+            <SectionHeader title="Cambiar contraseña" description="Usa al menos 8 caracteres para la nueva contraseña." className="flex-1" />
           </div>
-          <p className="mt-1 text-sm text-text-secondary">
-            Usa al menos 8 caracteres para la nueva contraseña.
-          </p>
 
           <form
-            className="mt-4 space-y-4"
+            className="mt-6 space-y-4"
             onSubmit={async (event) => {
               event.preventDefault();
               setPasswordSaved(false);
@@ -144,7 +136,7 @@ export default function AccountPage() {
             }}
           >
             <div>
-              <label htmlFor="current-password" className="mb-1 block text-sm font-medium text-text-primary">
+              <label htmlFor="current-password" className="mb-1.5 block text-sm font-medium text-text-secondary">
                 Contraseña actual
               </label>
               <TextInput
@@ -159,7 +151,7 @@ export default function AccountPage() {
             </div>
 
             <div>
-              <label htmlFor="new-password" className="mb-1 block text-sm font-medium text-text-primary">
+              <label htmlFor="new-password" className="mb-1.5 block text-sm font-medium text-text-secondary">
                 Nueva contraseña
               </label>
               <TextInput
@@ -174,7 +166,7 @@ export default function AccountPage() {
             </div>
 
             <div>
-              <label htmlFor="confirm-password" className="mb-1 block text-sm font-medium text-text-primary">
+              <label htmlFor="confirm-password" className="mb-1.5 block text-sm font-medium text-text-secondary">
                 Confirmar contraseña
               </label>
               <TextInput
@@ -189,14 +181,14 @@ export default function AccountPage() {
             </div>
 
             {passwordSaved && (
-              <p className="text-sm text-emerald-700">Contraseña actualizada.</p>
+              <p role="status" className="inline-flex items-center gap-1.5 text-sm text-primary-soft"><Check size={16} />Contraseña actualizada.</p>
             )}
-            {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+            {passwordError && <p role="alert" className="text-sm text-danger">{passwordError}</p>}
 
             <Button
               type="submit"
-              variant="primary"
-              className="w-full"
+              variant="secondary"
+              className="w-full sm:w-auto"
               disabled={
                 passwordMutation.isPending ||
                 !currentPassword ||
@@ -208,6 +200,7 @@ export default function AccountPage() {
             </Button>
           </form>
         </Panel>
+        </div>
       </div>
     </AppShell>
   );

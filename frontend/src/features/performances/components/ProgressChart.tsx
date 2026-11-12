@@ -65,8 +65,8 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
 
   if (points.length < 2) {
     return (
-      <section className="mb-4 rounded-2xl border border-dashed border-border/80 bg-elevated/75 p-4 text-center">
-        <p className="font-medium text-text-primary">Evolución</p>
+      <section className="mb-4 rounded-2xl border border-dashed border-white/[0.12] bg-surface/60 p-5 text-center">
+        <p className="font-display font-bold text-text-primary">Evolución</p>
         <p className="mt-1 text-sm text-text-secondary">
           Aún no hay suficientes marcas numéricas para dibujar una tendencia.
         </p>
@@ -106,21 +106,21 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
   const yTicks = [yMax, (yMax + yMin) / 2, yMin];
 
   return (
-    <section className="mb-4 rounded-2xl border border-border/70 bg-elevated/85 p-4 shadow-panel backdrop-blur">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-text-primary">Evolución</h2>
-          <p className="text-sm text-text-secondary">
+    <section className="mb-4 min-w-0 rounded-2xl border border-white/[0.08] bg-surface p-4 sm:p-5">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="eyebrow text-xs text-text-muted">Evolución</h2>
+          <p className="tabular mt-1.5 text-sm text-text-secondary">
             {points.length} marcas · {first.label} - {last.label}
           </p>
         </div>
         <span
-          className={`rounded-full px-3 py-1 text-sm font-semibold ${
+          className={`tabular rounded-full px-3 py-1 font-display text-sm font-bold ring-1 ${
             delta > 0
-              ? 'bg-emerald-500/12 text-emerald-700 ring-1 ring-emerald-500/20 dark:text-emerald-300'
+              ? 'bg-success/10 text-success ring-success/25'
               : delta < 0
-                ? 'bg-red-500/12 text-red-600 ring-1 ring-red-500/20 dark:text-red-300'
-                : 'bg-text-muted/10 text-text-secondary ring-1 ring-border'
+                ? 'bg-danger/10 text-danger ring-danger/25'
+                : 'bg-white/[0.04] text-text-secondary ring-white/[0.08]'
           }`}
         >
           {delta > 0 ? '+' : ''}
@@ -136,8 +136,8 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
       >
         <defs>
           <linearGradient id="progress-fill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -149,7 +149,7 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
                 x={paddingLeft - 10}
                 y={y + 3}
                 textAnchor="end"
-                className="fill-text-muted text-[9px]"
+                className="tabular fill-text-muted font-display text-xs"
               >
                 {formatValue(tick)}
               </text>
@@ -158,8 +158,9 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
                 x2={width - paddingRight}
                 y1={y}
                 y2={y}
-                className="stroke-border"
+                className="stroke-white/[0.06]"
                 strokeWidth="1"
+                strokeDasharray="3 4"
               />
             </g>
           );
@@ -178,46 +179,46 @@ export default function ProgressChart({ history }: { history: PerformanceRecord[
         {points.map((point, index) => {
           const x = xFor(index);
           const y = yFor(point.value);
-          const showLabel = index === 0 || index === points.length - 1 || point.value === maxValue;
+          const isLast = index === points.length - 1;
+          const showLabel = index === 0 || isLast || point.value === maxValue;
           return (
             <g key={point.id}>
-              <circle cx={x} cy={y} r="3.4" fill="currentColor" className="stroke-elevated" strokeWidth="2" />
+              {isLast && <circle cx={x} cy={y} r="8" fill="currentColor" opacity="0.18" />}
+              <circle cx={x} cy={y} r={isLast ? 4.5 : 3.4} fill="currentColor" className="stroke-surface" strokeWidth="2" />
               {showLabel && (
-                <>
-                  <text
-                    x={x}
-                    y={Math.max(12, y - 9)}
-                    textAnchor="middle"
-                    className="fill-text-primary text-[10px] font-semibold"
-                  >
-                    {formatValue(point.value)}
-                  </text>
-                </>
+                <text
+                  x={x}
+                  y={Math.max(12, y - 11)}
+                  textAnchor="middle"
+                  className={`tabular font-display text-xs font-bold ${isLast ? 'fill-primary-soft' : 'fill-text-primary'}`}
+                >
+                  {formatValue(point.value)}
+                </text>
               )}
             </g>
           );
         })}
 
-        <text x={paddingLeft} y={height - 9} textAnchor="start" className="fill-text-muted text-[9px]">
+        <text x={paddingLeft} y={height - 9} textAnchor="start" className="fill-text-muted font-display text-xs uppercase">
           {first.label}
         </text>
-        <text x={width - paddingRight} y={height - 9} textAnchor="end" className="fill-text-muted text-[9px]">
+        <text x={width - paddingRight} y={height - 9} textAnchor="end" className="fill-text-muted font-display text-xs uppercase">
           {last.label}
         </text>
       </svg>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 rounded-2xl border border-border/70 bg-surface/60 p-3 text-center text-xs text-text-secondary">
-        <div className="border-r border-border/70 last:border-r-0">
-          <p>Inicio</p>
-          <p className="mt-1 font-semibold text-text-primary">{formatValue(first.value)}</p>
-        </div>
-        <div className="border-r border-border/70 last:border-r-0">
-          <p>Mejor</p>
-          <p className="mt-1 font-semibold text-text-primary">{formatValue(maxValue)}</p>
+      <div className="mt-4 grid grid-cols-3 divide-x divide-white/[0.06] border-t border-white/[0.06] pt-4 text-center">
+        <div>
+          <p className="font-display text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">Inicio</p>
+          <p className="tabular mt-1.5 font-display text-xl font-bold text-text-primary">{formatValue(first.value)}</p>
         </div>
         <div>
-          <p>Última</p>
-          <p className="mt-1 font-semibold text-text-primary">{formatValue(last.value)}</p>
+          <p className="font-display text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">Mejor</p>
+          <p className="tabular mt-1.5 font-display text-xl font-bold text-text-primary">{formatValue(maxValue)}</p>
+        </div>
+        <div>
+          <p className="font-display text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">Última</p>
+          <p className="tabular mt-1.5 font-display text-xl font-bold text-primary-soft">{formatValue(last.value)}</p>
         </div>
       </div>
     </section>

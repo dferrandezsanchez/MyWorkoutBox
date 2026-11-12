@@ -256,8 +256,8 @@ export default function ExerciseForm({
   };
 
   const inputClass =
-    'w-full rounded-xl border border-border/70 bg-elevated/90 px-3 py-2 min-h-[46px] text-sm text-text-primary shadow-sm placeholder:text-text-muted focus-ring';
-  const labelClass = 'mb-1.5 block text-sm font-semibold text-text-secondary';
+    'min-h-[46px] w-full rounded-xl border border-border bg-background/60 px-3.5 py-2 text-sm text-text-primary placeholder:text-text-muted transition-colors hover:border-border-strong focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25';
+  const labelClass = 'mb-1.5 block text-sm font-medium text-text-secondary';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -305,14 +305,15 @@ export default function ExerciseForm({
               key={option.value}
               type="button"
               onClick={() => handleEvaluationChange(option.value)}
-              className={`min-h-[72px] rounded-2xl border px-3 py-2 text-left transition-colors focus-ring ${
+              aria-pressed={evaluationType === option.value}
+              className={`min-h-[72px] rounded-xl border px-3.5 py-2.5 text-left transition-[background-color,border-color,color] duration-150 ease-out focus-ring ${
                 evaluationType === option.value
-                  ? 'border-primary/60 bg-primary/15 text-primary'
-                  : 'border-border/70 bg-surface/70 text-text-secondary hover:bg-elevated'
+                  ? 'border-primary/60 bg-primary/10 text-text-primary'
+                  : 'border-white/[0.08] bg-background/60 text-text-secondary hover:border-white/20 hover:bg-white/[0.03]'
               }`}
             >
-              <span className="block text-sm font-semibold">{option.label}</span>
-              <span className="mt-1 block text-xs opacity-80">{option.description}</span>
+              <span className={`block font-display text-sm font-bold ${evaluationType === option.value ? 'text-primary-soft' : ''}`}>{option.label}</span>
+              <span className="mt-1 block text-xs text-text-muted">{option.description}</span>
             </button>
           ))}
         </div>
@@ -324,7 +325,7 @@ export default function ExerciseForm({
           {FIELD_OPTIONS.map((field) => {
             const checked = measurementFields.some((item) => item.key === field.key);
             return (
-              <label key={field.key} className="flex min-h-[48px] items-center gap-3 rounded-xl border border-border/70 bg-surface/70 px-3 text-sm text-text-secondary">
+              <label key={field.key} className={`flex min-h-[52px] items-center gap-3 rounded-xl border px-3.5 text-sm text-text-secondary transition-colors duration-150 ${checked ? 'border-primary/40 bg-primary/[0.06]' : 'border-white/[0.08] bg-background/60'} ${field.key === 'value' ? 'cursor-default' : 'cursor-pointer hover:border-white/20'}`}>
                 <input
                   type="checkbox"
                   checked={checked}
@@ -334,7 +335,7 @@ export default function ExerciseForm({
                 />
                 <span>
                   <span className="block font-semibold text-text-primary">{field.label}</span>
-                  <span className="text-xs">{field.required || field.key === 'value' ? 'Obligatorio' : 'Opcional'}</span>
+                  <span className="text-xs text-text-muted">{field.required || field.key === 'value' ? 'Obligatorio' : 'Opcional'}</span>
                 </span>
               </label>
             );
@@ -344,8 +345,8 @@ export default function ExerciseForm({
 
       <div>
         <div className="mb-2 flex items-center justify-between gap-3">
-          <span className={labelClass}>Variantes del ejercicio</span>
-          <Button type="button" variant="secondary" onClick={addVariantGroup} className="inline-flex min-h-9 items-center gap-2 px-3">
+          <span className="text-sm font-medium text-text-secondary">Variantes del ejercicio</span>
+          <Button type="button" variant="secondary" onClick={addVariantGroup} className="inline-flex items-center gap-2 px-4">
             <Plus size={15} />
             Añadir
           </Button>
@@ -353,13 +354,13 @@ export default function ExerciseForm({
 
         <div className="space-y-3">
           {variantGroups.length === 0 && (
-            <p className="rounded-2xl border border-dashed border-border/70 bg-surface/50 p-3 text-sm text-text-secondary">
+            <p className="rounded-xl border border-dashed border-white/[0.12] px-4 py-3 text-sm text-text-muted">
               Añade variantes como agarre, asistencia, modalidad, lado o rango si este ejercicio lo necesita.
             </p>
           )}
 
           {variantGroups.map((group, index) => (
-            <div key={`${group.key}-${index}`} className="rounded-2xl border border-border/70 bg-surface/70 p-3">
+            <div key={`${group.key}-${index}`} className="rounded-xl border border-white/[0.08] bg-background/40 p-3.5">
               <div className="grid gap-3 sm:grid-cols-[0.9fr_1.4fr_auto]">
                 <div>
                   <label className={labelClass} htmlFor={`variant-label-${index}`}>Nombre</label>
@@ -388,7 +389,7 @@ export default function ExerciseForm({
                 <button
                   type="button"
                   onClick={() => removeVariantGroup(index)}
-                  className="mt-6 flex min-h-[46px] items-center justify-center rounded-xl border border-red-300/40 px-3 text-red-600 hover:bg-red-50 dark:text-red-200 dark:hover:bg-red-500/10"
+                  className="flex min-h-[46px] min-w-[46px] items-center justify-center self-end rounded-full border border-danger/30 bg-danger/10 px-3 text-red-200 transition-colors duration-150 hover:border-danger/45 hover:bg-danger/15 focus-ring"
                   aria-label="Eliminar variante"
                 >
                   <Trash2 size={17} />
@@ -410,7 +411,7 @@ export default function ExerciseForm({
 
       <div>
         <label className={labelClass} htmlFor="ex-desc">Descripción</label>
-        <textarea id="ex-desc" className="w-full resize-none rounded-xl border border-border/70 bg-elevated/90 px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus-ring" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+        <textarea id="ex-desc" className={`${inputClass} resize-none py-2.5`} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
 
       {showStatus && (
@@ -423,7 +424,7 @@ export default function ExerciseForm({
         </div>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex justify-end border-t border-white/[0.06] pt-5">
         <Button type="submit" disabled={isSubmitting || !name.trim()} variant="primary" className="w-full sm:w-auto">{isSubmitting ? 'Enviando...' : submitLabel}</Button>
       </div>
     </form>

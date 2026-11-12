@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginPage from './LoginPage';
 import { login, selectTenant } from '@features/auth/api/auth.api';
 
@@ -17,7 +17,7 @@ vi.mock('@features/auth/api/auth.api', () => ({
 }));
 
 vi.mock('@features/auth/model/auth-store', () => ({
-  setStoredTenantBrand: vi.fn(),
+  setStoredTenant: vi.fn(),
   setToken: vi.fn(),
 }));
 
@@ -28,6 +28,21 @@ vi.mock('@shared/state/query-client', () => ({
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('links back to the marketing site only when configured', () => {
+    vi.stubEnv('VITE_MARKETING_URL', '');
+    const { unmount } = render(<LoginPage />);
+    expect(screen.queryByRole('link', { name: /Volver a la web/ })).not.toBeInTheDocument();
+    unmount();
+
+    vi.stubEnv('VITE_MARKETING_URL', 'https://www.example.com');
+    render(<LoginPage />);
+    expect(screen.getByRole('link', { name: /Volver a la web de STELIOS/ })).toHaveAttribute('href', 'https://www.example.com');
   });
 
   it('toggles password visibility without changing the typed value', async () => {
@@ -80,14 +95,6 @@ describe('LoginPage', () => {
         organizationId: 'org-1',
         name: 'Demo Center',
         slug: 'demo-center',
-        appName: 'MyWorkoutBox',
-        shortName: 'Demo',
-        mark: 'MW',
-        claim: 'Training Intelligence',
-        description: 'Demo tenant',
-        primary: '#2563EB',
-        primaryHover: '#1D4ED8',
-        primarySoft: '#93C5FD',
       },
       user: {
         id: 'user-1',

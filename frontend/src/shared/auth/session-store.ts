@@ -1,8 +1,8 @@
-import type { AuthUser, JwtPayload, TenantBrand } from '@shared/types/auth';
+import type { ActiveTenant, AuthUser, JwtPayload } from '@shared/types/auth';
 
 const TOKEN_KEY = 'auth_token';
-const TENANT_BRAND_KEY = 'auth_tenant_brand';
-export const AUTH_CONTEXT_EVENT = 'mwb-auth-context-changed';
+const ACTIVE_TENANT_KEY = 'auth_active_tenant';
+export const AUTH_CONTEXT_EVENT = 'stelios-auth-context-changed';
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -15,23 +15,23 @@ export function setToken(token: string): void {
 
 export function removeToken(): void {
   localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(TENANT_BRAND_KEY);
+  localStorage.removeItem(ACTIVE_TENANT_KEY);
   window.dispatchEvent(new Event(AUTH_CONTEXT_EVENT));
 }
 
-export function setStoredTenantBrand(tenant: TenantBrand): void {
-  localStorage.setItem(TENANT_BRAND_KEY, JSON.stringify(tenant));
+export function setStoredTenant(tenant: ActiveTenant): void {
+  localStorage.setItem(ACTIVE_TENANT_KEY, JSON.stringify(tenant));
   window.dispatchEvent(new Event(AUTH_CONTEXT_EVENT));
 }
 
-export function getStoredTenantBrand(): TenantBrand | null {
-  const raw = localStorage.getItem(TENANT_BRAND_KEY);
+export function getStoredTenant(): ActiveTenant | null {
+  const raw = localStorage.getItem(ACTIVE_TENANT_KEY);
   if (!raw) return null;
 
   try {
-    return JSON.parse(raw) as TenantBrand;
+    return JSON.parse(raw) as ActiveTenant;
   } catch {
-    localStorage.removeItem(TENANT_BRAND_KEY);
+    localStorage.removeItem(ACTIVE_TENANT_KEY);
     return null;
   }
 }

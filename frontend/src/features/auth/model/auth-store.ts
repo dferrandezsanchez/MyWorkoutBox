@@ -1,10 +1,10 @@
 export {
   AUTH_CONTEXT_EVENT,
   getAuthUser,
-  getStoredTenantBrand,
+  getStoredTenant,
   getToken,
   isTokenExpired,
   removeToken,
-  setStoredTenantBrand,
+  setStoredTenant,
   setToken,
 } from '@shared/auth/session-store';

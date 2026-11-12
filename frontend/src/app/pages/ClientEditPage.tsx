@@ -1,6 +1,9 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import ClientForm from '@features/clients/components/ClientForm';
-import { Button, Panel } from '@shared/components/ui';
+import { X } from 'lucide-react';
+import { Button, PageHeader, Panel } from '@shared/components/ui';
+import { BrandMark } from '@shared/components/BrandLogo';
+import Avatar from '@shared/components/Avatar';
 import { useClient, useUpdateClient } from '@features/clients/hooks/useClients';
 
 export default function ClientEditPage() {
@@ -10,28 +13,38 @@ export default function ClientEditPage() {
   const { data: client, isLoading, isError } = useClient(id!);
   const updateMutation = useUpdateClient();
 
-  if (isLoading) return <div className="min-h-screen bg-background p-6 text-text-secondary">Cargando...</div>;
-  if (isError || !client) return <div className="min-h-screen bg-background p-6 text-red-500">No se encontró el cliente</div>;
+  if (isLoading) return <div className="min-h-dvh bg-background p-6 text-text-secondary">Cargando...</div>;
+  if (isError || !client) {
+    return (
+      <div className="min-h-dvh bg-background p-6">
+        <p role="alert" className="mx-auto max-w-3xl rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-red-200">No se encontró el cliente</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border/70 bg-elevated/85 px-4 py-4 shadow-sm backdrop-blur-xl">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Administración</p>
-            <h1 className="truncate text-xl font-bold text-text-primary">Editar cliente</h1>
-          </div>
-          <Button onClick={() => navigate(-1)} variant="secondary">Cerrar</Button>
+    <div className="min-h-dvh bg-background">
+      <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-background/90 px-4 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-[64px] max-w-3xl items-center justify-between gap-3">
+          <BrandMark className="h-6 w-7 shrink-0 text-primary" />
+          <Button onClick={() => navigate(-1)} variant="secondary" className="inline-flex items-center gap-2">
+            <X size={16} />
+            Cerrar
+          </Button>
         </div>
       </header>
 
-      <main role="main" className="mx-auto max-w-4xl px-4 py-6">
-        <Panel className="p-4 sm:p-6">
-          <div className="mb-5 border-b border-border/70 pb-4">
-            <h2 className="text-lg font-semibold text-text-primary">
-              {client.firstName} {client.lastName}
-            </h2>
-            <p className="mt-1 text-sm text-text-secondary">Actualiza los datos operativos del cliente.</p>
+      <main role="main" className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:pt-10">
+        <PageHeader eyebrow="Administración" title="Editar cliente" />
+        <Panel className="p-5 sm:p-6">
+          <div className="mb-6 flex items-center gap-3 border-b border-white/[0.06] pb-5">
+            <Avatar firstName={client.firstName} lastName={client.lastName} size="md" />
+            <div className="min-w-0">
+              <h2 className="truncate text-lg font-bold text-text-primary sm:text-xl">
+                {client.firstName} {client.lastName}
+              </h2>
+              <p className="mt-0.5 text-sm text-text-secondary">Datos operativos del cliente</p>
+            </div>
           </div>
           <ClientForm
             initial={{

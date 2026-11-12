@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Pencil, Users } from 'lucide-react';
+import { Pencil, Power, ShieldX, Users } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
-import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary, RowIcon } from './AdminManagement';
+import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary, RowActionsMenu, RowIcon } from './AdminManagement';
 
 describe('admin management components', () => {
   it('renders the definitive section pattern and triggers actions', async () => {
@@ -33,5 +33,35 @@ describe('admin management components', () => {
     await user.click(screen.getByRole('button', { name: 'Editar' }));
     expect(create).toHaveBeenCalledOnce();
     expect(edit).toHaveBeenCalledOnce();
+  });
+
+  it('collapses secondary row actions into a labelled sheet', async () => {
+    const user = userEvent.setup();
+    const deactivate = vi.fn();
+    const anonymize = vi.fn();
+
+    render(
+      <RowActionsMenu
+        subject="Marta Ruiz"
+        actions={[
+          { label: 'Desactivar cliente', icon: Power, onSelect: deactivate },
+          { label: 'Anonimizar cliente', icon: ShieldX, tone: 'danger', onSelect: anonymize },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Más acciones de Marta Ruiz' }));
+    expect(screen.getByRole('dialog', { name: 'Acciones de Marta Ruiz' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Desactivar cliente' }));
+    expect(deactivate).toHaveBeenCalledOnce();
+    expect(anonymize).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Más acciones de Marta Ruiz' }));
+    await user.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(anonymize).not.toHaveBeenCalled();
   });
 });

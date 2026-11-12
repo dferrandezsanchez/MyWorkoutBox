@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { CalendarDays, ChevronLeft, ClipboardList, Dumbbell, History, Play, Trophy } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, ClipboardList, History, Play, TrendingUp, Trophy } from 'lucide-react';
 import Avatar from '@shared/components/Avatar';
 import AppShell from '@app/layout/AppShell';
 import { Button, EmptyState, Panel, StatusBadge } from '@shared/components/ui';
@@ -49,7 +49,7 @@ export default function ClientProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <p className="text-text-secondary">Cargando cliente...</p>
       </div>
     );
@@ -57,39 +57,38 @@ export default function ClientProfilePage() {
 
   if (isError || !client) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-red-500">Error al cargar el cliente</p>
+      <div className="flex min-h-dvh items-center justify-center bg-background">
+        <p className="text-danger">Error al cargar el cliente</p>
       </div>
     );
   }
 
   return (
     <AppShell title="Ficha cliente">
-      <div className="mx-auto max-w-4xl space-y-4">
-        <Panel className="p-4 sm:p-6">
-          <div>
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <Button onClick={() => navigate(-1)} className="inline-flex min-h-10 items-center gap-2 px-3">
-                <ChevronLeft size={16} />
-                Volver
-              </Button>
-              <StatusBadge status={client.status} />
-            </div>
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div className="flex items-center justify-between gap-3">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="-ml-2 inline-flex items-center gap-1.5 px-3">
+            <ChevronLeft size={18} />
+            Volver
+          </Button>
+          <StatusBadge status={client.status} />
+        </div>
 
-            <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-center sm:gap-4 sm:text-left">
+        <Panel className="relative overflow-hidden p-5 sm:p-7">
+          <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-primary/70 via-primary/25 to-transparent" />
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
               <Avatar
                 firstName={client.firstName}
                 lastName={client.lastName}
                 size="lg"
               />
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                  Cliente activo
-                </p>
-                <h1 className="mt-1 truncate text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">
+                <p className="eyebrow">Cliente activo</p>
+                <h1 className="mt-1.5 truncate text-2xl font-bold text-text-primary sm:text-[2.25rem] sm:leading-[1.1]">
                   {client.firstName} {client.lastName}
                 </h1>
-                <p className="mt-1 text-sm text-text-secondary">
+                <p className="tabular mt-1 text-sm text-text-secondary">
                   {formatAge(client.birthDate)}
                   {client.height != null ? ` · ${client.height} cm` : ''}
                   {client.weight != null ? ` · ${client.weight} kg` : ''}
@@ -97,52 +96,70 @@ export default function ClientProfilePage() {
               </div>
             </div>
 
-            <Button variant="primary" onClick={() => void openSession()} className="mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 sm:w-auto">
-              <Play size={17} fill="currentColor" />
+            <Button variant="primary" onClick={() => void openSession()} className="inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 sm:w-auto">
+              <Play size={16} fill="currentColor" />
               {activeSession ? `Continuar sesión de ${activeSession.client.firstName}` : 'Iniciar entrenamiento'}
             </Button>
           </div>
         </Panel>
 
         <section>
-          <div className="mb-3 flex items-center gap-2"><ClipboardList size={18} className="text-primary" /><p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Notas importantes</p></div>
-          <Panel className="border-l-4 border-l-primary p-4 sm:p-5">
+          <p className="eyebrow mb-3 flex items-center gap-2 px-1"><ClipboardList size={14} />Notas importantes</p>
+          <Panel className="border-l-2 border-l-primary/70 p-4 sm:p-5">
             <p className="leading-7 text-text-secondary">{client.notes || 'No hay observaciones registradas para este cliente.'}</p>
           </Panel>
         </section>
 
         <section>
-          <div className="mb-3 flex items-end justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                Marcas
-              </p>
-              <h2 className="mt-1 text-xl font-semibold text-text-primary">Ejercicios de referencia</h2>
-              <p className="text-sm text-text-secondary">Última marca, mejor registro e histórico.</p>
-            </div>
+          <div className="mb-3 px-1">
+            <p className="eyebrow">Marcas</p>
+            <h2 className="mt-1.5 text-xl font-bold text-text-primary">Ejercicios de referencia</h2>
+            <p className="mt-0.5 text-sm text-text-muted">Última marca, mejor registro e histórico.</p>
           </div>
 
           {!currentPerformances || currentPerformances.length === 0 ? (
             <EmptyState title="No hay ejercicios activos" />
           ) : (
-            <div className="grid gap-3 lg:grid-cols-2">
+            <Panel className="divide-y divide-white/[0.06] overflow-hidden">
               {currentPerformances.map((item) => (
-                <ExerciseMarkCard
+                <ExerciseMarkRow
                   key={item.exerciseId}
                   item={item}
                   clientId={clientId!}
                 />
               ))}
-            </div>
+            </Panel>
           )}
         </section>
+
         <section>
-          <div className="mb-3"><p className="text-xs font-semibold uppercase tracking-wide text-primary">Entrenamientos</p><h2 className="mt-1 text-xl font-semibold text-text-primary">Sesiones anteriores</h2></div>
+          <div className="mb-3 px-1">
+            <p className="eyebrow">Entrenamientos</p>
+            <h2 className="mt-1.5 text-xl font-bold text-text-primary">Sesiones anteriores</h2>
+          </div>
           {clientSessions.length === 0 ? <EmptyState title="Sin sesiones finalizadas" /> : (
-            <Panel className="overflow-hidden p-0"><div className="divide-y divide-border/70">{clientSessions.map((session) => {
-              const series = session.exercises.reduce((total, item) => total + item.series.length, 0);
-              return <button key={session.id} onClick={() => navigate(`/trainer/sessions/${session.id}`)} className="flex min-h-16 w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-primary/10 focus-ring"><span className="flex items-center gap-3"><CalendarDays size={18} className="text-primary" /><span><span className="block font-semibold text-text-primary">{new Date(session.startedAt).toLocaleDateString('es-ES')}</span><span className="text-xs text-text-secondary">{session.exercises.length} ejercicios · {series} series</span></span></span><span className="text-sm text-text-secondary">{session.trainerName}</span></button>;
-            })}</div></Panel>
+            <Panel className="overflow-hidden">
+              <div className="divide-y divide-white/[0.06]">
+                {clientSessions.map((session) => {
+                  const series = session.exercises.reduce((total, item) => total + item.series.length, 0);
+                  return (
+                    <button key={session.id} onClick={() => navigate(`/trainer/sessions/${session.id}`)} className="group flex min-h-16 w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors duration-150 ease-out hover:bg-white/[0.03] focus-ring sm:px-5">
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-background/60 text-text-secondary"><CalendarDays size={17} /></span>
+                        <span className="min-w-0">
+                          <span className="tabular block font-display font-bold text-text-primary">{new Date(session.startedAt).toLocaleDateString('es-ES')}</span>
+                          <span className="tabular text-xs text-text-muted">{session.exercises.length} ejercicios · {series} series</span>
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-2 text-sm text-text-secondary">
+                        <span className="hidden truncate min-[380px]:inline">{session.trainerName}</span>
+                        <ChevronRight size={18} className="text-text-muted transition-colors duration-150 group-hover:text-primary-soft" />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </Panel>
           )}
         </section>
       </div>
@@ -150,7 +167,7 @@ export default function ClientProfilePage() {
   );
 }
 
-function ExerciseMarkCard({
+function ExerciseMarkRow({
   item,
   clientId,
 }: {
@@ -162,62 +179,52 @@ function ExerciseMarkCard({
   const records = item.recentRecords ?? [];
   const trend = getPerformanceTrend(records, item.exercise.improvementDirection);
   const bars = getTrendBars(records);
-  const trendLabel = trend === 'progressing' ? 'Progresando' : trend === 'stable' ? 'Estable' : 'Sin tendencia';
+  const progressing = trend === 'progressing';
+  const hasRecord = Boolean(item.record);
 
   return (
-    <Panel className="max-w-full overflow-hidden p-4">
-      <div className="flex min-w-0 items-start justify-between gap-3">
-        <div className="flex min-w-0 gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20">
-            <Dumbbell size={20} />
-          </span>
-          <div className="min-w-0">
-            <h3 className="truncate text-base font-semibold text-text-primary">
-              {item.exerciseName}
-            </h3>
-            <p className="mt-1 text-sm text-text-secondary">
-              Última: <span className="font-semibold text-text-primary">{formatPerformance(item.record)}</span>
-            </p>
-          </div>
-        </div>
-        <span className={`w-fit shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${trend === 'progressing' ? 'bg-emerald-500/12 text-emerald-600' : 'bg-surface text-text-secondary'}`}>
-          {trendLabel}
+    <button
+      type="button"
+      onClick={() => navigate(`/clients/${clientId}/exercises/${item.exerciseId}${location.search}`)}
+      aria-label={`Ver histórico de ${item.exerciseName}`}
+      className="group flex min-h-[76px] w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-white/[0.03] active:bg-white/[0.05] focus-ring sm:px-5"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="truncate font-display text-base font-bold text-text-primary">{item.exerciseName}</span>
+          {progressing && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-semibold text-success ring-1 ring-success/25">
+              <TrendingUp size={12} aria-hidden="true" />
+              Progresa
+            </span>
+          )}
         </span>
-      </div>
+        {hasRecord ? (
+          <>
+            <span className="tabular mt-1 flex items-center gap-1.5 truncate text-sm text-text-secondary">
+              <History size={13} className="shrink-0 text-text-muted" aria-hidden="true" />
+              <span className="sr-only">Última:</span>
+              <span className="truncate">{formatPerformance(item.record)}</span>
+            </span>
+            <span className="tabular mt-0.5 flex items-center gap-1.5 truncate text-sm font-semibold text-primary-soft">
+              <Trophy size={13} className="shrink-0" aria-hidden="true" />
+              <span className="sr-only">Mejor:</span>
+              <span className="truncate">{formatPerformance(item.bestRecord)}</span>
+            </span>
+          </>
+        ) : (
+          <span className="mt-1 block text-sm text-text-muted">Sin marcas todavía</span>
+        )}
+      </span>
 
-      {bars.length > 0 && (
-        <div className="mt-4 flex h-16 items-end gap-1.5 rounded-xl bg-surface/60 px-3 pt-3" aria-label={`Evolución de ${item.exerciseName}`}>
-          {bars.map((height, index) => <span key={`${item.exerciseId}-${index}`} className="min-w-0 flex-1 rounded-t-sm bg-primary/35 last:bg-primary" style={{ height: `${height}%` }} />)}
-        </div>
+      {bars.length > 1 && (
+        <span aria-hidden="true" className="flex h-9 w-16 shrink-0 items-end gap-[3px]">
+          {bars.map((height, index) => (
+            <span key={`${item.exerciseId}-${index}`} className="min-w-0 flex-1 rounded-t-[2px] bg-primary/25 last:bg-primary" style={{ height: `${Math.max(height, 8)}%` }} />
+          ))}
+        </span>
       )}
-
-      <div className="mt-4 grid grid-cols-1 gap-2 min-[380px]:grid-cols-2">
-        <div className="min-w-0 rounded-2xl border border-border/70 bg-surface/60 p-3">
-          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
-            <History size={13} />
-            Última
-          </p>
-          <p className="mt-1 truncate text-sm font-semibold text-text-primary">{formatPerformance(item.record)}</p>
-        </div>
-        <div className="min-w-0 rounded-2xl border border-border/70 bg-surface/60 p-3">
-          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
-            <Trophy size={13} />
-            Mejor
-          </p>
-          <p className="mt-1 truncate text-sm font-semibold text-text-primary">{formatPerformance(item.bestRecord)}</p>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <Button
-          variant="secondary"
-          onClick={() => navigate(`/clients/${clientId}/exercises/${item.exerciseId}${location.search}`)}
-          className="inline-flex w-full items-center justify-center gap-2"
-        >
-          <History size={16} />
-          Histórico
-        </Button>
-      </div>
-    </Panel>
+      <ChevronRight size={18} className="shrink-0 text-text-muted transition-colors duration-150 group-hover:text-primary-soft" aria-hidden="true" />
+    </button>
   );
 }

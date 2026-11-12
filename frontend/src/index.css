@@ -2,57 +2,106 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * STELIOS visual identity. Values mirror the marketing site so the product and
+ * the landing read as one brand. The palette is fixed: centers cannot override it.
+ */
 @layer base {
   :root {
-    color-scheme: light;
-    --color-primary: 237 112 45;
-    --color-primary-hover: 217 100 36;
-    --color-primary-soft: 242 154 106;
-    --color-primary-contrast: 255 255 255;
-    --color-background: 244 246 250;
-    --color-surface: 250 251 253;
-    --color-elevated: 255 255 255;
-    --color-border: 218 224 235;
-    --color-border-strong: 190 199 214;
-    --color-text-primary: 22 27 38;
-    --color-text-secondary: 92 101 118;
-    --color-text-muted: 148 157 172;
-    --color-success: 22 163 74;
-    --color-warning: 217 119 6;
-    --color-danger: 220 38 38;
-  }
-
-  .dark {
     color-scheme: dark;
-    --color-background: 6 12 22;
-    --color-surface: 13 24 39;
-    --color-elevated: 17 30 48;
-    --color-border: 42 57 77;
-    --color-border-strong: 64 82 106;
-    --color-text-primary: 246 248 252;
-    --color-text-secondary: 166 176 193;
-    --color-text-muted: 105 119 141;
+    --color-primary: 20 184 166;          /* #14B8A6 */
+    --color-primary-hover: 45 212 191;    /* #2DD4BF */
+    --color-primary-soft: 94 234 212;     /* #5EEAD4, accent text on dark */
+    --color-primary-contrast: 11 15 20;   /* text on teal */
+    --color-background: 11 15 20;         /* #0B0F14 */
+    --color-surface: 15 22 31;            /* #0F161F */
+    --color-elevated: 21 29 40;           /* #151D28 */
+    --color-border: 36 45 58;
+    --color-border-strong: 56 67 83;
+    --color-text-primary: 248 250 252;
+    --color-text-secondary: 163 174 190;
+    --color-text-muted: 120 134 154;
     --color-success: 52 211 153;
     --color-warning: 251 191 36;
     --color-danger: 248 113 113;
   }
 
   html {
-    font-family:
-      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    @apply font-sans;
   }
 
   body {
     @apply bg-background text-text-primary antialiased;
     min-width: 320px;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+
+  ::selection {
+    background: rgb(var(--color-primary) / 0.35);
   }
 }
 
 @layer components {
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 
+  /* Small uppercase label used above section titles, as on the marketing site. */
+  .eyebrow {
+    @apply font-display text-xs font-semibold uppercase tracking-[0.2em] text-primary-soft;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Bottom bars and sheets sit above the iOS home indicator. */
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Space reserved so content never hides behind the mobile bottom navigation. */
+  .pb-mobile-nav {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+  }
+
+  @media (min-width: 1024px) {
+    .pb-mobile-nav {
+      padding-bottom: 2.5rem;
+    }
+  }
 }
 
 @media screen and (max-width: 767px) {

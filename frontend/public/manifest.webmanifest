@@ -1,0 +1,15 @@
+{
+  "name": "STELIOS",
+  "short_name": "STELIOS",
+  "description": "Entrena. Registra. Evoluciona.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0F14",
+  "theme_color": "#0B0F14",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

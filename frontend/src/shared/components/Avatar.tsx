@@ -5,9 +5,9 @@ interface AvatarProps {
 }
 
 const sizeClasses = {
-  sm: 'w-8 h-8 text-xs',
-  md: 'w-12 h-12 text-sm',
-  lg: 'w-16 h-16 text-base',
+  sm: 'h-9 w-9 text-xs',
+  md: 'h-11 w-11 text-sm',
+  lg: 'h-16 w-16 text-lg',
 };
 
 export default function Avatar({ firstName, lastName, size = 'md' }: AvatarProps) {
@@ -18,7 +18,7 @@ export default function Avatar({ firstName, lastName, size = 'md' }: AvatarProps
   return (
     <div
       aria-label={ariaLabel}
-      className={`${sizeClass} rounded-full bg-surface border border-border text-text-primary font-semibold flex items-center justify-center flex-shrink-0`}
+      className={`${sizeClass} flex shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 font-display font-bold tracking-wide text-primary-soft`}
     >
       {initials}
     </div>

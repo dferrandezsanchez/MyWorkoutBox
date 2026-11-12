@@ -16,6 +16,21 @@ describe('PerformanceForm', () => {
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeDisabled();
   });
 
+  it('steps the value with the round buttons and never goes below zero', async () => {
+    const user = userEvent.setup();
+    render(<PerformanceForm onSave={onSave} onClose={vi.fn()} />);
+
+    const input = screen.getByLabelText(/Repeticiones/);
+    await user.click(screen.getByRole('button', { name: 'Sumar 1' }));
+    await user.click(screen.getByRole('button', { name: 'Sumar 1' }));
+    expect(input).toHaveValue(2);
+
+    await user.click(screen.getByRole('button', { name: 'Restar 1' }));
+    await user.click(screen.getByRole('button', { name: 'Restar 1' }));
+    await user.click(screen.getByRole('button', { name: 'Restar 1' }));
+    expect(input).toHaveValue(0);
+  });
+
   it('enables submit when the required value has content', async () => {
     render(<PerformanceForm onSave={onSave} onClose={vi.fn()} />);
 

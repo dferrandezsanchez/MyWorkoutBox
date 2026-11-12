@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from 'react';
 import {
-  Activity,
   Building2,
   Dumbbell,
   LayoutDashboard,
@@ -8,7 +7,6 @@ import {
   Settings,
   User,
   Users,
-  Zap,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthUser } from '@features/auth/hooks/useAuthUser';
@@ -16,8 +14,9 @@ import { useLogout } from '@features/auth/hooks/useLogout';
 import { useActiveSession } from '@features/training-sessions/hooks/useTrainingSessions';
 import { getAuthUser } from '@features/auth/model/auth-store';
 import { ConfirmDialog } from '@shared/components/ui';
-import { PLATFORM_BRAND } from '@shared/config/branding';
-import { useTheme } from '@shared/theme/useTheme';
+import { BrandLogo, BrandMark } from '@shared/components/BrandLogo';
+import { BRAND } from '@shared/config/branding';
+import { useActiveTenant } from '@shared/tenant/useActiveTenant';
 import { getAppMode, getModePath } from '@app/mode/app-mode';
 import { UserMenu } from '@app/layout/UserMenu';
 
@@ -43,7 +42,7 @@ export function AppShell({
   const modeHome = getModePath(mode);
   const { data: fullUser } = useAuthUser();
   const { data: activeSession } = useActiveSession();
-  const { brand } = useTheme();
+  const { tenant } = useActiveTenant();
   const logout = useLogout();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false);
@@ -61,7 +60,7 @@ export function AppShell({
     ? [
         { label: 'Dashboard', mobileLabel: 'Inicio', path: '/admin', icon: LayoutDashboard, active: location.pathname === '/admin' },
         { label: 'Clientes', path: '/admin/clients', icon: Users, active: location.pathname.startsWith('/admin/clients') },
-        { label: 'Entrenadores', path: '/admin/trainers', icon: User, active: location.pathname.startsWith('/admin/trainers') },
+        { label: 'Entrenadores', mobileLabel: 'Equipo', path: '/admin/trainers', icon: User, active: location.pathname.startsWith('/admin/trainers') },
         { label: 'Ejercicios', path: '/admin/exercises', icon: Dumbbell, active: location.pathname.startsWith('/admin/exercises') },
         { label: 'Ajustes', path: '/admin/settings', icon: Settings, active: location.pathname.startsWith('/admin/settings') },
       ]
@@ -70,10 +69,18 @@ export function AppShell({
           label: 'Inicio',
           path: '/trainer',
           icon: LayoutDashboard,
-          active: location.pathname === '/trainer' || /^\/clients\/[^/]+$/.test(location.pathname),
+          active: location.pathname === '/trainer',
+        },
+        {
+          label: 'Clientes',
+          path: '/trainer/clients',
+          icon: Users,
+          active: location.pathname === '/trainer/clients' || location.pathname.startsWith('/clients/'),
         },
         {
           label: activeSession ? 'Sesión activa' : 'Nueva sesión',
+          mobileLabel: activeSession ? 'En curso' : 'Entrenar',
+          primary: true,
           path: activeSession ? `/trainer/sessions/${activeSession.id}` : '/trainer/sessions/new',
           icon: Dumbbell,
           active: location.pathname.startsWith('/trainer/sessions'),
@@ -86,106 +93,99 @@ export function AppShell({
         },
       ];
 
+  const initials = (displayUser?.name || displayUser?.email || 'U').slice(0, 2).toUpperCase();
+  const tenantName = tenant?.name ?? '';
+
   return (
-    <div className="min-h-screen bg-background text-text-primary">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[282px] border-r border-white/10 bg-[#07111f]/95 px-5 py-6 text-white shadow-2xl backdrop-blur-xl lg:flex lg:flex-col dark:bg-[#07111f]/95">
+    <div className="min-h-dvh bg-background text-text-primary">
+      <a
+        href="#contenido"
+        className="sr-only z-[100] rounded-full bg-primary px-4 py-2 font-semibold text-primary-contrast focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Saltar al contenido
+      </a>
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[272px] flex-col border-r border-white/[0.06] bg-[#080B10] px-4 py-6 lg:flex">
         <button
           onClick={() => navigate(modeHome)}
-          className="mb-7 flex min-h-[58px] items-center gap-3 rounded-xl text-left focus-ring"
+          className="mb-8 flex min-h-[44px] items-center rounded-xl px-2 text-left focus-ring"
           aria-label="Ir al panel"
         >
-          <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-xl font-black text-primary ring-1 ring-primary/25">
-            {PLATFORM_BRAND.mark}
-            <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-primary shadow-[0_0_18px_rgba(var(--color-primary)/0.85)]" />
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-2xl font-bold leading-none text-white">
-              {PLATFORM_BRAND.appName}
-            </span>
-            <span className="mt-1 block truncate text-[10px] font-semibold uppercase tracking-[0.2em] text-white/48">
-              {PLATFORM_BRAND.claim}
-            </span>
-          </span>
+          <BrandLogo size="md" />
         </button>
 
-        <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-white/45">
-            <Building2 size={14} />
-            Centro activo
-          </div>
-          <p className="mt-2 truncate text-sm font-semibold text-white">{brand.name}</p>
-          <div className="mt-2 flex items-center gap-2 text-xs text-emerald-300">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" />
-            Tenant operativo
-          </div>
+        <div className="mb-6 rounded-2xl border border-white/[0.08] bg-surface p-3.5">
+          <p className="eyebrow text-xs text-text-muted">Centro</p>
+          <p className="mt-1.5 flex items-center gap-2 truncate text-sm font-semibold text-text-primary">
+            <Building2 size={15} className="shrink-0 text-primary-soft" />
+            <span className="truncate">{tenantName || 'Sin centro'}</span>
+          </p>
+          <p className="mt-2 text-xs text-text-muted">{isAdminMode ? 'Modo administración' : 'Modo entrenador'}</p>
         </div>
 
-        <nav aria-label="Navegación principal" className="space-y-2">
+        <nav aria-label="Navegación principal" className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
               <button
                 key={`${item.label}-${item.path}`}
                 onClick={() => navigate(item.path)}
-                className={`flex min-h-[52px] w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition-all focus-ring ${
+                aria-current={item.active ? 'page' : undefined}
+                className={`relative flex min-h-[46px] w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition-colors duration-150 focus-ring ${
                   item.active
-                    ? 'bg-primary text-white shadow-[0_14px_30px_rgba(var(--color-primary)/0.32)]'
-                    : 'text-white/68 hover:bg-white/[0.06] hover:text-white'
+                    ? 'bg-primary/10 text-text-primary'
+                    : 'text-text-secondary hover:bg-white/[0.04] hover:text-text-primary'
                 }`}
               >
-                <span
-                  className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                    item.active ? 'bg-white/14 text-white' : 'bg-white/[0.05] text-white/60'
-                  }`}
-                >
-                  <Icon size={18} strokeWidth={2.2} />
-                </span>
+                {item.active && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-primary" />}
+                <Icon size={18} strokeWidth={2.1} className={item.active ? 'text-primary-soft' : 'text-text-muted'} />
                 {item.label}
               </button>
             );
           })}
         </nav>
 
-        <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              {isAdminMode ? <Activity size={18} /> : <Zap size={18} />}
+        {activeSession && !isAdminMode && (
+          <button
+            type="button"
+            onClick={() => navigate(`/trainer/sessions/${activeSession.id}`)}
+            className="mt-6 rounded-2xl border border-primary/30 bg-primary/[0.08] p-3.5 text-left transition-colors hover:border-primary/50 focus-ring"
+          >
+            <span className="eyebrow flex items-center gap-2 text-xs">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60 motion-reduce:hidden" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </span>
+              En curso
             </span>
-            <div>
-              <p className="text-sm font-semibold text-white">
-                {isAdminMode ? 'Control del centro' : 'Modo entrenador'}
-              </p>
-              <p className="text-xs text-white/50">
-                {isAdminMode ? 'Gestión real del MVP' : 'Listo para registrar marcas'}
-              </p>
-            </div>
-          </div>
-        </div>
+            <span className="mt-1.5 block truncate text-sm font-semibold text-text-primary">
+              {activeSession.client ? `${activeSession.client.firstName} ${activeSession.client.lastName}` : 'Sesión activa'}
+            </span>
+          </button>
+        )}
+
+        <p className="mt-auto px-2 text-xs text-text-muted">{BRAND.claim}</p>
       </aside>
 
-      <div className="lg:pl-[282px]">
-        <header className="sticky top-0 z-30 bg-background/90 px-2 pt-2 backdrop-blur-xl lg:border-b lg:border-border/60 lg:px-0 lg:pt-0">
-          <div className="flex min-h-[68px] items-center justify-between gap-3 rounded-2xl border border-border/70 bg-elevated/70 px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.14)] lg:min-h-[78px] lg:rounded-none lg:border-0 lg:bg-transparent lg:px-8 lg:py-3 lg:shadow-none">
+      <div className="lg:pl-[272px]">
+        <header className="pt-safe sticky top-0 z-30 border-b border-white/[0.06] bg-background/90 backdrop-blur-xl">
+          <div className="flex min-h-[64px] items-center justify-between gap-3 px-4 lg:min-h-[72px] lg:px-8">
             <button
               onClick={() => navigate(modeHome)}
               className="flex min-h-[44px] min-w-0 items-center gap-3 rounded-xl text-left focus-ring lg:hidden"
               aria-label="Ir al panel"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-xs font-bold text-white shadow-[0_10px_24px_rgba(var(--color-primary)/0.34)]">
-                {PLATFORM_BRAND.mark}
-              </span>
+              <BrandMark className="h-6 w-7 shrink-0 text-primary" />
               <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold text-text-primary">
-                  {isAdminMode ? 'Modo administración' : 'Modo entrenador'}
-                </span>
-                <span className="block truncate text-xs text-text-secondary">{brand.name}</span>
+                <span className="block truncate font-display text-sm font-bold tracking-[0.18em] text-text-primary">{BRAND.name}</span>
+                <span className="block truncate text-xs text-text-secondary">{tenantName}</span>
               </span>
             </button>
 
             <div className="hidden min-w-0 flex-1 md:block">
               {onSearchChange && (
                 <label className="relative block max-w-xl">
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary">
+                  <span className="sr-only">{searchPlaceholder}</span>
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
                     <Search size={18} />
                   </span>
                   <input
@@ -193,86 +193,92 @@ export function AppShell({
                     value={searchValue}
                     onChange={(event) => onSearchChange(event.target.value)}
                     placeholder={searchPlaceholder}
-                    className="h-12 w-full rounded-xl border border-border/70 bg-elevated/80 pl-12 pr-4 text-sm text-text-primary shadow-sm placeholder:text-text-secondary focus-ring"
+                    className="h-11 w-full rounded-full border border-border bg-surface pl-11 pr-4 text-sm text-text-primary placeholder:text-text-muted transition-colors hover:border-border-strong focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
                   />
                 </label>
               )}
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
-              <button
-                type="button"
-                onClick={() => setUserMenuOpen(true)}
-                aria-label="Abrir cuenta"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-text-primary text-sm font-bold text-background ring-2 ring-primary/20 focus-ring lg:h-11 lg:w-11"
-              >
-                {(displayUser?.name || displayUser?.email || 'U').slice(0, 2).toUpperCase()}
-              </button>
-              <div className="hidden text-left sm:block">
-                <p className="text-sm font-semibold text-text-primary">
+            <button
+              type="button"
+              onClick={() => setUserMenuOpen(true)}
+              aria-label="Abrir cuenta"
+              className="flex min-h-[44px] items-center gap-3 rounded-full py-1 pl-1 pr-1 text-left transition-colors hover:bg-white/[0.04] focus-ring sm:pr-4"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-primary/10 font-display text-sm font-bold text-primary-soft">
+                {initials}
+              </span>
+              <span className="hidden sm:block">
+                <span className="block text-sm font-semibold text-text-primary">
                   {displayUser?.name || displayUser?.email || 'Usuario'}
-                </p>
-                <p className="text-xs text-text-secondary">
+                </span>
+                <span className="block text-xs text-text-muted">
                   {displayUser?.role === 'ADMIN' ? 'Administrador' : 'Entrenador'}
-                </p>
-              </div>
-            </div>
+                </span>
+              </span>
+            </button>
           </div>
         </header>
 
-        <main role="main" className="px-4 pb-24 pt-4 lg:px-8 lg:pb-8 lg:pt-5">
+        <main id="contenido" tabIndex={-1} role="main" className="pb-mobile-nav mx-auto max-w-[1280px] px-4 pt-5 outline-none lg:px-8 lg:pt-8">
           {children}
         </main>
       </div>
 
       <nav
         aria-label="Navegación móvil"
-        className={`fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-elevated/95 px-2 pb-[max(env(safe-area-inset-bottom),0.6rem)] pt-2 shadow-[0_-16px_42px_rgba(0,0,0,0.22)] backdrop-blur-xl lg:hidden ${
-          isAdminMode ? 'grid grid-cols-5 gap-1' : 'grid grid-cols-2 gap-1'
+        className={`pb-safe fixed inset-x-0 bottom-0 z-40 grid gap-1 border-t border-white/[0.08] bg-[#080B10]/95 px-2 pt-1.5 backdrop-blur-xl lg:hidden ${
+          isAdminMode ? 'grid-cols-5' : 'grid-cols-3'
         }`}
       >
-        {isAdminMode ? (
-          navItems.map((item) => {
-            const Icon = item.icon;
+        {/* Trainer: Inicio · Entrenar · Clientes, with the training action centred in the thumb zone. Account lives in the header avatar. */}
+        {(isAdminMode ? navItems : [navItems[0], navItems[2], navItems[1]]).map((item) => {
+          const Icon = item.icon;
+          const label = item.mobileLabel ?? item.label;
+
+          if ('primary' in item && item.primary) {
             return (
               <button
-                key={`mobile-${item.label}-${item.path}`}
+                key={`mobile-${item.path}`}
                 onClick={() => navigate(item.path)}
-                className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-semibold transition-colors focus-ring ${
-                  item.active ? 'bg-primary/15 text-primary' : 'text-text-secondary hover:bg-surface'
-                }`}
+                aria-current={item.active ? 'page' : undefined}
+                aria-label={item.label}
+                className="flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold text-primary-soft focus-ring"
               >
-                <Icon size={18} />
-                <span>{item.mobileLabel ?? item.label}</span>
+                <span className="relative flex h-11 w-11 -mt-4 items-center justify-center rounded-full bg-primary text-primary-contrast shadow-glow ring-4 ring-[#080B10] transition-transform duration-150 active:scale-95">
+                  <Icon size={20} strokeWidth={2.4} />
+                  {activeSession && (
+                    <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-primary-soft ring-2 ring-[#080B10]" />
+                  )}
+                </span>
+                <span>{label}</span>
               </button>
             );
-          })
-        ) : (
-          <>
-            {[navItems[0], navItems[2]].map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={`mobile-${item.label}-${item.path}`}
-                  onClick={() => navigate(item.path)}
-                className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-colors focus-ring ${
-                    item.active ? 'text-primary' : 'text-text-secondary hover:bg-surface'
-                  }`}
-                >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </>
-        )}
+          }
+
+          return (
+            <button
+              key={`mobile-${item.label}-${item.path}`}
+              onClick={() => navigate(item.path)}
+              aria-current={item.active ? 'page' : undefined}
+              className={`flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-colors duration-150 focus-ring ${
+                item.active ? 'text-primary-soft' : 'text-text-muted hover:text-text-secondary'
+              }`}
+            >
+              <span className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-150 ${item.active ? 'bg-primary/15' : ''}`}>
+                <Icon size={18} />
+              </span>
+              <span className="max-w-full truncate px-0.5">{label}</span>
+            </button>
+          );
+        })}
       </nav>
 
       {displayUser && (
         <UserMenu
           open={userMenuOpen}
           user={displayUser}
-          tenantName={brand.name}
+          tenantName={tenantName}
           mode={mode}
           onClose={() => setUserMenuOpen(false)}
           onNavigate={navigate}

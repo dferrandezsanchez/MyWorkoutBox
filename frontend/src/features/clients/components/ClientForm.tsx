@@ -52,8 +52,8 @@ export default function ClientForm({
   };
 
   const inputClass =
-    'w-full rounded-xl border border-border/70 bg-elevated/90 px-3 py-2 min-h-[46px] text-sm text-text-primary shadow-sm placeholder:text-text-muted focus-ring';
-  const labelClass = 'mb-1.5 block text-sm font-semibold text-text-secondary';
+    'min-h-[46px] w-full rounded-xl border border-border bg-background/60 px-3.5 py-2 text-sm text-text-primary placeholder:text-text-muted transition-colors hover:border-border-strong focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25';
+  const labelClass = 'mb-1.5 block text-sm font-medium text-text-secondary';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -103,10 +103,10 @@ export default function ClientForm({
 
       <div>
         <label className={labelClass} htmlFor="notes">Notas</label>
-        <textarea id="notes" className="w-full resize-none rounded-xl border border-border/70 bg-elevated/90 px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus-ring" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <textarea id="notes" className={`${inputClass} resize-none py-2.5`} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-2 border-t border-white/[0.06] pt-5">
         <Button type="submit" disabled={isSubmitting} variant="primary" className="w-full sm:w-auto">
           {isSubmitting ? 'Enviando...' : submitLabel}
         </Button>

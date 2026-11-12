@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   AUTH_CONTEXT_EVENT,
   getAuthUser,
-  getStoredTenantBrand,
+  getStoredTenant,
   getToken,
   isTokenExpired,
   removeToken,
-  setStoredTenantBrand,
+  setStoredTenant,
   setToken,
 } from './session-store';
-import type { JwtPayload, TenantBrand } from '@shared/types/auth';
+import type { ActiveTenant, JwtPayload } from '@shared/types/auth';
 
 function createJwt(payload: JwtPayload): string {
   const encodedPayload = btoa(JSON.stringify(payload))
@@ -19,19 +19,11 @@ function createJwt(payload: JwtPayload): string {
   return `header.${encodedPayload}.signature`;
 }
 
-const tenant: TenantBrand = {
+const tenant: ActiveTenant = {
   id: 'tenant-1',
   organizationId: 'org-1',
   name: 'Demo Center',
   slug: 'demo-center',
-  appName: 'MyWorkoutBox',
-  shortName: 'Demo',
-  mark: 'MW',
-  claim: 'Training Intelligence',
-  description: 'Demo tenant',
-  primary: '#2563EB',
-  primaryHover: '#1D4ED8',
-  primarySoft: '#93C5FD',
 };
 
 describe('session-store', () => {
@@ -48,13 +40,13 @@ describe('session-store', () => {
     expect(getToken()).toBe('jwt-token');
     expect(listener).toHaveBeenCalledOnce();
 
-    setStoredTenantBrand(tenant);
-    expect(getStoredTenantBrand()).toEqual(tenant);
+    setStoredTenant(tenant);
+    expect(getStoredTenant()).toEqual(tenant);
     expect(listener).toHaveBeenCalledTimes(2);
 
     removeToken();
     expect(getToken()).toBeNull();
-    expect(getStoredTenantBrand()).toBeNull();
+    expect(getStoredTenant()).toBeNull();
     expect(listener).toHaveBeenCalledTimes(3);
 
     window.removeEventListener(AUTH_CONTEXT_EVENT, listener);
@@ -103,10 +95,10 @@ describe('session-store', () => {
     expect(isTokenExpired()).toBe(true);
   });
 
-  it('clears corrupted tenant branding from storage', () => {
-    localStorage.setItem('auth_tenant_brand', '{invalid-json');
+  it('clears a corrupted active tenant from storage', () => {
+    localStorage.setItem('auth_active_tenant', '{invalid-json');
 
-    expect(getStoredTenantBrand()).toBeNull();
-    expect(localStorage.getItem('auth_tenant_brand')).toBeNull();
+    expect(getStoredTenant()).toBeNull();
+    expect(localStorage.getItem('auth_active_tenant')).toBeNull();
   });
 });
