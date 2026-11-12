@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, AlertTriangle, CalendarDays, CheckCircle2, ChevronRight, CirclePlay, ClipboardCheck, Dumbbell, Users } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, ChevronRight, CirclePlay, ClipboardCheck, Dumbbell, Users } from 'lucide-react';
 import Avatar from '@shared/components/Avatar';
 import AppShell from '@app/layout/AppShell';
 import { OperationalHero } from '@app/components/OperationalHero';
@@ -79,11 +79,15 @@ export default function TrainerPage() {
   return (
     <AppShell title="Inicio">
       <div className="mx-auto max-w-6xl space-y-4 sm:space-y-5">
-        <section className="px-1 py-1">
-          <h1 className="text-2xl font-semibold text-text-primary sm:text-3xl">
+        <section className="px-1">
+          <p className="eyebrow flex items-center gap-3">
+            <span aria-hidden="true" className="h-px w-8 bg-primary/60" />
+            Inicio
+          </p>
+          <h1 className="mt-3 text-3xl font-bold text-text-primary sm:text-[2.75rem] sm:leading-[1.05]">
             Hola, {user?.name || 'Entrenador'}
           </h1>
-          <p className="mt-1 text-sm text-text-secondary sm:text-base">
+          <p className="mt-2 text-sm text-text-secondary sm:text-base">
             ¿Qué necesitas hacer ahora?
           </p>
         </section>
@@ -140,30 +144,32 @@ function DashboardHero({ onStart }: { onStart: () => void }) {
 function ActiveSessionPanel({ session, elapsedTime, isStale, onContinue }: { session: TrainingSession; elapsedTime: string; isStale: boolean; onContinue: () => void }) {
   const seriesCount = session.exercises.reduce((total, exercise) => total + exercise.series.length, 0);
   return (
-    <Panel className="overflow-hidden border-primary/45 bg-primary/10 shadow-[0_18px_50px_rgba(var(--color-primary)/0.12)]">
-      <div className="h-1 bg-primary" />
-      <div className="p-5 sm:p-6">
+    <Panel className="relative overflow-hidden border-primary/30">
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-primary via-primary/40 to-transparent" />
+      <div className="p-5 sm:p-7">
         <div className="flex items-center justify-between gap-4">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
-            <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_12px_rgba(var(--color-primary)/0.8)]" />
+          <p className="eyebrow flex items-center gap-2">
+            <LiveDot />
             Sesión en curso
           </p>
-          <time className="font-mono text-sm font-semibold text-text-secondary">{elapsedTime}</time>
         </div>
-        <h2 className="mt-4 text-2xl font-semibold text-text-primary">
-          {session.client.firstName} {session.client.lastName}
-        </h2>
-        <div className="mt-4 flex gap-5 text-sm text-text-secondary">
-          <span className="flex items-center gap-2"><Dumbbell size={17} className="text-primary" />{session.exercises.length} ejercicios</span>
-          <span className="flex items-center gap-2"><Activity size={17} className="text-primary" />{seriesCount} series</span>
+        <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <h2 className="min-w-0 truncate text-2xl font-bold text-text-primary sm:text-3xl">
+            {session.client.firstName} {session.client.lastName}
+          </h2>
+          <time className="tabular font-display text-4xl font-bold leading-none tracking-tight text-text-primary sm:text-5xl">{elapsedTime}</time>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-2 text-sm text-text-secondary">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-background/60 px-3 py-1.5"><Dumbbell size={15} className="text-primary-soft" /><span className="tabular font-display font-semibold text-text-primary">{session.exercises.length} ejercicios</span></span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-background/60 px-3 py-1.5"><Activity size={15} className="text-primary-soft" /><span className="tabular font-display font-semibold text-text-primary">{seriesCount} series</span></span>
         </div>
         {isStale && (
-          <div className="mt-4 flex gap-3 rounded-xl border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+          <div role="status" className="mt-4 flex gap-3 rounded-xl border border-warning/25 bg-warning/10 p-3 text-sm text-warning">
             <AlertTriangle size={18} className="mt-0.5 shrink-0" />
             <p>Esta sesión lleva más de 3 horas activa. Revísala antes de continuar.</p>
           </div>
         )}
-        <Button variant="primary" onClick={onContinue} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 sm:w-auto">
+        <Button variant="primary" onClick={onContinue} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 sm:w-auto">
           Continuar entrenamiento
           <ChevronRight size={18} />
         </Button>
@@ -172,48 +178,66 @@ function ActiveSessionPanel({ session, elapsedTime, isStale, onContinue }: { ses
   );
 }
 
+function LiveDot() {
+  return (
+    <span className="relative flex h-2 w-2" aria-hidden="true">
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60 motion-reduce:hidden" />
+      <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+    </span>
+  );
+}
+
 function TodaySummary({ sessions, exercises, series }: { sessions: number; exercises: number; series: number }) {
   return (
     <section className="min-w-0 lg:col-start-2 lg:row-start-1">
       <SectionHeading title="Resumen de hoy" meta="Datos actuales" />
-      <Panel className="mt-3 grid grid-cols-3 divide-x divide-border/70 overflow-hidden bg-surface">
-        <SummaryValue label="Sesiones" value={sessions} icon={<CalendarDays size={16} />} tone="bg-primary/14 text-primary ring-primary/20" />
-        <SummaryValue label="Ejercicios" value={exercises} icon={<Dumbbell size={16} />} tone="bg-emerald-500/12 text-emerald-300 ring-emerald-500/20" />
-        <SummaryValue label="Series" value={series} icon={<Activity size={16} />} tone="bg-violet-500/12 text-violet-300 ring-violet-500/20" />
+      <Panel className="mt-3 grid grid-cols-3 divide-x divide-white/[0.06] overflow-hidden">
+        <SummaryValue label="Sesiones" value={sessions} />
+        <SummaryValue label="Ejercicios" value={exercises} />
+        <SummaryValue label="Series" value={series} />
       </Panel>
     </section>
   );
 }
 
-function SummaryValue({ label, value, icon, tone }: { label: string; value: number; icon: ReactNode; tone: string }) {
-  return <div className="grid grid-rows-[32px_22px_34px] justify-items-center px-1 py-3 text-center sm:grid-rows-[36px_24px_38px] sm:px-2"><span className={`flex h-8 w-8 items-center justify-center rounded-lg ring-1 ${tone}`}>{icon}</span><span className="self-end text-[11px] text-text-secondary">{label}</span><strong className="self-end text-2xl font-semibold text-text-primary">{value}</strong></div>;
+function SummaryValue({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex flex-col items-center gap-2 px-1 py-4 text-center sm:px-2 sm:py-5">
+      <strong className="tabular font-display text-3xl font-bold leading-none tracking-tight text-text-primary sm:text-4xl">{value}</strong>
+      <span className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{label}</span>
+    </div>
+  );
 }
 
 function RecentClients({ clients, isLoading, onOpen, onViewAll }: { clients: { client: Client; lastSessionAt: string }[]; isLoading: boolean; onOpen: (id: string) => void; onViewAll: () => void }) {
   return (
     <section className="min-w-0 lg:col-start-2 lg:row-start-2">
-      <div className="flex items-end justify-between gap-3 px-1">
-        <h2 className="text-base font-semibold text-text-primary sm:text-lg">Últimos clientes</h2>
-        <button type="button" onClick={onViewAll} className="text-xs font-semibold text-primary hover:underline focus-ring">
+      <div className="flex items-center justify-between gap-3 px-1">
+        <h2 className="text-lg font-bold text-text-primary">Últimos clientes</h2>
+        <button type="button" onClick={onViewAll} className="-mr-2 inline-flex min-h-[44px] items-center rounded-full px-3 text-sm font-semibold text-primary-soft transition-colors duration-150 hover:bg-white/[0.04] hover:text-primary-hover focus-ring">
           Ver todos
         </button>
       </div>
       {isLoading && <p className="py-8 text-center text-text-secondary">Cargando clientes...</p>}
-      {!isLoading && clients.length === 0 && <Panel className="mt-3"><EmptySection icon={<Users size={18} />} title="Aún no hay clientes recientes" tone="bg-sky-500/12 text-sky-300 ring-sky-500/20" /></Panel>}
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
-        {clients.map(({ client, lastSessionAt }) => (
-          <button key={client.id} onClick={() => onOpen(client.id)} className="flex min-h-[68px] min-w-[190px] flex-1 items-center justify-between gap-3 rounded-xl border border-border/70 bg-surface/70 px-3 py-2 text-left hover:border-primary/40 hover:bg-primary/10 focus-ring lg:min-w-0">
-            <span className="flex min-w-0 items-center gap-3">
-              <span className="relative"><Avatar firstName={client.firstName} lastName={client.lastName} size="sm" /><span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-success" /></span>
-              <span className="min-w-0">
-                <span className="block truncate font-semibold text-text-primary">{client.firstName} {client.lastName}</span>
-                <span className="mt-0.5 block text-xs text-text-secondary">{formatRelativeDate(lastSessionAt)}</span>
-              </span>
-            </span>
-            <ChevronRight size={19} className="shrink-0 text-text-secondary" />
-          </button>
-        ))}
-      </div>
+      {!isLoading && clients.length === 0 && <Panel className="mt-2"><EmptySection icon={<Users size={18} />} title="Aún no hay clientes recientes" /></Panel>}
+      {clients.length > 0 && (
+        <Panel className="mt-2 overflow-hidden">
+          <div className="divide-y divide-white/[0.06]">
+            {clients.map(({ client, lastSessionAt }) => (
+              <button key={client.id} onClick={() => onOpen(client.id)} className="group flex min-h-[68px] w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors duration-150 ease-out hover:bg-white/[0.03] focus-ring">
+                <span className="flex min-w-0 items-center gap-3">
+                  <Avatar firstName={client.firstName} lastName={client.lastName} size="sm" />
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold text-text-primary">{client.firstName} {client.lastName}</span>
+                    <span className="mt-0.5 block text-xs text-text-muted">{formatRelativeDate(lastSessionAt)}</span>
+                  </span>
+                </span>
+                <ChevronRight size={18} className="shrink-0 text-text-muted transition-colors duration-150 group-hover:text-primary-soft" />
+              </button>
+            ))}
+          </div>
+        </Panel>
+      )}
     </section>
   );
 }
@@ -224,14 +248,23 @@ function RecentSessions({ sessions, isLoading, onOpen }: { sessions: TrainingSes
       <SectionHeading title="Actividad reciente" meta="Entrenamientos completados" />
       <Panel className="mt-3 overflow-hidden">
         {isLoading && <p className="py-10 text-center text-text-secondary">Cargando sesiones...</p>}
-        {!isLoading && sessions.length === 0 && <EmptySection icon={<ClipboardCheck size={18} />} title="Aún no hay sesiones completadas" tone="bg-emerald-500/12 text-emerald-300 ring-emerald-500/20" />}
-        <div className="divide-y divide-border/70">
-        {sessions.map((session) => (
-          <button key={session.id} onClick={() => onOpen(session.id)} className="flex min-h-[76px] w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-primary/10 focus-ring sm:px-5">
-            <span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-500/20"><ClipboardCheck size={19} /></span><span className="min-w-0"><span className="block text-xs text-text-secondary">Entrenamiento completado</span><span className="mt-0.5 block truncate font-semibold text-text-primary">{session.client.firstName} {session.client.lastName}</span></span></span>
-            <span className="flex shrink-0 items-center gap-3"><span className="text-xs text-text-secondary">{formatRelativeDate(session.startedAt)}</span><CheckCircle2 size={20} className="text-success" /></span>
-          </button>
-        ))}
+        {!isLoading && sessions.length === 0 && <EmptySection icon={<ClipboardCheck size={18} />} title="Aún no hay sesiones completadas" />}
+        <div className="divide-y divide-white/[0.06]">
+          {sessions.map((session) => (
+            <button key={session.id} onClick={() => onOpen(session.id)} className="group flex min-h-[72px] w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors duration-150 ease-out hover:bg-white/[0.03] focus-ring sm:px-5">
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-background/60 text-text-secondary"><ClipboardCheck size={18} /></span>
+                <span className="min-w-0">
+                  <span className="block text-xs text-text-muted">Entrenamiento completado</span>
+                  <span className="mt-0.5 block truncate font-semibold text-text-primary">{session.client.firstName} {session.client.lastName}</span>
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-3">
+                <span className="tabular text-xs text-text-muted">{formatRelativeDate(session.startedAt)}</span>
+                <CheckCircle2 size={19} className="text-primary-soft" />
+              </span>
+            </button>
+          ))}
         </div>
       </Panel>
     </section>
@@ -239,9 +272,19 @@ function RecentSessions({ sessions, isLoading, onOpen }: { sessions: TrainingSes
 }
 
 function SectionHeading({ title, meta }: { title: string; meta: string }) {
-  return <div className="flex items-end justify-between gap-3 px-1"><h2 className="text-base font-semibold text-text-primary sm:text-lg">{title}</h2><span className="text-xs text-text-muted">{meta}</span></div>;
+  return (
+    <div className="flex items-end justify-between gap-3 px-1">
+      <h2 className="text-lg font-bold text-text-primary">{title}</h2>
+      <span className="text-xs text-text-muted">{meta}</span>
+    </div>
+  );
 }
 
-function EmptySection({ icon, title, tone }: { icon: ReactNode; title: string; tone: string }) {
-  return <div className="flex min-h-[104px] items-center gap-3 px-4 py-5"><span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${tone}`}>{icon}</span><p className="text-sm font-medium text-text-primary">{title}</p></div>;
+function EmptySection({ icon, title }: { icon: ReactNode; title: string }) {
+  return (
+    <div className="flex min-h-[96px] items-center gap-3 px-4 py-5">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary-soft">{icon}</span>
+      <p className="text-sm font-medium text-text-secondary">{title}</p>
+    </div>
+  );
 }

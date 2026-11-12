@@ -1,12 +1,14 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, LineChart } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { useClient } from '@features/clients/hooks/useClients';
 import { useExercise } from '@features/exercises/hooks/useExercises';
 import { usePerformanceHistory } from '@features/performances/hooks/usePerformances';
 import ProgressChart from '@features/performances/components/ProgressChart';
 import AppShell from '@app/layout/AppShell';
 import { Button, EmptyState, Panel } from '@shared/components/ui';
-import { formatPerformance } from '@features/performances/utils/exerciseTemplates';
+import { extractVariant, formatPerformance } from '@features/performances/utils/exerciseTemplates';
+import { UNIT_LABELS } from '@features/exercises/utils/labels';
+import type { PerformanceRecord } from '@shared/types/api';
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -14,6 +16,38 @@ function formatDate(iso: string): string {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   return `${day}/${month}/${year}`;
+}
+
+const SHORT_UNITS: Record<string, string> = {
+  kg: 'kg',
+  repetitions: 'reps',
+  seconds: 's',
+  minutes: 'min',
+  meters: 'm',
+  calories: 'kcal',
+};
+
+function getMarkDetails(record: PerformanceRecord): string {
+  const parts: string[] = [];
+  if (record.repetitions && record.unit !== 'repetitions') parts.push(`× ${record.repetitions} reps`);
+  if (record.weight && record.unit !== 'kg') parts.push(`+${record.weight} kg`);
+  const variant = extractVariant(record);
+  if (variant) parts.push(variant);
+  return parts.join(' · ');
+}
+
+function MarkValue({ record, size }: { record: PerformanceRecord; size: 'lg' | 'md' }) {
+  const unit = record.unit === 'text' ? '' : SHORT_UNITS[record.unit] ?? UNIT_LABELS[record.unit] ?? record.unit;
+  const details = getMarkDetails(record);
+  return (
+    <div className="min-w-0">
+      <p className="flex items-baseline gap-1.5">
+        <span className={`tabular font-display font-bold leading-none tracking-tight text-text-primary ${size === 'lg' ? 'text-5xl sm:text-6xl' : 'text-2xl'}`}>{record.value}</span>
+        {unit && <span className={`font-display font-semibold text-text-muted ${size === 'lg' ? 'text-xl' : 'text-sm'}`}>{unit}</span>}
+      </p>
+      {details && <p className={`tabular truncate text-text-secondary ${size === 'lg' ? 'mt-2 text-sm' : 'mt-1 text-xs'}`}>{details}</p>}
+    </div>
+  );
 }
 
 export default function ExerciseHistoryPage() {
@@ -33,7 +67,7 @@ export default function ExerciseHistoryPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <p className="text-text-secondary">Cargando...</p>
       </div>
     );
@@ -41,8 +75,8 @@ export default function ExerciseHistoryPage() {
 
   if (isError || !client || !exercise) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-red-500">Error al cargar el histórico</p>
+      <div className="flex min-h-dvh items-center justify-center bg-background">
+        <p className="text-danger">Error al cargar el histórico</p>
       </div>
     );
   }
@@ -53,29 +87,23 @@ export default function ExerciseHistoryPage() {
 
   return (
     <AppShell title="Histórico">
-      <div className="mx-auto max-w-3xl">
-        <Panel className="mb-4 overflow-hidden p-4">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <Button onClick={() => navigate(-1)} className="inline-flex min-h-10 items-center gap-2 px-3">
-              <ChevronLeft size={16} />
-              Volver
-            </Button>
-          </div>
+      <div className="mx-auto max-w-3xl space-y-4">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="-ml-2 inline-flex items-center gap-1.5 px-3">
+          <ChevronLeft size={18} />
+          Volver
+        </Button>
 
-          <p className="text-sm text-text-secondary">{clientFullName}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-text-primary">
-            {exerciseName}
-          </h1>
+        <Panel className="relative overflow-hidden p-5 sm:p-6">
+          <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-primary/70 via-primary/25 to-transparent" />
+          <p className="eyebrow">{clientFullName}</p>
+          <h1 className="mt-2 text-3xl font-bold text-text-primary">{exerciseName}</h1>
 
-          <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/10 p-4">
-            <p className="flex items-center gap-2 text-sm font-semibold text-primary">
-              <LineChart size={16} />
-              Marca actual
-            </p>
-            <p className="mt-1 text-3xl font-semibold text-text-primary">
-              {formatPerformance(current)}
-            </p>
-            <p className="mt-1 text-sm text-text-secondary">
+          <div className="mt-6 border-t border-white/[0.08] pt-5">
+            <p className="eyebrow text-xs text-text-muted">Marca actual</p>
+            <div className="mt-2">
+              {current ? <MarkValue record={current} size="lg" /> : <p className="font-display text-3xl font-bold text-text-primary">{formatPerformance(current)}</p>}
+            </div>
+            <p className="tabular mt-2 text-sm text-text-muted">
               {current ? formatDate(current.date) : 'Sin marcas registradas'}
             </p>
           </div>
@@ -87,32 +115,32 @@ export default function ExerciseHistoryPage() {
           <>
             <ProgressChart history={history} />
             <section>
-              <h2 className="mb-3 text-lg font-semibold text-text-primary">Registros</h2>
-              <ul className="space-y-3" aria-label="Histórico de marcas">
-                {history.map((record) => (
-                  <li key={record.id} className="rounded-2xl border border-border/70 bg-elevated/80 p-4 shadow-sm">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xl font-semibold text-text-primary">
-                          {formatPerformance(record)}
-                        </p>
-                        <p className="mt-1 text-xs text-text-secondary">
-                          Registrado por {record.trainerName}
-                        </p>
+              <h2 className="mb-3 px-1 text-lg font-bold text-text-primary">Registros</h2>
+              <Panel className="overflow-hidden">
+                <ul className="divide-y divide-white/[0.06]" aria-label="Histórico de marcas">
+                  {history.map((record) => (
+                    <li key={record.id} className="px-4 py-4 sm:px-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <MarkValue record={record} size="md" />
+                          <p className="mt-1.5 text-xs text-text-muted">
+                            Registrado por {record.trainerName}
+                          </p>
+                        </div>
+                        <span className="tabular shrink-0 font-display text-sm font-semibold text-text-secondary">
+                          {formatDate(record.date)}
+                        </span>
                       </div>
-                      <span className="shrink-0 text-sm text-text-secondary">
-                        {formatDate(record.date)}
-                      </span>
-                    </div>
 
-                    {record.notes && (
-                      <p className="mt-3 whitespace-pre-line rounded-2xl bg-surface/70 p-3 text-sm text-text-secondary">
-                        {record.notes}
-                      </p>
-                    )}
-                  </li>
-                ))}
-              </ul>
+                      {record.notes && (
+                        <p className="mt-3 whitespace-pre-line rounded-xl border border-white/[0.08] bg-background/60 p-3 text-sm text-text-secondary">
+                          {record.notes}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
             </section>
           </>
         )}

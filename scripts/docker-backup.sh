@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${DOCKER_ENV_FILE:-$ROOT_DIR/.env.docker}"
 BACKUP_DIR="${BACKUP_DIR:-$ROOT_DIR/backups}"
 TIMESTAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-BACKUP_PATH="$BACKUP_DIR/myworkoutbox-$TIMESTAMP.sql.gz"
+BACKUP_PATH="$BACKUP_DIR/stelios-$TIMESTAMP.sql.gz"
 TEMP_PATH="$BACKUP_PATH.tmp"
 
 mkdir -p "$BACKUP_DIR"

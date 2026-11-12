@@ -146,21 +146,8 @@ export class PrismaTenantRepository implements TenantRepository {
     return tenant ? toTenant(tenant) : null;
   }
 
-  async updateBranding(
-    tenantId: string,
-    data: {
-      name: string;
-      appName: string;
-      shortName: string;
-      mark: string;
-      claim: string;
-      description: string;
-      primary: string;
-      primaryHover: string;
-      primarySoft: string;
-    },
-  ): Promise<void> {
-    await prisma.tenant.update({ where: { id: tenantId }, data });
+  async updateName(tenantId: string, name: string): Promise<void> {
+    await prisma.tenant.update({ where: { id: tenantId }, data: { name } });
   }
 }
 

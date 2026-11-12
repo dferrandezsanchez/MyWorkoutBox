@@ -1,6 +1,6 @@
-# Contributing to MyWorkoutBox
+# Contributing to STELIOS
 
-Thank you for helping improve MyWorkoutBox. Keep contributions focused, reviewable, and aligned with the project architecture.
+Thank you for helping improve STELIOS. Keep contributions focused, reviewable, and aligned with the project architecture.
 
 ## Before You Start
 

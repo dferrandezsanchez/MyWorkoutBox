@@ -5,9 +5,9 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 const SALT_ROUNDS = 10;
-const PLATFORM_PRIMARY = '#2563EB';
-const PLATFORM_PRIMARY_HOVER = '#1D4ED8';
-const PLATFORM_PRIMARY_SOFT = '#93C5FD';
+const PLATFORM_PRIMARY = '#14B8A6';
+const PLATFORM_PRIMARY_HOVER = '#2DD4BF';
+const PLATFORM_PRIMARY_SOFT = '#5EEAD4';
 
 const BASE_EXERCISES = [
   {
@@ -198,12 +198,12 @@ async function seedDemoTenant() {
   const organization = await prisma.organization.upsert({
     where: { slug: 'demo-myworkoutbox' },
     update: {
-      name: 'Demo MyWorkoutBox',
+      name: 'Demo STELIOS',
       active: true,
     },
     create: {
       id: 'org_demo_myworkoutbox',
-      name: 'Demo MyWorkoutBox',
+      name: 'Demo STELIOS',
       slug: 'demo-myworkoutbox',
       active: true,
     },
@@ -214,10 +214,10 @@ async function seedDemoTenant() {
     where: { slug: 'myworkoutbox-demo-center' },
     update: {
       organizationId: organization.id,
-      name: 'MyWorkoutBox Demo Center',
-      appName: 'MyWorkoutBox',
+      name: 'STELIOS Demo Center',
+      appName: 'STELIOS',
       shortName: 'Demo Center',
-      mark: 'MW',
+      mark: 'S',
       claim: 'Training Intelligence',
       description: 'Tenant de demostración con datos ficticios para validar el producto.',
       primary: PLATFORM_PRIMARY,
@@ -228,11 +228,11 @@ async function seedDemoTenant() {
     create: {
       id: 'tenant_demo',
       organizationId: organization.id,
-      name: 'MyWorkoutBox Demo Center',
+      name: 'STELIOS Demo Center',
       slug: 'myworkoutbox-demo-center',
-      appName: 'MyWorkoutBox',
+      appName: 'STELIOS',
       shortName: 'Demo Center',
-      mark: 'MW',
+      mark: 'S',
       claim: 'Training Intelligence',
       description: 'Tenant de demostración con datos ficticios para validar el producto.',
       primary: PLATFORM_PRIMARY,
@@ -436,7 +436,13 @@ async function seedDemoTenant() {
 const SESSION_EXERCISE_SLUGS = BASE_EXERCISES.map((exercise) => exercise.slug);
 const EXERCISES_PER_SESSION = 3;
 const SERIES_PER_EXERCISE = 3;
-const SESSIONS_PER_CLIENT = 3;
+const SESSIONS_PER_CLIENT = 6;
+/** Days between a client's demo sessions. */
+const SESSION_CADENCE_DAYS = 5;
+/** The last demo clients stop training this many days ago, so the dashboard shows clients to reactivate. */
+const INACTIVE_CLIENTS = 2;
+const INACTIVE_OFFSET_DAYS = 18;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const SESSION_DURATION_MINUTES = 45;
 
 function seriesValues(slug: (typeof SESSION_EXERCISE_SLUGS)[number], sessionIndex: number, seriesIndex: number) {
@@ -480,10 +486,13 @@ async function seedTrainingSessions(tenantId: string, trainerId: string, clientI
 
   for (const [clientIndex, clientId] of clientIds.entries()) {
     for (let sessionIndex = 0; sessionIndex < SESSIONS_PER_CLIENT; sessionIndex += 1) {
-      const weeksAgo = (SESSIONS_PER_CLIENT - sessionIndex) * 2;
-      const startedAt = new Date('2026-07-04T09:00:00.000Z');
-      startedAt.setUTCDate(startedAt.getUTCDate() - weeksAgo * 7);
-      startedAt.setUTCMinutes(startedAt.getUTCMinutes() + clientIndex * 20);
+      // Dates are relative to the day the seed runs, so the demo always shows recent activity.
+      const isInactive = clientIndex >= clientIds.length - INACTIVE_CLIENTS;
+      const daysAgo =
+        (SESSIONS_PER_CLIENT - 1 - sessionIndex) * SESSION_CADENCE_DAYS + 1 + (clientIndex % SESSION_CADENCE_DAYS) + (isInactive ? INACTIVE_OFFSET_DAYS : 0);
+      const today = new Date();
+      const startedAt = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) - daysAgo * DAY_MS);
+      startedAt.setUTCHours(7 + ((clientIndex * 3) % 12), (clientIndex * 20) % 60);
       const completedAt = new Date(startedAt.getTime() + SESSION_DURATION_MINUTES * 60 * 1000);
 
       const sessionId = `demo_session_${clientIndex}_${sessionIndex}`;

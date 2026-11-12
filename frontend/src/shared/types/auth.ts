@@ -9,19 +9,12 @@ export interface JwtPayload {
   exp: number;
 }
 
-export interface TenantBrand {
+/** Training center the session is scoped to. Visual identity is always STELIOS. */
+export interface ActiveTenant {
   id: string;
   organizationId: string;
   name: string;
   slug: string;
-  appName: string;
-  shortName: string;
-  mark: string;
-  claim: string;
-  description: string;
-  primary: string;
-  primaryHover: string;
-  primarySoft: string;
 }
 
 export interface TenantOption {
@@ -35,7 +28,7 @@ export interface TenantOption {
 export interface LoginSuccessResponse {
   token: string;
   user: { id: string; name: string; email: string; role: Role; tenantId: string; organizationId: string };
-  tenant: TenantBrand;
+  tenant: ActiveTenant;
 }
 
 export interface TenantSelectionResponse {

@@ -1,5 +1,5 @@
 import apiClient from '@shared/api/http-client';
-import type { LoginResponse, AuthUser, LoginSuccessResponse, TenantBrand } from '@shared/types/auth';
+import type { ActiveTenant, AuthUser, LoginResponse, LoginSuccessResponse } from '@shared/types/auth';
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
   const response = await apiClient.post<LoginResponse>('/auth/login', { email, password });
@@ -23,13 +23,13 @@ export async function getMe(): Promise<AuthUser> {
   return response.data;
 }
 
-export async function getCurrentTenant(): Promise<TenantBrand> {
-  const response = await apiClient.get<TenantBrand>('/auth/tenant');
+export async function getCurrentTenant(): Promise<ActiveTenant> {
+  const response = await apiClient.get<ActiveTenant>('/auth/tenant');
   return response.data;
 }
 
-export async function updateCurrentTenant(data: Partial<TenantBrand>): Promise<TenantBrand> {
-  const response = await apiClient.put<TenantBrand>('/auth/tenant', data);
+export async function updateCurrentTenant(data: { name: string }): Promise<ActiveTenant> {
+  const response = await apiClient.put<ActiveTenant>('/auth/tenant', data);
   return response.data;
 }
 

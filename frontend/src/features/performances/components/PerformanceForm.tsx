@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { CreatePerformanceData, Exercise, MeasurementField, PerformanceRecord, PerformanceUnit, VariantGroup } from '@shared/types/api';
+import { Minus, Plus } from 'lucide-react';
 import { Button } from '@shared/components/ui';
 import { getExerciseTemplate } from '@features/performances/utils/exerciseTemplates';
 
@@ -88,6 +89,19 @@ function getPlaceholder(field: MeasurementField): string {
   return 'Valor';
 }
 
+const STEPPER_STEPS: Partial<Record<PerformanceUnit, number>> = {
+  kg: 2.5,
+  repetitions: 1,
+  seconds: 5,
+  minutes: 1,
+  meters: 50,
+  calories: 10,
+};
+
+function formatStep(step: number): string {
+  return String(step).replace('.', ',');
+}
+
 export default function PerformanceForm({
   context = 'history',
   exerciseName,
@@ -152,6 +166,14 @@ export default function PerformanceForm({
     setValues((current) => ({ ...current, [key]: value }));
   };
 
+  const stepFieldValue = (key: MeasurementField['key'], delta: number) => {
+    setValues((current) => {
+      const base = Number(current[key]);
+      const next = Math.max(0, Math.round(((Number.isFinite(base) ? base : 0) + delta) * 100) / 100);
+      return { ...current, [key]: String(next) };
+    });
+  };
+
   const hasMissingRequiredField = fields.some((field) => field.required && !values[field.key]?.trim());
 
   const validate = (): boolean => {
@@ -202,13 +224,17 @@ export default function PerformanceForm({
   };
 
   const inputClass =
-    'w-full border border-border/70 bg-elevated/90 rounded-xl px-3 py-2 min-h-[46px] text-text-primary placeholder:text-text-muted shadow-sm focus-ring';
-  const labelClass = 'block text-sm font-medium text-text-primary mb-1';
-  const errorClass = 'text-red-500 text-xs mt-1';
+    'w-full min-h-[46px] rounded-xl border border-border bg-background/60 px-3.5 py-2 text-sm text-text-primary placeholder:text-text-muted transition-colors hover:border-border-strong focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25';
+  const numberInputClass =
+    'tabular min-h-[52px] min-w-0 flex-1 rounded-xl border border-border bg-background/60 px-2 py-2 text-center font-display text-2xl font-bold text-text-primary placeholder:font-sans placeholder:text-sm placeholder:font-normal placeholder:text-text-muted transition-colors hover:border-border-strong focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none';
+  const stepperButtonClass =
+    'flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-white/[0.11] text-text-primary transition-[background-color,border-color,transform] duration-150 ease-out hover:border-primary/50 hover:bg-primary/10 active:scale-[0.96] motion-reduce:active:scale-100 focus-ring';
+  const labelClass = 'mb-1.5 block text-sm font-medium text-text-secondary';
+  const errorClass = 'mt-1.5 text-xs text-danger';
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 px-0 backdrop-blur-sm sm:items-center sm:px-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-0 backdrop-blur-sm sm:items-center sm:px-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -216,10 +242,10 @@ export default function PerformanceForm({
       role="dialog"
       aria-label={formTitle}
     >
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-border/70 bg-elevated/95 p-5 shadow-[0_-18px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:rounded-2xl sm:p-6">
-        <div className="mb-5 border-b border-border/70 pb-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">{sessionContext ? 'Registro de entrenamiento' : 'Histórico'}</p>
-          <h2 className="mt-1 text-xl font-semibold text-text-primary">{formTitle}</h2>
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-white/[0.08] bg-surface p-5 shadow-panel sm:rounded-3xl sm:p-6">
+        <div className="mb-5 border-b border-white/[0.08] pb-4">
+          <p className="eyebrow">{sessionContext ? 'Registro de entrenamiento' : 'Histórico'}</p>
+          <h2 className="mt-2 text-2xl font-bold text-text-primary">{formTitle}</h2>
           <p className="mt-1 text-sm text-text-secondary">
             {exerciseName
               ? `${exerciseName}: registra los datos de esta serie.`
@@ -236,20 +262,56 @@ export default function PerformanceForm({
                   <label htmlFor={`perf-${field.key}`} className={labelClass}>
                     {field.label} {unit && unit !== 'text' ? `(${unit})` : ''} {field.required && <span aria-hidden="true">*</span>}
                   </label>
-                  <input
-                    id={`perf-${field.key}`}
-                    type={unit === 'text' ? 'text' : 'number'}
-                    value={values[field.key] ?? ''}
-                    onChange={(event) => setFieldValue(field.key, event.target.value)}
-                    ref={index === 0 ? firstInputRef : undefined}
-                    autoFocus={index === 0}
-                    placeholder={getPlaceholder({ ...field, unit })}
-                    min={unit === 'text' ? undefined : '0'}
-                    step={unit === 'kg' || unit === 'meters' ? '0.5' : '1'}
-                    className={inputClass}
-                    aria-required={field.required}
-                    aria-describedby={errors[field.key] ? `perf-${field.key}-error` : undefined}
-                  />
+                  {unit === 'text' ? (
+                    <input
+                      id={`perf-${field.key}`}
+                      type="text"
+                      value={values[field.key] ?? ''}
+                      onChange={(event) => setFieldValue(field.key, event.target.value)}
+                      ref={index === 0 ? firstInputRef : undefined}
+                      autoFocus={index === 0}
+                      placeholder={getPlaceholder({ ...field, unit })}
+                      className={inputClass}
+                      aria-required={field.required}
+                      aria-describedby={errors[field.key] ? `perf-${field.key}-error` : undefined}
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => stepFieldValue(field.key, -(STEPPER_STEPS[unit ?? 'repetitions'] ?? 1))}
+                        aria-label={`Restar ${formatStep(STEPPER_STEPS[unit ?? 'repetitions'] ?? 1)}`}
+                        aria-controls={`perf-${field.key}`}
+                        className={stepperButtonClass}
+                      >
+                        <Minus size={18} />
+                      </button>
+                      <input
+                        id={`perf-${field.key}`}
+                        type="number"
+                        inputMode="decimal"
+                        value={values[field.key] ?? ''}
+                        onChange={(event) => setFieldValue(field.key, event.target.value)}
+                        ref={index === 0 ? firstInputRef : undefined}
+                        autoFocus={index === 0}
+                        placeholder={getPlaceholder({ ...field, unit })}
+                        min="0"
+                        step={unit === 'kg' || unit === 'meters' ? '0.5' : '1'}
+                        className={numberInputClass}
+                        aria-required={field.required}
+                        aria-describedby={errors[field.key] ? `perf-${field.key}-error` : undefined}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => stepFieldValue(field.key, STEPPER_STEPS[unit ?? 'repetitions'] ?? 1)}
+                        aria-label={`Sumar ${formatStep(STEPPER_STEPS[unit ?? 'repetitions'] ?? 1)}`}
+                        aria-controls={`perf-${field.key}`}
+                        className={stepperButtonClass}
+                      >
+                        <Plus size={18} />
+                      </button>
+                    </div>
+                  )}
                   {errors[field.key] && (
                     <p id={`perf-${field.key}-error`} className={errorClass} role="alert">
                       {errors[field.key]}
@@ -267,16 +329,17 @@ export default function PerformanceForm({
                   <span className={labelClass}>
                     {group.label} {group.required && <span aria-hidden="true">*</span>}
                   </span>
-                  <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3">
+                  <div className="flex flex-wrap gap-2">
                     {group.options.map((option) => (
                       <button
                         key={option}
                         type="button"
                         onClick={() => setVariants((current) => ({ ...current, [group.key]: option }))}
-                        className={`min-h-[44px] rounded-xl border px-3 text-sm font-semibold transition-colors ${
+                        aria-pressed={variants[group.key] === option}
+                        className={`min-h-[44px] rounded-full border px-4 text-sm font-semibold transition-colors duration-150 ease-out focus-ring ${
                           variants[group.key] === option
-                            ? 'border-primary/60 bg-primary/15 text-primary'
-                            : 'border-border/70 bg-elevated/80 text-text-secondary hover:bg-surface'
+                            ? 'border-primary/60 bg-primary/15 text-primary-soft'
+                            : 'border-white/[0.11] text-text-secondary hover:border-white/20 hover:bg-white/[0.04] hover:text-text-primary'
                         }`}
                       >
                         {option}
@@ -318,15 +381,16 @@ export default function PerformanceForm({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Opcional"
               rows={3}
-              className="w-full resize-none rounded-xl border border-border/70 bg-elevated/90 px-3 py-2 text-text-primary placeholder:text-text-muted focus-ring"
+              className="w-full resize-none rounded-xl border border-border bg-background/60 px-3.5 py-2 text-sm text-text-primary placeholder:text-text-muted transition-colors hover:border-border-strong focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
             />
           </div>
 
-          {submitError && <p className="mb-4 text-sm text-red-500" role="alert">{submitError}</p>}
+          {submitError && <p className="mb-4 text-sm text-danger" role="alert">{submitError}</p>}
 
-          <div className="sticky bottom-0 -mx-5 flex gap-3 border-t border-border/70 bg-elevated/95 px-5 pb-[max(env(safe-area-inset-bottom),0rem)] pt-4 backdrop-blur-xl sm:static sm:mx-0 sm:justify-end sm:px-0 sm:pb-0">
+          <div className="sticky bottom-0 -mx-5 flex gap-2 border-t border-white/[0.08] bg-surface px-5 pb-[max(env(safe-area-inset-bottom),0rem)] pt-4 sm:static sm:mx-0 sm:justify-end sm:px-0 sm:pb-0">
             <Button
               type="button"
+              variant="ghost"
               onClick={onClose}
               className="flex-1 sm:flex-none"
             >

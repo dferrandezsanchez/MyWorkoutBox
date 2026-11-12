@@ -1,12 +1,12 @@
 # AGENTS.md
 
-Guía de trabajo para agentes y asistentes que colaboren en MyWorkoutBox.
+Guía de trabajo para agentes y asistentes que colaboren en STELIOS.
 
 Este archivo es la fuente principal de instrucciones del proyecto. Antes de modificar código, documentación, tests o configuración, lee estas reglas y respétalas salvo que el usuario indique explícitamente lo contrario.
 
 ## Identidad del proyecto
 
-MyWorkoutBox es una aplicación real para centros de entrenamiento. Gestiona clientes, entrenadores, ejercicios evaluables, marcas de rendimiento, histórico, roles, tenants, branding, auditoría y RGPD básico.
+STELIOS es una aplicación real para centros de entrenamiento. Gestiona clientes, entrenadores, ejercicios evaluables, marcas de rendimiento, histórico, roles, tenants, auditoría y RGPD básico. La identidad visual es siempre la de STELIOS: los tenants no personalizan colores, logos ni nombre de aplicación.
 
 El proyecto debe tratarse como un producto en evolución, no como una demo. Las decisiones deben favorecer mantenibilidad, claridad, calidad, producción y crecimiento futuro hacia móvil/API pública.
 
@@ -111,7 +111,7 @@ Reglas:
 
 ## API y producción
 
-MyWorkoutBox debe estar preparado para producción y consumo futuro desde móvil.
+STELIOS debe estar preparado para producción y consumo futuro desde móvil.
 
 Directrices:
 

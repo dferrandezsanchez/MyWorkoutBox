@@ -42,7 +42,7 @@ const adminResponses = {
 export const openApiDocument: OpenApiDocument = {
   openapi: '3.0.3',
   info: {
-    title: 'MyWorkoutBox API',
+    title: 'STELIOS API',
     version: '0.6.0-alpha',
     description:
       'HTTP API for managing training centers, clients, trainers, sessions, measurable exercises, and performance records. Except for health and login operations, requests require a tenant-scoped JWT. ADMIN users manage center resources; ADMIN and TRAINER users can use trainer workflows.',
@@ -59,6 +59,7 @@ export const openApiDocument: OpenApiDocument = {
     { name: 'Performances', description: 'Performance records and history' },
     { name: 'Training Sessions', description: 'Trainer sessions, exercises, and series' },
     { name: 'Trainers', description: 'Trainer management' },
+    { name: 'Dashboard', description: 'Center activity overview for administrators' },
   ],
   components: {
     securitySchemes: {
@@ -110,20 +111,13 @@ export const openApiDocument: OpenApiDocument = {
       },
       Tenant: {
         type: 'object',
-        required: ['id', 'organizationId', 'name', 'slug', 'appName', 'shortName', 'mark'],
+        description: 'Active training center. Visual branding is fixed by the platform and is not configurable per tenant.',
+        required: ['id', 'organizationId', 'name', 'slug'],
         properties: {
           id: { type: 'string' },
           organizationId: { type: 'string' },
           name: { type: 'string' },
           slug: { type: 'string' },
-          appName: { type: 'string' },
-          shortName: { type: 'string' },
-          mark: { type: 'string' },
-          claim: { type: 'string' },
-          description: { type: 'string' },
-          primary: { type: 'string', example: '#2563EB' },
-          primaryHover: { type: 'string', example: '#1D4ED8' },
-          primarySoft: { type: 'string', example: '#93C5FD' },
         },
       },
       TenantOption: {
@@ -137,18 +131,68 @@ export const openApiDocument: OpenApiDocument = {
           role: { $ref: '#/components/schemas/Role' },
         },
       },
+      DashboardOverview: {
+        type: 'object',
+        description: 'Center activity over the last 28 days compared with the previous 28 days.',
+        required: ['period', 'totals', 'daily', 'activeSessions', 'trainers', 'recentSessions', 'clientsToReactivate'],
+        properties: {
+          period: {
+            type: 'object',
+            required: ['from', 'to', 'days'],
+            properties: { from: { type: 'string', format: 'date-time' }, to: { type: 'string', format: 'date-time' }, days: { type: 'integer', example: 28 } },
+          },
+          totals: {
+            type: 'object',
+            required: ['completedSessions', 'previousCompletedSessions', 'series', 'previousSeries', 'trainedClients', 'previousTrainedClients'],
+            properties: {
+              completedSessions: { type: 'integer' },
+              previousCompletedSessions: { type: 'integer' },
+              series: { type: 'integer' },
+              previousSeries: { type: 'integer' },
+              trainedClients: { type: 'integer' },
+              previousTrainedClients: { type: 'integer' },
+            },
+          },
+          daily: {
+            type: 'array',
+            items: { type: 'object', required: ['date', 'sessions', 'series'], properties: { date: { type: 'string', format: 'date' }, sessions: { type: 'integer' }, series: { type: 'integer' } } },
+          },
+          activeSessions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['id', 'clientId', 'clientName', 'trainerName', 'startedAt', 'seriesCount'],
+              properties: { id: { type: 'string' }, clientId: { type: 'string' }, clientName: { type: 'string' }, trainerName: { type: 'string' }, startedAt: { type: 'string', format: 'date-time' }, seriesCount: { type: 'integer' } },
+            },
+          },
+          trainers: {
+            type: 'array',
+            items: { type: 'object', required: ['id', 'name', 'sessions', 'series'], properties: { id: { type: 'string' }, name: { type: 'string' }, sessions: { type: 'integer' }, series: { type: 'integer' } } },
+          },
+          recentSessions: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['id', 'clientId', 'clientName', 'trainerName', 'completedAt', 'exerciseCount', 'seriesCount'],
+              properties: { id: { type: 'string' }, clientId: { type: 'string' }, clientName: { type: 'string' }, trainerName: { type: 'string' }, completedAt: { type: 'string', format: 'date-time' }, exerciseCount: { type: 'integer' }, seriesCount: { type: 'integer' } },
+            },
+          },
+          clientsToReactivate: {
+            type: 'array',
+            description: 'Active clients without a session in the last 14 days, longest inactivity first.',
+            items: {
+              type: 'object',
+              required: ['id', 'name', 'lastSessionAt', 'daysSince'],
+              properties: { id: { type: 'string' }, name: { type: 'string' }, lastSessionAt: { type: 'string', format: 'date-time', nullable: true }, daysSince: { type: 'integer', nullable: true } },
+            },
+          },
+        },
+      },
       TenantUpdateInput: {
         type: 'object',
+        required: ['name'],
         properties: {
-          name: { type: 'string' },
-          appName: { type: 'string' },
-          shortName: { type: 'string' },
-          mark: { type: 'string' },
-          claim: { type: 'string' },
-          description: { type: 'string' },
-          primary: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', example: '#2563EB' },
-          primaryHover: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', example: '#1D4ED8' },
-          primarySoft: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', example: '#93C5FD' },
+          name: { type: 'string', minLength: 1, maxLength: 191 },
         },
       },
       LoginSuccessResponse: {
@@ -550,7 +594,7 @@ export const openApiDocument: OpenApiDocument = {
       put: {
         tags: ['Auth'],
         security: [{ bearerAuth: [] }],
-        summary: 'Update active tenant branding',
+        summary: 'Rename the active tenant',
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/TenantUpdateInput' } } } },
         responses: {
           200: { description: 'Tenant updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Tenant' } } } },
@@ -763,6 +807,14 @@ Object.assign(openApiDocument.paths, {
       responses: { 200: { description: 'Training session completed', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, ...authResponses },
     },
   },
+  '/dashboard/overview': {
+    get: {
+      tags: ['Dashboard'],
+      security: [{ bearerAuth: [] }],
+      summary: 'Get the center activity overview',
+      responses: { 200: { description: 'Activity overview', content: { 'application/json': { schema: { $ref: '#/components/schemas/DashboardOverview' } } } }, ...adminResponses },
+    },
+  },
   '/trainers': pathItem('Trainers', 'Trainer', true),
   '/trainers/{id}': {
     get: {
@@ -844,6 +896,7 @@ const operationMetadata: Record<string, OperationMetadata> = {
   'PUT /training-sessions/{id}/series/{recordId}': { operationId: 'updateTrainingSessionSeries', roles: ['ADMIN', 'TRAINER'] },
   'DELETE /training-sessions/{id}/series/{recordId}': { operationId: 'deleteTrainingSessionSeries', roles: ['ADMIN', 'TRAINER'] },
   'POST /training-sessions/{id}/complete': { operationId: 'completeTrainingSession', roles: ['ADMIN', 'TRAINER'] },
+  'GET /dashboard/overview': { operationId: 'getDashboardOverview', roles: ['ADMIN'] },
   'GET /trainers': { operationId: 'listTrainers', roles: ['ADMIN'] },
   'POST /trainers': { operationId: 'createTrainer', roles: ['ADMIN'] },
   'GET /trainers/{id}': { operationId: 'getTrainer', roles: ['ADMIN'] },

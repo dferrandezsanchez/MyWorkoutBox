@@ -5,7 +5,7 @@ import { useClients, useCreateClient, useSetClientStatus, useExportClient, useAn
 import ClientForm from '@features/clients/components/ClientForm';
 import type { Client, CreateClientData } from '@shared/types/api';
 import AppShell from '@app/layout/AppShell';
-import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary } from '@app/components/AdminManagement';
+import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary, RowActionsMenu } from '@app/components/AdminManagement';
 import Avatar from '@shared/components/Avatar';
 import { ConfirmDialog, Dialog, EmptyState, StatusBadge } from '@shared/components/ui';
 
@@ -30,13 +30,24 @@ export default function ClientsAdminPage() {
   if (isError) {
     return (
       <AppShell>
-        <p className="text-red-500">Error al cargar clientes</p>
+        <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-red-200">Error al cargar clientes</p>
       </AppShell>
     );
   }
 
   const activeCount = clients?.filter((client) => client.status === 'ACTIVE').length ?? 0;
   const inactiveCount = clients?.filter((client) => client.status === 'INACTIVE').length ?? 0;
+
+  const exportClient = async (client: Client) => {
+    const exported = await exportMutation.mutateAsync(client.id);
+    const blob = new Blob([JSON.stringify(exported, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `cliente-${client.id}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <AppShell>
@@ -51,8 +62,8 @@ export default function ClientsAdminPage() {
 
       <ManagementSummary items={[
         { label: 'Total', value: clients?.length ?? 0, icon: UserRound, tone: 'primary' },
-        { label: 'Activos', value: activeCount, icon: UserCheck, tone: 'green' },
-        { label: 'Inactivos', value: inactiveCount, icon: UserX, tone: 'amber' },
+        { label: 'Activos', value: activeCount, icon: UserCheck, tone: 'primary' },
+        { label: 'Inactivos', value: inactiveCount, icon: UserX, tone: 'muted' },
       ]} />
 
       <ManagementSection title="Directorio de clientes" meta={`${clients?.length ?? 0} perfiles`}>
@@ -62,31 +73,29 @@ export default function ClientsAdminPage() {
           </div>
         ) : (
           clients.map((c) => (
-            <div key={c.id} className="flex flex-col gap-3 border-b border-border/70 p-4 last:border-b-0 sm:flex-row sm:items-center">
-                <button type="button" onClick={() => navigate(`/clients/${c.id}?mode=admin`)} className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-ring">
-                  <Avatar firstName={c.firstName} lastName={c.lastName} size="md" />
-                  <span className="min-w-0"><span className="block truncate font-semibold text-text-primary group-hover:text-primary">{c.firstName} {c.lastName}</span><span className="mt-1 block text-xs text-text-secondary">Perfil, sesiones y marcas</span></span>
-                </button>
-                <div className="flex items-center justify-between gap-2 sm:justify-end">
-                  <StatusBadge status={c.status} />
-                  <div className="flex gap-1.5">
-                  <IconAction label={`Editar ${c.firstName}`} onClick={() => navigate(`/admin/clients/${c.id}`)}><Pencil size={16} /></IconAction>
-                  <IconAction label={c.status === 'ACTIVE' ? `Desactivar ${c.firstName}` : `Activar ${c.firstName}`} onClick={() => statusMutation.mutate({ id: c.id, status: c.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}><Power size={16} /></IconAction>
-                  <IconAction label={`Exportar ${c.firstName}`} onClick={async () => {
-                    const exported = await exportMutation.mutateAsync(c.id);
-                    const blob = new Blob([JSON.stringify(exported, null, 2)], {
-                      type: 'application/json',
-                    });
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `cliente-${c.id}.json`;
-                    link.click();
-                    URL.revokeObjectURL(url);
-                  }}><Download size={16} /></IconAction>
-                  <IconAction label={`Anonimizar ${c.firstName}`} tone="danger" onClick={() => setClientToAnonymize(c)}><ShieldX size={16} /></IconAction>
-                  </div>
-                </div>
+            <div key={c.id} className="flex items-center gap-2 py-2 pl-3 pr-2 transition-colors duration-150 hover:bg-white/[0.02] sm:gap-3 sm:px-5 sm:py-3">
+              <button type="button" onClick={() => navigate(`/clients/${c.id}?mode=admin`)} className="group flex min-h-[56px] min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-ring">
+                <Avatar firstName={c.firstName} lastName={c.lastName} size="md" />
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold text-text-primary transition-colors duration-150 group-hover:text-primary-soft">{c.firstName} {c.lastName}</span>
+                  <span className="mt-1 block"><StatusBadge status={c.status} /></span>
+                </span>
+              </button>
+              <div className="flex shrink-0 gap-2">
+                <IconAction label={`Editar ${c.firstName}`} onClick={() => navigate(`/admin/clients/${c.id}`)}><Pencil size={16} /></IconAction>
+                <RowActionsMenu
+                  subject={`${c.firstName} ${c.lastName}`}
+                  actions={[
+                    {
+                      label: c.status === 'ACTIVE' ? 'Desactivar cliente' : 'Activar cliente',
+                      icon: Power,
+                      onSelect: () => statusMutation.mutate({ id: c.id, status: c.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' }),
+                    },
+                    { label: 'Exportar datos (RGPD)', icon: Download, onSelect: () => void exportClient(c) },
+                    { label: 'Anonimizar cliente', icon: ShieldX, tone: 'danger', onSelect: () => setClientToAnonymize(c) },
+                  ]}
+                />
+              </div>
             </div>
           ))
         )}
@@ -95,7 +104,8 @@ export default function ClientsAdminPage() {
         {/* Create modal */}
         {showCreate && (
           <Dialog label="Crear cliente" onClose={() => setShowCreate(false)} className="max-w-md">
-              <h2 className="text-lg font-semibold text-text-primary mb-4">Crear cliente</h2>
+              <p className="eyebrow mb-2">Nuevo perfil</p>
+              <h2 className="mb-5 text-xl font-bold text-text-primary">Crear cliente</h2>
               <ClientForm
                 onSubmit={async (data) => {
                   await createMutation.mutateAsync(data as CreateClientData);

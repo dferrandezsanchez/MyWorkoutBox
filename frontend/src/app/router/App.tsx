@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@features/auth/components/ProtectedRoute';
 
 const LoginPage = React.lazy(() => import('@app/pages/LoginPage'));
-const LandingPage = React.lazy(() => import('@app/pages/LandingPage'));
+const RootRedirectPage = React.lazy(() => import('@app/pages/RootRedirectPage'));
 const DashboardPage = React.lazy(() => import('@app/pages/DashboardPage'));
 const TrainerPage = React.lazy(() => import('@app/pages/TrainerPage'));
 const AccountPage = React.lazy(() => import('@app/pages/TrainerAccountPage'));
@@ -19,7 +19,7 @@ const NewTrainingSessionPage = React.lazy(() => import('@app/pages/NewTrainingSe
 const TrainerClientsPage = React.lazy(() => import('@app/pages/TrainerClientsPage'));
 
 const LoadingFallback = (
-  <div className="flex min-h-screen items-center justify-center">
+  <div className="flex min-h-dvh items-center justify-center">
     <div className="text-text-secondary">Cargando...</div>
   </div>
 );
@@ -29,7 +29,7 @@ export default function App() {
     <Suspense fallback={LoadingFallback}>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<RootRedirectPage />} />
         <Route path="/login" element={<LoginPage />} />
 
         {/* Protected routes — any authenticated user */}

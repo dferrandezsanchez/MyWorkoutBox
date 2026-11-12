@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { changePassword, getMe, getCurrentTenant, updateCurrentTenant, updateMe } from '@features/auth/api/auth.api';
-import { AUTH_CONTEXT_EVENT, setStoredTenantBrand } from '@features/auth/model/auth-store';
+import { setStoredTenant } from '@features/auth/model/auth-store';
 
 export function useAuthUser() {
   return useQuery({
@@ -39,8 +39,7 @@ export function useUpdateCurrentTenant() {
   return useMutation({
     mutationFn: updateCurrentTenant,
     onSuccess: (tenant) => {
-      setStoredTenantBrand(tenant);
-      window.dispatchEvent(new Event(AUTH_CONTEXT_EVENT));
+      setStoredTenant(tenant);
       queryClient.setQueryData(['currentTenant'], tenant);
       void queryClient.invalidateQueries({ queryKey: ['currentTenant'] });
     },

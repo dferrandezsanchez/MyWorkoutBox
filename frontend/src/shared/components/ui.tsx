@@ -5,13 +5,13 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 const buttonVariants: Record<ButtonVariant, string> = {
   primary:
-    'border-primary bg-primary text-primary-contrast shadow-[0_14px_34px_rgba(var(--color-primary)/0.32)] hover:bg-primary-hover',
+    'border-primary bg-primary text-primary-contrast hover:border-primary-hover hover:bg-primary-hover',
   secondary:
-    'border-border/80 bg-elevated/80 text-text-primary shadow-sm hover:bg-surface',
+    'border-white/[0.11] bg-transparent text-text-primary hover:border-white/20 hover:bg-white/[0.04]',
   ghost:
-    'border-transparent bg-transparent text-text-secondary hover:bg-surface/80 hover:text-text-primary',
+    'border-transparent bg-transparent text-text-secondary hover:bg-white/[0.05] hover:text-text-primary',
   danger:
-    'border-red-300/50 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200 dark:hover:bg-red-500/15',
+    'border-danger/30 bg-danger/10 text-red-200 hover:border-danger/45 hover:bg-danger/15',
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -21,7 +21,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export function Button({ variant = 'secondary', className = '', ...props }: ButtonProps) {
   return (
     <button
-      className={`min-h-[44px] rounded-lg border px-4 py-2 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${buttonVariants[variant]} ${className}`}
+      className={`min-h-[44px] rounded-full border px-5 py-2 text-sm font-semibold transition-[background-color,border-color,color,transform] duration-150 ease-out active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus-ring ${buttonVariants[variant]} ${className}`}
       {...props}
     />
   );
@@ -30,7 +30,7 @@ export function Button({ variant = 'secondary', className = '', ...props }: Butt
 export function TextInput({ className = '', ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`min-h-[46px] rounded-lg border border-border/80 bg-elevated/90 px-3 py-2 text-sm text-text-primary shadow-sm placeholder:text-text-muted focus-ring ${className}`}
+      className={`min-h-[46px] rounded-xl border border-border bg-background/60 px-3.5 py-2 text-sm text-text-primary placeholder:text-text-muted transition-colors hover:border-border-strong focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 ${className}`}
       {...props}
     />
   );
@@ -44,7 +44,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={`min-w-0 rounded-2xl border border-border/70 bg-elevated/85 shadow-panel backdrop-blur ${className}`}>
+    <section className={`min-w-0 rounded-2xl border border-white/[0.08] bg-surface ${className}`}>
       {children}
     </section>
   );
@@ -64,7 +64,7 @@ export function SectionHeader({
   return (
     <div className={`flex items-start justify-between gap-4 ${className}`}>
       <div className="min-w-0">
-        <h2 className="text-base font-semibold text-text-primary sm:text-lg">{title}</h2>
+        <h2 className="text-lg font-bold text-text-primary sm:text-xl">{title}</h2>
         {description && <p className="mt-1 text-sm text-text-secondary">{description}</p>}
       </div>
       {action}
@@ -86,26 +86,23 @@ export function MetricCard({
   tone?: 'primary' | 'blue' | 'green' | 'amber' | 'red';
 }) {
   const toneClass = {
-    primary: 'bg-primary/15 text-primary ring-primary/20',
-    blue: 'bg-sky-500/15 text-sky-500 dark:text-sky-300 ring-sky-500/20',
-    green: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 ring-emerald-500/20',
-    amber: 'bg-amber-500/15 text-amber-600 dark:text-amber-300 ring-amber-500/20',
-    red: 'bg-red-500/15 text-red-600 dark:text-red-300 ring-red-500/20',
+    primary: 'text-primary-soft',
+    blue: 'text-primary-soft',
+    green: 'text-success',
+    amber: 'text-warning',
+    red: 'text-danger',
   }[tone];
 
   return (
-    <Panel className="relative overflow-hidden p-4">
-      <div className="absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-text-secondary">{label}</p>
-          <p className="mt-3 text-3xl font-semibold tracking-tight text-text-primary">{value}</p>
-          {detail && <p className="mt-1 text-xs font-semibold text-text-secondary">{detail}</p>}
-        </div>
-        <span className={`flex h-11 w-11 items-center justify-center rounded-xl ring-1 ${toneClass}`}>
-          <Icon size={20} />
+    <Panel className="p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-text-secondary">{label}</p>
+        <span className={`flex h-9 w-9 items-center justify-center rounded-full border border-white/[0.08] bg-background/60 ${toneClass}`}>
+          <Icon size={17} />
         </span>
       </div>
+      <p className="tabular mt-4 font-display text-4xl font-bold leading-none tracking-tight text-text-primary">{value}</p>
+      {detail && <p className="mt-2 text-xs text-text-muted">{detail}</p>}
     </Panel>
   );
 }
@@ -126,12 +123,12 @@ export function ActionTile({
   return (
     <button
       onClick={onClick}
-      className={`group min-h-[96px] rounded-xl border border-border/70 bg-surface/70 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:bg-primary/10 focus-ring ${className}`}
+      className={`group min-h-[96px] rounded-2xl border border-white/[0.08] bg-surface p-4 text-left transition-[border-color,background-color] duration-150 ease-out hover:border-primary/40 hover:bg-primary/[0.06] focus-ring ${className}`}
     >
-      <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/20 transition-colors group-hover:bg-primary group-hover:text-white">
+      <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary-soft transition-colors duration-150 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-contrast">
         <Icon size={19} />
       </span>
-      <span className="block text-sm font-semibold text-text-primary">{title}</span>
+      <span className="block font-display text-base font-bold text-text-primary">{title}</span>
       {description && <span className="mt-1 block text-xs leading-5 text-text-secondary">{description}</span>}
     </button>
   );
@@ -146,13 +143,16 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, eyebrow, description, actions }: PageHeaderProps) {
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
         {eyebrow && (
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">{eyebrow}</p>
+          <p className="eyebrow mb-3 flex items-center gap-3">
+            <span aria-hidden="true" className="h-px w-8 bg-primary/60" />
+            {eyebrow}
+          </p>
         )}
-        <h1 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">{title}</h1>
-        {description && <p className="mt-2 max-w-2xl text-sm text-text-secondary">{description}</p>}
+        <h1 className="text-3xl font-bold text-text-primary sm:text-[2.75rem] sm:leading-[1.05]">{title}</h1>
+        {description && <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary sm:text-base">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
@@ -165,13 +165,13 @@ export function StatusBadge({ status }: { status: 'ACTIVE' | 'INACTIVE' }) {
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
         active
-          ? 'bg-emerald-500/12 text-emerald-700 ring-emerald-500/20 dark:text-emerald-300'
-          : 'bg-text-muted/10 text-text-secondary ring-border'
+          ? 'bg-primary/10 text-primary-soft ring-primary/25'
+          : 'bg-white/[0.04] text-text-secondary ring-white/[0.08]'
       }`}
     >
       <span
         className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-          active ? 'bg-emerald-500' : 'bg-text-muted'
+          active ? 'bg-primary' : 'bg-text-muted'
         }`}
       />
       {active ? 'Activo' : 'Inactivo'}
@@ -181,20 +181,25 @@ export function StatusBadge({ status }: { status: 'ACTIVE' | 'INACTIVE' }) {
 
 export function MetricChip({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="rounded-xl border border-border/70 bg-elevated/80 px-3 py-2 shadow-sm">
-      <p className="text-xs text-text-secondary">{label}</p>
-      <p className="text-sm font-semibold text-text-primary">{value}</p>
+    <div className="rounded-xl border border-white/[0.08] bg-background/60 px-3 py-2">
+      <p className="text-xs text-text-muted">{label}</p>
+      <p className="tabular font-display text-sm font-bold text-text-primary">{value}</p>
     </div>
   );
 }
 
 export function EmptyState({ title, description }: { title: string; description?: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border/80 bg-elevated/70 px-6 py-10 text-center">
-      <p className="font-medium text-text-primary">{title}</p>
+    <div className="rounded-2xl border border-dashed border-white/[0.12] bg-surface/60 px-6 py-10 text-center">
+      <p className="font-display font-bold text-text-primary">{title}</p>
       {description && <p className="mt-1 text-sm text-text-secondary">{description}</p>}
     </div>
   );
+}
+
+/** Visual grab handle shown on mobile bottom sheets. */
+function SheetHandle() {
+  return <span aria-hidden="true" className="mx-auto -mt-1 mb-4 block h-1 w-10 rounded-full bg-white/15 sm:hidden" />;
 }
 
 export function Dialog({
@@ -230,7 +235,7 @@ export function Dialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <div
@@ -239,8 +244,9 @@ export function Dialog({
         aria-modal="true"
         aria-label={label}
         tabIndex={-1}
-        className={`relative max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-border/70 bg-elevated/95 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.35)] outline-none sm:rounded-2xl ${className}`}
+        className={`pb-safe relative max-h-[92dvh] w-full animate-sheet-in overflow-y-auto overscroll-contain rounded-t-3xl border border-white/[0.08] bg-surface p-5 shadow-panel outline-none sm:animate-pop-in sm:rounded-3xl sm:p-6 ${className}`}
       >
+        <SheetHandle />
         <button
           type="button"
           onClick={onClose}
@@ -275,11 +281,12 @@ export function ConfirmDialog({
   onCancel: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/65 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-description">
-      <div className="w-full max-w-md rounded-t-2xl border border-border/70 bg-elevated p-5 shadow-2xl sm:rounded-2xl">
-        <h2 id="confirm-dialog-title" className="text-xl font-semibold text-text-primary">{title}</h2>
+    <div className="fixed inset-0 z-[60] flex animate-fade-in items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-description">
+      <div className="pb-safe w-full max-w-md animate-sheet-in rounded-t-3xl border border-white/[0.08] bg-surface p-5 shadow-panel sm:animate-pop-in sm:rounded-3xl sm:p-6">
+        <SheetHandle />
+        <h2 id="confirm-dialog-title" className="text-xl font-bold text-text-primary">{title}</h2>
         <p id="confirm-dialog-description" className="mt-2 text-sm leading-6 text-text-secondary">{description}</p>
-        <div className="mt-6 grid grid-cols-2 gap-2">
+        <div className="mt-6 grid grid-cols-2 gap-3">
           <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>{cancelLabel}</Button>
           <Button type="button" variant={tone} onClick={onConfirm} disabled={pending}>
             {pending ? 'Procesando...' : confirmLabel}

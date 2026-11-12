@@ -1,14 +1,15 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginPage from './LoginPage';
 import { login, selectTenant } from '@features/auth/api/auth.api';
 
 const navigate = vi.fn();
+let searchParams = new URLSearchParams();
 
 vi.mock('react-router-dom', () => ({
   useNavigate: () => navigate,
-  useSearchParams: () => [new URLSearchParams()],
+  useSearchParams: () => [searchParams],
 }));
 
 vi.mock('@features/auth/api/auth.api', () => ({
@@ -17,7 +18,7 @@ vi.mock('@features/auth/api/auth.api', () => ({
 }));
 
 vi.mock('@features/auth/model/auth-store', () => ({
-  setStoredTenantBrand: vi.fn(),
+  setStoredTenant: vi.fn(),
   setToken: vi.fn(),
 }));
 
@@ -25,9 +26,53 @@ vi.mock('@shared/state/query-client', () => ({
   queryClient: { clear: vi.fn() },
 }));
 
+async function loginAsAdmin() {
+  vi.mocked(login).mockResolvedValueOnce({
+    token: 'jwt',
+    tenant: { id: 'tenant-1', organizationId: 'org-1', name: 'Demo Center', slug: 'demo-center' },
+    user: { id: 'user-1', name: 'Admin', email: 'admin-demo@gym.com', role: 'ADMIN', tenantId: 'tenant-1', organizationId: 'org-1' },
+  });
+  const user = userEvent.setup();
+  render(<LoginPage />);
+  await user.type(screen.getByLabelText('Email'), 'admin-demo@gym.com');
+  await user.type(screen.getByLabelText('Contraseña'), 'Admin1234!');
+  await user.click(screen.getByRole('button', { name: 'Entrar' }));
+}
+
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    searchParams = new URLSearchParams();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('returns to a safe in-app path after login', async () => {
+    searchParams = new URLSearchParams({ next: '/admin/clients?page=2' });
+    await loginAsAdmin();
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/admin/clients?page=2', { replace: true }));
+  });
+
+  it.each(['//evil.example', '/\\evil.example', 'https://evil.example', '/login?next=/admin'])(
+    'ignores an unsafe next path (%s)',
+    async (next) => {
+      searchParams = new URLSearchParams({ next });
+      await loginAsAdmin();
+      await waitFor(() => expect(navigate).toHaveBeenCalledWith('/admin', { replace: true }));
+    },
+  );
+
+  it('links back to the marketing site only when configured', () => {
+    vi.stubEnv('VITE_MARKETING_URL', '');
+    const { unmount } = render(<LoginPage />);
+    expect(screen.queryByRole('link', { name: /Volver a la web/ })).not.toBeInTheDocument();
+    unmount();
+
+    vi.stubEnv('VITE_MARKETING_URL', 'https://www.example.com');
+    render(<LoginPage />);
+    expect(screen.getByRole('link', { name: /Volver a la web de STELIOS/ })).toHaveAttribute('href', 'https://www.example.com');
   });
 
   it('toggles password visibility without changing the typed value', async () => {
@@ -80,14 +125,6 @@ describe('LoginPage', () => {
         organizationId: 'org-1',
         name: 'Demo Center',
         slug: 'demo-center',
-        appName: 'MyWorkoutBox',
-        shortName: 'Demo',
-        mark: 'MW',
-        claim: 'Training Intelligence',
-        description: 'Demo tenant',
-        primary: '#2563EB',
-        primaryHover: '#1D4ED8',
-        primarySoft: '#93C5FD',
       },
       user: {
         id: 'user-1',

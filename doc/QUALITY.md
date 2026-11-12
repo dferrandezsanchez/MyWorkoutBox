@@ -29,7 +29,7 @@ npm --prefix backend run quality
 npm --prefix frontend run quality
 ```
 
-`quality` runs ESLint, coverage, build and `npm audit --audit-level=moderate`.
+`quality` runs ESLint, coverage, build and `npm audit --omit=dev --audit-level=moderate`. The audit gate covers production dependencies, the code that ships; development tooling advisories are tracked and upgraded separately.
 
 Individual commands:
 
