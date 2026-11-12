@@ -12,7 +12,7 @@ export default function ClientCard({ client }: ClientCardProps) {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(`/clients/${client.id}`);
+    void navigate(`/clients/${client.id}`);
   };
 
   return (

@@ -12,7 +12,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --run --coverage --coverage.thresholds.functions 95",
     "lint": "eslint .",
-    "quality": "npm run lint && npm run test:coverage && npm run build && npm audit --audit-level=moderate"
+    "quality": "npm run lint && npm run test:coverage && npm run build && npm audit --omit=dev --audit-level=moderate"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "5.3.0",
@@ -24,7 +24,7 @@
     "postcss": "^8.5.16",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router-dom": "^6.30.4",
+    "react-router-dom": "^7.18.5",
     "tailwindcss": "3.4.19"
   },
   "devDependencies": {

@@ -40,11 +40,11 @@ export default function ClientProfilePage() {
 
   const openSession = async () => {
     if (activeSession) {
-      navigate(`/trainer/sessions/${activeSession.id}`);
+      void navigate(`/trainer/sessions/${activeSession.id}`);
       return;
     }
     const session = await startSession.mutateAsync(clientId!);
-    navigate(`/trainer/sessions/${session.id}`);
+    void navigate(`/trainer/sessions/${session.id}`);
   };
 
   if (isLoading) {

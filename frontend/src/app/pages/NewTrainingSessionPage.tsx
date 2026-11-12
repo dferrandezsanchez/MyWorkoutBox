@@ -36,7 +36,7 @@ export default function NewTrainingSessionPage() {
   const confirmStart = async () => {
     if (!selected) return;
     const session = await startSession.mutateAsync(selected.id);
-    navigate(`/trainer/sessions/${session.id}`);
+    void navigate(`/trainer/sessions/${session.id}`);
   };
 
   if (activeSession) {

@@ -19,7 +19,7 @@ export default function ExerciseRow({
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(`/clients/${clientId}/exercises/${exerciseId}`);
+    void navigate(`/clients/${clientId}/exercises/${exerciseId}`);
   };
 
   return (

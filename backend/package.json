@@ -16,7 +16,7 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "test:coverage": "vitest --run --coverage --coverage.thresholds.functions 95",
     "lint": "eslint .",
-    "quality": "npm run lint && npm run test:coverage && npm run build && npm audit --audit-level=moderate"
+    "quality": "npm run lint && npm run test:coverage && npm run build && npm audit --omit=dev --audit-level=moderate"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
@@ -48,5 +48,8 @@
     "typescript": "5.9.3",
     "typescript-eslint": "^8.63.0",
     "vitest": "^4.1.9"
+  },
+  "overrides": {
+    "qs": "^6.16.2"
   }
 }

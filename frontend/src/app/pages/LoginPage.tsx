@@ -23,7 +23,9 @@ export default function LoginPage() {
   const nextPath = searchParams.get('next');
 
   const getSafeNextPath = () => {
-    if (!nextPath || !nextPath.startsWith('/') || nextPath.startsWith('//')) {
+    // Only same-origin app paths: reject protocol-relative ("//host") and
+    // backslash variants ("/\\host"), which browsers normalize to another origin.
+    if (!nextPath || !nextPath.startsWith('/') || nextPath.startsWith('//') || nextPath.includes('\\')) {
       return null;
     }
 
@@ -38,7 +40,7 @@ export default function LoginPage() {
     queryClient.clear();
     setStoredTenant(response.tenant);
     setToken(response.token);
-    navigate(getSafeNextPath() ?? (response.user.role === 'ADMIN' ? '/admin' : '/trainer'), {
+    void navigate(getSafeNextPath() ?? (response.user.role === 'ADMIN' ? '/admin' : '/trainer'), {
       replace: true,
     });
   };

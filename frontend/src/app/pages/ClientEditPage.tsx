@@ -59,7 +59,7 @@ export default function ClientEditPage() {
             }}
             onSubmit={async (data) => {
               await updateMutation.mutateAsync({ id: client.id, data });
-              navigate(-1);
+              void navigate(-1);
             }}
             showStatus
           />
