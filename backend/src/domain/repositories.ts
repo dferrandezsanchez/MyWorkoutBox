@@ -44,17 +44,7 @@ export interface MembershipRepository {
 
 export interface TenantRepository {
   findActiveById(id: string): Promise<Tenant | null>;
-  updateBranding(tenantId: string, data: {
-    name: string;
-    appName: string;
-    shortName: string;
-    mark: string;
-    claim: string;
-    description: string;
-    primary: string;
-    primaryHover: string;
-    primarySoft: string;
-  }): Promise<void>;
+  updateName(tenantId: string, name: string): Promise<void>;
 }
 
 export interface ClientRepository {
@@ -164,4 +154,31 @@ export interface TrainingSessionRepository {
 
 export interface AuditLogRepository {
   create(log: AuditLog): Promise<void>;
+}
+
+/** Read model for the admin dashboard: one row per training session. */
+export interface DashboardSessionRow {
+  id: string;
+  clientId: string;
+  clientName: string;
+  trainerId: string;
+  trainerName: string;
+  status: string;
+  startedAt: Date;
+  completedAt: Date | null;
+  exerciseCount: number;
+  seriesCount: number;
+}
+
+export interface DashboardClientRow {
+  id: string;
+  name: string;
+  lastSessionAt: Date | null;
+}
+
+export interface DashboardRepository {
+  /** Sessions started on or after `since`, plus any session still active. */
+  listSessionsSince(tenantId: string, since: Date): Promise<DashboardSessionRow[]>;
+  /** Active clients with the start date of their latest training session. */
+  listActiveClientsWithLastSession(tenantId: string): Promise<DashboardClientRow[]>;
 }

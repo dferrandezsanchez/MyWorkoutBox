@@ -36,9 +36,9 @@ const tenant: Tenant = {
   organizationId: organization.id,
   name: 'Demo Center',
   slug: 'demo-center',
-  appName: 'MyWorkoutBox',
+  appName: 'STELIOS',
   shortName: 'Demo',
-  mark: 'MW',
+  mark: 'S',
   claim: 'Training Intelligence',
   description: 'Demo tenant',
   primary: '#2563EB',
@@ -89,7 +89,7 @@ function createMembershipRepository(overrides: Partial<MembershipRepository> = {
 function createTenantRepository(overrides: Partial<TenantRepository> = {}): TenantRepository {
   return {
     findActiveById: vi.fn(async (id) => (id === tenant.id ? tenant : null)),
-    updateBranding: vi.fn(),
+    updateName: vi.fn(),
     ...overrides,
   };
 }
@@ -245,32 +245,34 @@ describe('auth use cases', () => {
     });
   });
 
-  it('normalizes tenant branding and applies defaults for optional text', async () => {
+  it('renames the tenant with a trimmed name', async () => {
     const tenants = createTenantRepository();
 
     const result = await new UpdateCurrentTenantUseCase(tenants).execute(tenant.id, {
       name: '  Updated Center  ',
-      appName: '',
-      shortName: '  UP  ',
-      mark: '  LONGMARK  ',
-      claim: '',
-      description: '',
-      primary: 'invalid',
-      primaryHover: '#111111',
-      primarySoft: '#222222',
     });
 
-    expect(tenants.updateBranding).toHaveBeenCalledWith(tenant.id, {
-      name: 'Updated Center',
-      appName: 'Updated Center',
-      shortName: 'UP',
-      mark: 'LONG',
-      claim: 'Training Intelligence',
-      description: 'Gestión de clientes, entrenadores, ejercicios y marcas.',
-      primary: '#2563EB',
-      primaryHover: '#111111',
-      primarySoft: '#222222',
-    });
+    expect(tenants.updateName).toHaveBeenCalledWith(tenant.id, 'Updated Center');
     expect(result.id).toBe(tenant.id);
+    expect(result).toEqual({
+      id: tenant.id,
+      organizationId: tenant.organizationId,
+      name: tenant.name,
+      slug: tenant.slug,
+    });
+  });
+
+  it('rejects an empty or too long tenant name', async () => {
+    const tenants = createTenantRepository();
+    const useCase = new UpdateCurrentTenantUseCase(tenants);
+
+    await expect(useCase.execute(tenant.id, { name: '   ' })).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+      message: 'El nombre del centro es obligatorio',
+    });
+    await expect(useCase.execute(tenant.id, { name: 'x'.repeat(192) })).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+    });
+    expect(tenants.updateName).not.toHaveBeenCalled();
   });
 });

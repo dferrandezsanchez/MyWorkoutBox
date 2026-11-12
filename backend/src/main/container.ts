@@ -16,6 +16,7 @@ import {
   SetClientStatusUseCase,
   UpdateClientUseCase,
 } from '../application/clients';
+import { GetDashboardOverviewUseCase } from '../application/dashboard';
 import {
   CreateExerciseUseCase,
   GetExerciseUseCase,
@@ -60,6 +61,7 @@ import {
   PrismaTrainingSessionRepository,
   PrismaUserRepository,
 } from '../infrastructure/repositories/prisma-repositories';
+import { PrismaDashboardRepository } from '../infrastructure/repositories/prisma-dashboard-repository';
 import { BcryptPasswordHasher } from '../infrastructure/security/bcrypt-password-hasher';
 import { JwtTokenService } from '../infrastructure/security/jwt-token-service';
 import { SystemClock } from '../infrastructure/time/system-clock';
@@ -73,6 +75,7 @@ export function createContainer() {
   const performances = new PrismaPerformanceRepository();
   const auditLogs = new PrismaAuditLogRepository();
   const trainingSessions = new PrismaTrainingSessionRepository();
+  const dashboard = new PrismaDashboardRepository();
 
   const passwordHasher = new BcryptPasswordHasher();
   const tokenService = new JwtTokenService(process.env.JWT_SECRET, process.env.JWT_EXPIRES_IN ?? '8h');
@@ -117,6 +120,9 @@ export function createContainer() {
       update: new UpdateTrainerUseCase(users, memberships),
       setActive: new SetTrainerActiveUseCase(memberships),
       resetPassword: new ResetTrainerPasswordUseCase(users, memberships, passwordHasher),
+    },
+    dashboard: {
+      overview: new GetDashboardOverviewUseCase(dashboard, clock),
     },
     trainingSessions: {
       start: new StartTrainingSessionUseCase(trainingSessions, clients, auditLogs, clock),

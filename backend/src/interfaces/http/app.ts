@@ -7,6 +7,7 @@ import { createClientsRouter } from './routes/clients.routes';
 import { createExercisesRouter } from './routes/exercises.routes';
 import { createPerformancesRouter } from './routes/performances.routes';
 import { createTrainersRouter } from './routes/trainers.routes';
+import { createDashboardRouter } from './routes/dashboard.routes';
 import { createTrainingSessionsRouter } from './routes/training-sessions.routes';
 import { openApiDocument } from './openapi';
 
@@ -15,7 +16,7 @@ const swaggerHtml = `<!doctype html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MyWorkoutBox API Docs</title>
+    <title>STELIOS API Docs</title>
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
   </head>
   <body>
@@ -59,6 +60,7 @@ export function createHttpApp(container: AppContainer) {
   app.use('/clients', createClientsRouter(container));
   app.use('/exercises', createExercisesRouter(container));
   app.use('/trainers', createTrainersRouter(container));
+  app.use('/dashboard', createDashboardRouter(container));
   app.use('/training-sessions', createTrainingSessionsRouter(container));
   app.use('/', createPerformancesRouter(container));
 

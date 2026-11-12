@@ -27,6 +27,7 @@ function expressOperations(): string[] {
     ['clients.routes.ts', '/clients'],
     ['exercises.routes.ts', '/exercises'],
     ['trainers.routes.ts', '/trainers'],
+    ['dashboard.routes.ts', '/dashboard'],
     ['training-sessions.routes.ts', '/training-sessions'],
     ['performances.routes.ts', ''],
   ];
@@ -59,7 +60,7 @@ describe('OpenAPI documentation', () => {
       .expect('Content-Type', /json/);
 
     expect(response.body.openapi).toBe('3.0.3');
-    expect(response.body.info.title).toBe('MyWorkoutBox API');
+    expect(response.body.info.title).toBe('STELIOS API');
     expect(response.body.info.version).toBe('0.6.0-alpha');
     expect(response.body.servers[0]).toEqual({ url: '.', description: 'Current environment' });
     expect(response.body.components.securitySchemes.bearerAuth).toMatchObject({
