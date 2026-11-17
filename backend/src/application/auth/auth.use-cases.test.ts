@@ -44,6 +44,7 @@ const tenant: Tenant = {
   primary: '#2563EB',
   primaryHover: '#1D4ED8',
   primarySoft: '#93C5FD',
+  measurementsEnabled: true,
   active: true,
 };
 
@@ -89,7 +90,7 @@ function createMembershipRepository(overrides: Partial<MembershipRepository> = {
 function createTenantRepository(overrides: Partial<TenantRepository> = {}): TenantRepository {
   return {
     findActiveById: vi.fn(async (id) => (id === tenant.id ? tenant : null)),
-    updateName: vi.fn(),
+    updateSettings: vi.fn(),
     ...overrides,
   };
 }
@@ -252,13 +253,14 @@ describe('auth use cases', () => {
       name: '  Updated Center  ',
     });
 
-    expect(tenants.updateName).toHaveBeenCalledWith(tenant.id, 'Updated Center');
+    expect(tenants.updateSettings).toHaveBeenCalledWith(tenant.id, { name: 'Updated Center' });
     expect(result.id).toBe(tenant.id);
     expect(result).toEqual({
       id: tenant.id,
       organizationId: tenant.organizationId,
       name: tenant.name,
       slug: tenant.slug,
+      measurementsEnabled: true,
     });
   });
 
@@ -273,6 +275,19 @@ describe('auth use cases', () => {
     await expect(useCase.execute(tenant.id, { name: 'x'.repeat(192) })).rejects.toMatchObject({
       code: 'BAD_REQUEST',
     });
-    expect(tenants.updateName).not.toHaveBeenCalled();
+    expect(tenants.updateSettings).not.toHaveBeenCalled();
+  });
+
+  it('switches measurement tracking and rejects empty or invalid settings', async () => {
+    const tenants = createTenantRepository();
+    const useCase = new UpdateCurrentTenantUseCase(tenants);
+
+    await useCase.execute(tenant.id, { measurementsEnabled: false });
+    expect(tenants.updateSettings).toHaveBeenCalledWith(tenant.id, { measurementsEnabled: false });
+
+    await expect(useCase.execute(tenant.id, {})).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    await expect(useCase.execute(tenant.id, { measurementsEnabled: 'yes' as unknown as boolean })).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+    });
   });
 });

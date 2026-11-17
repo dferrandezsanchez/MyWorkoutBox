@@ -5,10 +5,11 @@ import {
   createClient,
   updateClient,
   setClientStatus,
+  updateClientGoal,
   exportClient,
   anonymizeClient,
 } from '@features/clients/api/clients.api';
-import type { CreateClientData, UpdateClientData } from '@shared/types/api';
+import type { ClientGoalInput, CreateClientData, UpdateClientData } from '@shared/types/api';
 
 export function useClients(q?: string, includeInactive?: boolean) {
   return useQuery({
@@ -43,6 +44,17 @@ export function useUpdateClient() {
     onSuccess: (_result, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['clients'] });
       void queryClient.invalidateQueries({ queryKey: ['client', variables.id] });
+    },
+  });
+}
+
+export function useUpdateClientGoal(clientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ClientGoalInput) => updateClientGoal(clientId, data),
+    onSuccess: (client) => {
+      queryClient.setQueryData(['client', clientId], client);
+      void queryClient.invalidateQueries({ queryKey: ['clients'] });
     },
   });
 }

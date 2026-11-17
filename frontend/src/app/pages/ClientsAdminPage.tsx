@@ -112,6 +112,7 @@ export default function ClientsAdminPage() {
                   setShowCreate(false);
                 }}
                 submitLabel="Crear"
+                allowInitialMeasurement
               />
           </Dialog>
         )}

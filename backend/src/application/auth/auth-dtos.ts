@@ -22,6 +22,7 @@ export interface PublicTenant {
   organizationId: string;
   name: string;
   slug: string;
+  measurementsEnabled: boolean;
 }
 
 export interface TenantOption {
@@ -50,6 +51,7 @@ export interface ChangePasswordInput {
 
 export interface UpdateTenantInput {
   name?: string;
+  measurementsEnabled?: boolean;
 }
 
 export type LoginResult = LoginResponse | TenantSelectionResponse;
@@ -61,5 +63,6 @@ export function toPublicTenant(tenant: Tenant): PublicTenant {
     organizationId: tenant.organizationId,
     name: tenant.name,
     slug: tenant.slug,
+    measurementsEnabled: tenant.measurementsEnabled,
   };
 }

@@ -77,6 +77,53 @@ export function createClientsRouter(container: AppContainer): Router {
     }
   });
 
+  router.patch('/:id/goal', auth, async (req, res, next): Promise<void> => {
+    try {
+      res.status(200).json(await container.clients.updateGoal.execute(req.user!.tenantId, req.params.id, req.body, req.user!.userId));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get('/:id/measurements', auth, async (req, res, next): Promise<void> => {
+    try {
+      res.status(200).json(await container.measurements.list.execute(req.user!.tenantId, req.params.id));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post('/:id/measurements', auth, async (req, res, next): Promise<void> => {
+    try {
+      res.status(201).json(await container.measurements.create.execute(req.user!.tenantId, req.params.id, req.body, req.user!.userId));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.put('/:id/measurements/:measurementId', auth, async (req, res, next): Promise<void> => {
+    try {
+      res.status(200).json(await container.measurements.update.execute(
+        req.user!.tenantId,
+        req.params.id,
+        req.params.measurementId,
+        req.body,
+        req.user!.userId,
+      ));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.delete('/:id/measurements/:measurementId', auth, async (req, res, next): Promise<void> => {
+    try {
+      await container.measurements.delete.execute(req.user!.tenantId, req.params.id, req.params.measurementId, req.user!.userId);
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  });
+
   router.get('/:id/training-sessions', auth, async (req, res, next): Promise<void> => {
     try {
       res.status(200).json(await container.trainingSessions.listByClient.execute(req.user!.tenantId, req.params.id));

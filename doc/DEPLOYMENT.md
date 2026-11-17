@@ -225,6 +225,18 @@ Comportamiento a tener en cuenta:
 
 Después, el administrador del centro puede dar de alta a más entrenadores, y crear sus clientes y sus propios ejercicios, desde la aplicación.
 
+## 📏 Mediciones de clientes (desde v1.1.0)
+
+La migración `20261117120000_add_client_measurements` crea el historial de mediciones, el objetivo del cliente y el ajuste por centro (activado por defecto). Se aplica sola en el despliegue y no toca datos existentes.
+
+Para que el peso y el % de grasa que ya estaban guardados en la ficha de cada cliente aparezcan como su primera medición, ejecuta una vez el script manual (es idempotente):
+
+```bash
+docker compose --env-file <DOCKER_ENV_FILE> exec -T database \
+  sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' \
+  < scripts/sql/backfill-client-measurements.sql
+```
+
 ## 🔀 Migración desde la instalación MyWorkoutBox
 
 El producto pasó a llamarse STELIOS y cambiaron los nombres internos por defecto: proyecto Compose `stelios`, imágenes `stelios-backend`/`stelios-frontend`, base de datos y usuario `stelios`. Una instalación existente con `COMPOSE_PROJECT_NAME=myworkoutbox` sigue funcionando con su `.env.docker`, pero para adoptar los nombres nuevos (y un dominio nuevo) se monta un stack paralelo y se migran los datos:

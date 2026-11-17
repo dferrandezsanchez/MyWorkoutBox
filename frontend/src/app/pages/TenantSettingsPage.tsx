@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import axios from 'axios';
-import { Building2, Check, Save } from 'lucide-react';
+import { Building2, Check, Save, Scale } from 'lucide-react';
 import AppShell from '@app/layout/AppShell';
 import { Button, EmptyState, PageHeader, Panel, SectionHeader, TextInput } from '@shared/components/ui';
 import { useCurrentTenant, useUpdateCurrentTenant } from '@features/auth/hooks/useAuthUser';
@@ -121,7 +121,7 @@ export default function TenantSettingsPage() {
           </form>
         </Panel>
 
-        <Panel className="h-fit p-5 sm:p-6">
+        <Panel className="h-fit p-5 sm:p-6 lg:col-start-2 lg:row-start-1">
           <p className="eyebrow text-xs text-text-muted">Centro activo</p>
           <div className="mt-4 flex items-center gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary-soft">
@@ -133,7 +133,57 @@ export default function TenantSettingsPage() {
             La identidad visual es la de STELIOS en todos los centros.
           </p>
         </Panel>
+        <FeaturesPanel enabled={tenant.measurementsEnabled} />
       </div>
     </AppShell>
+  );
+}
+
+function FeaturesPanel({ enabled }: { enabled: boolean }) {
+  const updateMutation = useUpdateCurrentTenant();
+  const [error, setError] = useState<string | null>(null);
+
+  const toggle = async () => {
+    setError(null);
+    try {
+      await updateMutation.mutateAsync({ measurementsEnabled: !enabled });
+    } catch (toggleError) {
+      setError(getApiError(toggleError).replace('el nombre del centro', 'el ajuste'));
+    }
+  };
+
+  return (
+    <Panel className="p-5 sm:p-6">
+      <SectionHeader title="Funciones" description="Activa solo lo que tu centro usa." />
+      <div className="mt-5 flex items-start gap-4 rounded-2xl border border-white/[0.08] bg-background/40 p-4">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary-soft">
+          <Scale size={18} aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p id="measurements-toggle-label" className="font-semibold text-text-primary">Seguimiento de mediciones y objetivos</p>
+          <p id="measurements-toggle-description" className="mt-0.5 text-sm text-text-muted">
+            Peso, grasa corporal y masa muscular en la ficha de cada cliente, con su evolución y su objetivo.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          aria-labelledby="measurements-toggle-label"
+          aria-describedby="measurements-toggle-description"
+          disabled={updateMutation.isPending}
+          onClick={() => void toggle()}
+          className={`relative mt-1 inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors duration-150 disabled:opacity-60 focus-ring ${
+            enabled ? 'border-primary bg-primary' : 'border-white/[0.14] bg-white/[0.06]'
+          }`}
+        >
+          <span
+            aria-hidden="true"
+            className={`inline-block h-5 w-5 rounded-full shadow transition-transform duration-150 ${enabled ? 'translate-x-6 bg-primary-contrast' : 'translate-x-1 bg-text-secondary'}`}
+          />
+        </button>
+      </div>
+      {error && <p role="alert" className="mt-3 text-sm text-red-300">{error}</p>}
+    </Panel>
   );
 }

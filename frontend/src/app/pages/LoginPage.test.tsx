@@ -29,7 +29,7 @@ vi.mock('@shared/state/query-client', () => ({
 async function loginAsAdmin() {
   vi.mocked(login).mockResolvedValueOnce({
     token: 'jwt',
-    tenant: { id: 'tenant-1', organizationId: 'org-1', name: 'Demo Center', slug: 'demo-center' },
+    tenant: { id: 'tenant-1', organizationId: 'org-1', name: 'Demo Center', slug: 'demo-center', measurementsEnabled: true },
     user: { id: 'user-1', name: 'Admin', email: 'admin-demo@gym.com', role: 'ADMIN', tenantId: 'tenant-1', organizationId: 'org-1' },
   });
   const user = userEvent.setup();
@@ -125,6 +125,7 @@ describe('LoginPage', () => {
         organizationId: 'org-1',
         name: 'Demo Center',
         slug: 'demo-center',
+        measurementsEnabled: true,
       },
       user: {
         id: 'user-1',

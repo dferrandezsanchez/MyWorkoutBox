@@ -28,7 +28,7 @@ export async function getCurrentTenant(): Promise<ActiveTenant> {
   return response.data;
 }
 
-export async function updateCurrentTenant(data: { name: string }): Promise<ActiveTenant> {
+export async function updateCurrentTenant(data: { name?: string; measurementsEnabled?: boolean }): Promise<ActiveTenant> {
   const response = await apiClient.put<ActiveTenant>('/auth/tenant', data);
   return response.data;
 }

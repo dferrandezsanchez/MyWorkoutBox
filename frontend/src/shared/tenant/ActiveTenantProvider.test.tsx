@@ -10,6 +10,7 @@ const tenant: ActiveTenant = {
   organizationId: 'org-1',
   name: 'TuMeta Personal Training',
   slug: 'tumeta',
+  measurementsEnabled: true,
 };
 
 function Probe() {

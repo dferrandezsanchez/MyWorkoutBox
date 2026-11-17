@@ -73,6 +73,8 @@ export interface Client {
   weight?: number;             // kg
   bodyFatPercentage?: number;
   notes?: string;
+  goal?: string | null;
+  goalDate?: string | null;     // ISO 8601
   status: 'ACTIVE' | 'INACTIVE';
   anonymizedAt?: string | null;
   createdAt: string;
@@ -184,7 +186,10 @@ export interface CreateClientData {
   weight?: number;
   bodyFatPercentage?: number;
   notes?: string;
+  goal?: string | null;
+  goalDate?: string | null;
   status?: 'ACTIVE' | 'INACTIVE';
+  initialMeasurement?: MeasurementInput;
 }
 
 export interface UpdateClientData {
@@ -195,6 +200,8 @@ export interface UpdateClientData {
   weight?: number;
   bodyFatPercentage?: number;
   notes?: string;
+  goal?: string | null;
+  goalDate?: string | null;
   status?: 'ACTIVE' | 'INACTIVE';
 }
 
@@ -298,4 +305,29 @@ export interface ExerciseLibraryImportResult {
   created: number;
   reactivated: number;
   skipped: number;
+}
+
+export interface ClientMeasurement {
+  id: string;
+  clientId: string;
+  measuredAt: string;          // ISO 8601
+  weight: number | null;       // kg
+  bodyFatPercentage: number | null;
+  muscleMass: number | null;   // kg
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MeasurementInput {
+  measuredAt: string;          // YYYY-MM-DD
+  weight?: number | null;
+  bodyFatPercentage?: number | null;
+  muscleMass?: number | null;
+  notes?: string | null;
+}
+
+export interface ClientGoalInput {
+  goal: string | null;
+  goalDate: string | null;     // YYYY-MM-DD
 }

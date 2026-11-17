@@ -33,7 +33,7 @@ function calculateAge(birthDate: string): number {
 
 function hasDataIssue(client: Client): boolean {
   const age = calculateAge(client.birthDate);
-  return age < 12 || age > 90 || (client.height == null && client.weight == null);
+  return age < 12 || age > 90 || client.height == null;
 }
 
 function splitName(name: string): [string, string] {
