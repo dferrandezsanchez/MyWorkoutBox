@@ -6,7 +6,7 @@ import { normalizeCreateExerciseData } from './exercise-inputs';
 export class CreateExerciseUseCase {
   constructor(private readonly exercises: ExerciseRepository) {}
 
-  execute(tenantId: string, data: CreateExerciseInput): Promise<Exercise> {
+  async execute(tenantId: string, data: CreateExerciseInput): Promise<Exercise> {
     return this.exercises.create(tenantId, normalizeCreateExerciseData(data));
   }
 }

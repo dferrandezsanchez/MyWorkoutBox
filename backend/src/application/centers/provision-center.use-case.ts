@@ -1,7 +1,7 @@
-import { BASE_EXERCISES } from '../../domain/exercise-library';
-import type { LibraryExercise } from '../../domain/exercise-library';
-import type { CenterRepository, CreateExerciseData, ProvisionCenterUser } from '../../domain/repositories';
+import { STARTER_EXERCISES } from '../../domain/exercise-library';
+import type { CenterRepository, ProvisionCenterUser } from '../../domain/repositories';
 import { badRequest } from '../../domain/shared/errors';
+import { libraryExerciseToData } from '../exercises/exercise-library-data';
 import type { PasswordGenerator, PasswordHasher } from '../ports';
 import { normalizeEmail, normalizeName, validatePassword } from '../trainers/trainer-inputs';
 import { normalizeCenterName, resolveCenterSlug } from './center-naming';
@@ -46,20 +46,6 @@ export interface ProvisionCenterResult {
   exercisesCreated: number;
 }
 
-function toExerciseData(exercise: LibraryExercise): CreateExerciseData {
-  return {
-    name: exercise.name,
-    category: exercise.category,
-    movementPattern: exercise.movementPattern,
-    evaluationType: exercise.evaluationType,
-    improvementDirection: exercise.improvementDirection,
-    defaultUnit: exercise.defaultUnit,
-    measurementFields: JSON.stringify(exercise.measurementFields),
-    variantGroups: JSON.stringify(exercise.variantGroups),
-    description: exercise.description,
-  };
-}
-
 /** One "@", something on both sides and a dot inside the domain. Deliberately simple: the real check is that mail arrives. */
 function isEmailLike(email: string): boolean {
   if (/\s/.test(email)) return false;
@@ -96,7 +82,7 @@ export class ProvisionCenterUseCase {
     const admin = parsePerson({ name: input.adminName, email: input.adminEmail }, 'administrador');
     const trainers = (input.trainers ?? []).map((trainer) => parsePerson(trainer, 'entrenador'));
     const providedPassword = input.adminPassword === undefined ? undefined : validatePassword(input.adminPassword);
-    const exercises = input.starterExercises === false ? [] : BASE_EXERCISES.map(toExerciseData);
+    const exercises = input.starterExercises === false ? [] : STARTER_EXERCISES.map(libraryExerciseToData);
 
     const emails = [admin.email, ...trainers.map((trainer) => trainer.email)];
     if (new Set(emails).size !== emails.length) {

@@ -20,6 +20,8 @@ import { GetDashboardOverviewUseCase } from '../application/dashboard';
 import {
   CreateExerciseUseCase,
   GetExerciseUseCase,
+  ImportExerciseLibraryUseCase,
+  ListExerciseLibraryUseCase,
   ListExercisesUseCase,
   SetExerciseStatusUseCase,
   UpdateExerciseUseCase,
@@ -107,6 +109,8 @@ export function createContainer() {
       create: new CreateExerciseUseCase(exercises),
       update: new UpdateExerciseUseCase(exercises),
       setStatus: new SetExerciseStatusUseCase(exercises),
+      listLibrary: new ListExerciseLibraryUseCase(exercises),
+      importLibrary: new ImportExerciseLibraryUseCase(exercises),
     },
     performances: {
       create: new CreatePerformanceUseCase(clients, exercises, performances, auditLogs, clock),

@@ -3,7 +3,7 @@ import request from 'supertest';
 import bcrypt from 'bcrypt';
 import app from '../../index';
 import { ProvisionCenterUseCase } from '../../application/centers';
-import { BASE_EXERCISES } from '../../domain/exercise-library';
+import { STARTER_EXERCISES } from '../../domain/exercise-library';
 import prisma from '../../infrastructure/prisma/prisma-client';
 import { PrismaCenterRepository } from '../../infrastructure/repositories/prisma-center-repository';
 import { BcryptPasswordHasher } from '../../infrastructure/security/bcrypt-password-hasher';
@@ -61,7 +61,7 @@ describe('center provisioning', () => {
 
     const result = await useCase.execute(input);
 
-    expect(result).toMatchObject({ status: 'created', slug: input.slug, admin: { created: true }, exercisesCreated: BASE_EXERCISES.length });
+    expect(result).toMatchObject({ status: 'created', slug: input.slug, admin: { created: true }, exercisesCreated: STARTER_EXERCISES.length });
     expect(result.admin.generatedPassword).toMatch(/^\S{4}(-\S{4}){3}$/);
 
     const session = await login(input.adminEmail, result.admin.generatedPassword!).expect(200);
@@ -71,7 +71,7 @@ describe('center provisioning', () => {
     const auth = { Authorization: `Bearer ${session.body.token}` };
     const exercises = await request(app).get('/exercises').set(auth).expect(200);
     expect(exercises.body.map((exercise: { name: string }) => exercise.name).sort((a: string, b: string) => a.localeCompare(b)))
-      .toEqual(BASE_EXERCISES.map((exercise) => exercise.name).sort((a, b) => a.localeCompare(b)));
+      .toEqual(STARTER_EXERCISES.map((exercise) => exercise.name).sort((a, b) => a.localeCompare(b)));
     expect((await request(app).get('/clients').set(auth).expect(200)).body).toEqual([]);
     expect((await request(app).get('/trainers').set(auth).expect(200)).body).toEqual([]);
 
@@ -138,7 +138,7 @@ describe('center provisioning', () => {
     const session = await login(trainerEmail, result.trainers[0].generatedPassword!).expect(200);
     expect(session.body.user).toMatchObject({ role: Role.TRAINER, tenantId: result.tenantId });
     const auth = { Authorization: `Bearer ${session.body.token}` };
-    expect((await request(app).get('/exercises').set(auth).expect(200)).body).toHaveLength(BASE_EXERCISES.length);
+    expect((await request(app).get('/exercises').set(auth).expect(200)).body).toHaveLength(STARTER_EXERCISES.length);
     // Trainers cannot manage the team: that stays with the admin.
     await request(app).get('/trainers').set(auth).expect(403);
 

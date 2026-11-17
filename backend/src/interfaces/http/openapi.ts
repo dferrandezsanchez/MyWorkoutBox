@@ -307,10 +307,44 @@ export const openApiDocument: OpenApiDocument = {
           measurementFields: { type: 'string', description: 'Serialized JSON measurement fields' },
           variantGroups: { type: 'string', description: 'Serialized JSON variant groups' },
           description: { type: 'string', nullable: true },
+          muscleGroup: { type: 'string', nullable: true, enum: ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'legs', 'glutes', 'core', 'functional', 'cardio'], description: 'Muscle group used to organize the catalog.' },
+          libraryKey: { type: 'string', nullable: true, description: 'Slug of the library exercise this one was created from, if any.' },
           status: { $ref: '#/components/schemas/Status' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
         },
+      },
+      ExerciseLibraryItem: {
+        type: 'object',
+        required: ['slug', 'name', 'muscleGroup', 'category', 'evaluationType', 'defaultUnit', 'starter', 'added'],
+        properties: {
+          slug: { type: 'string' },
+          name: { type: 'string' },
+          muscleGroup: { type: 'string' },
+          category: { type: 'string' },
+          evaluationType: { type: 'string' },
+          defaultUnit: { type: 'string' },
+          starter: { type: 'boolean', description: 'Part of the starter pack new centers begin with.' },
+          added: { type: 'boolean', description: 'The center already has this exercise.' },
+        },
+      },
+      ExerciseLibrary: {
+        type: 'object',
+        required: ['groups', 'exercises'],
+        properties: {
+          groups: { type: 'array', items: { type: 'object', required: ['key', 'label'], properties: { key: { type: 'string' }, label: { type: 'string' } } } },
+          exercises: { type: 'array', items: { $ref: '#/components/schemas/ExerciseLibraryItem' } },
+        },
+      },
+      ExerciseLibraryImportInput: {
+        type: 'object',
+        required: ['slugs'],
+        properties: { slugs: { type: 'array', minItems: 1, maxItems: 100, items: { type: 'string' }, example: ['press_banca_mancuernas', 'remo_mancuerna'] } },
+      },
+      ExerciseLibraryImportResult: {
+        type: 'object',
+        required: ['created', 'reactivated', 'skipped'],
+        properties: { created: { type: 'integer' }, reactivated: { type: 'integer' }, skipped: { type: 'integer' } },
       },
       ExerciseInput: {
         type: 'object',
@@ -320,6 +354,7 @@ export const openApiDocument: OpenApiDocument = {
           movementPattern: { type: 'string', example: 'pull' },
           evaluationType: { type: 'string', example: 'repetitions' },
           improvementDirection: { type: 'string', example: 'higher' },
+          muscleGroup: { type: 'string', nullable: true, example: 'back', description: 'chest, back, shoulders, biceps, triceps, legs, glutes, core, functional or cardio. Null for no group.' },
           defaultUnit: { $ref: '#/components/schemas/PerformanceUnit' },
           measurementFields: { type: 'array', items: { $ref: '#/components/schemas/MeasurementFieldInput' } },
           variantGroups: { type: 'array', items: { $ref: '#/components/schemas/VariantGroupInput' } },
@@ -681,6 +716,20 @@ Object.assign(openApiDocument.paths, {
     },
   },
   '/exercises': pathItem('Exercises', 'Exercise'),
+  '/exercises/library': {
+    get: {
+      tags: ['Exercises'], security: [{ bearerAuth: [] }], summary: 'List the exercise library, marking what the center already has',
+      responses: { 200: { description: 'Exercise library grouped by muscle group', content: { 'application/json': { schema: { $ref: '#/components/schemas/ExerciseLibrary' } } } }, ...adminResponses },
+    },
+  },
+  '/exercises/library/import': {
+    post: {
+      tags: ['Exercises'], security: [{ bearerAuth: [] }], summary: 'Add library exercises to the center catalog',
+      description: 'Idempotent: exercises the center already has are not duplicated and deactivated ones are reactivated.',
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ExerciseLibraryImportInput' } } } },
+      responses: { 200: { description: 'Import summary', content: { 'application/json': { schema: { $ref: '#/components/schemas/ExerciseLibraryImportResult' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...adminResponses },
+    },
+  },
   '/exercises/{id}': {
     get: {
       tags: ['Exercises'],
@@ -880,6 +929,8 @@ const operationMetadata: Record<string, OperationMetadata> = {
   'GET /clients/{id}/training-sessions': { operationId: 'listClientTrainingSessions', roles: ['ADMIN', 'TRAINER'] },
   'GET /exercises': { operationId: 'listExercises', roles: ['ADMIN', 'TRAINER'] },
   'POST /exercises': { operationId: 'createExercise', roles: ['ADMIN'] },
+  'GET /exercises/library': { operationId: 'listExerciseLibrary', roles: ['ADMIN'] },
+  'POST /exercises/library/import': { operationId: 'importExerciseLibrary', roles: ['ADMIN'] },
   'GET /exercises/{id}': { operationId: 'getExercise', roles: ['ADMIN', 'TRAINER'] },
   'PUT /exercises/{id}': { operationId: 'updateExercise', roles: ['ADMIN'] },
   'PATCH /exercises/{id}/status': { operationId: 'updateExerciseStatus', roles: ['ADMIN'] },

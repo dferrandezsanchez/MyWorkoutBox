@@ -211,6 +211,12 @@ export class PrismaExerciseRepository implements ExerciseRepository {
     return toExercise(exercise);
   }
 
+  async createMany(tenantId: string, data: CreateExerciseData[]): Promise<number> {
+    if (data.length === 0) return 0;
+    const result = await prisma.exercise.createMany({ data: data.map((exercise) => ({ ...exercise, tenantId })) });
+    return result.count;
+  }
+
   async update(_tenantId: string, id: string, data: UpdateExerciseData): Promise<Exercise> {
     const exercise = await prisma.exercise.update({ where: { id }, data });
     return toExercise(exercise);
@@ -506,6 +512,8 @@ function toExercise(exercise: {
   measurementFields: string;
   variantGroups: string;
   description: string | null;
+  muscleGroup: string | null;
+  libraryKey: string | null;
   status: string;
   createdAt: Date;
   updatedAt: Date;
