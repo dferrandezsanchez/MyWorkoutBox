@@ -91,6 +91,8 @@ export interface Exercise {
   measurementFields: string;
   variantGroups: string;
   description?: string;
+  muscleGroup?: string | null;
+  libraryKey?: string | null;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
   updatedAt: string;
@@ -206,6 +208,7 @@ export interface CreateExerciseData {
   measurementFields?: MeasurementField[];
   variantGroups?: VariantGroup[];
   description?: string;
+  muscleGroup?: string | null;
   status?: 'ACTIVE' | 'INACTIVE';
 }
 
@@ -220,6 +223,7 @@ export interface UpdateExerciseData {
   variantGroups?: VariantGroup[];
   description?: string;
   status?: 'ACTIVE' | 'INACTIVE';
+  muscleGroup?: string | null;
 }
 
 export interface CreateTrainerData {
@@ -270,4 +274,28 @@ export interface DashboardOverview {
   trainers: Array<{ id: string; name: string; sessions: number; series: number }>;
   recentSessions: Array<{ id: string; clientId: string; clientName: string; trainerName: string; completedAt: string; exerciseCount: number; seriesCount: number }>;
   clientsToReactivate: Array<{ id: string; name: string; lastSessionAt: string | null; daysSince: number | null }>;
+}
+
+export interface ExerciseLibraryItem {
+  slug: string;
+  name: string;
+  muscleGroup: string;
+  category: string;
+  evaluationType: string;
+  defaultUnit: string;
+  /** Part of the starter pack every new center begins with. */
+  starter: boolean;
+  /** The center already has this exercise. */
+  added: boolean;
+}
+
+export interface ExerciseLibrary {
+  groups: Array<{ key: string; label: string }>;
+  exercises: ExerciseLibraryItem[];
+}
+
+export interface ExerciseLibraryImportResult {
+  created: number;
+  reactivated: number;
+  skipped: number;
 }

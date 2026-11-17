@@ -166,6 +166,25 @@ docker compose --env-file /var/www/stelios/.env.docker up -d --wait database
 
 No elimines la base anterior hasta conservar varios backups verificados de la nueva instalación.
 
+## 📚 Biblioteca de ejercicios
+
+El catálogo de cada centro se organiza por grupo muscular. La migración `20261118090000_add_exercise_library_fields` añade el grupo y la clave de biblioteca a los ejercicios y se aplica sola en el despliegue, sin tocar datos.
+
+- **Centros nuevos** (comando de alta de centro): empiezan con un pack inicial de 15 ejercicios.
+- **Cualquier centro** puede añadir el resto de la biblioteca (66 ejercicios) desde *Ejercicios → Añadir desde la biblioteca*. Es idempotente: no duplica lo que ya tiene y reactiva lo que hubiera desactivado.
+- **Centros que ya existían** conservan su catálogo tal cual. Sus ejercicios antiguos aparecen en «Sin grupo» hasta que se les asigne uno al editarlos.
+
+Para que los siete ejercicios base que ya existían en producción (Dominadas, Peso muerto, Sentadilla, Zancadas, Plancha frontal, Burpees y Carrera) reciban su grupo y se reconozcan como parte de la biblioteca, ejecuta una vez el script manual. Es idempotente, solo toca ejercicios sin clave de biblioteca y se ajusta por nombre:
+
+```bash
+cd /var/www/vhosts/steliosapp.com/stelios/repo
+docker compose --env-file ../.env.docker exec -T database \
+  sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' \
+  < scripts/sql/backfill-exercise-library.sql
+```
+
+La lista de ejercicios está en `backend/src/domain/exercise-library.ts`. Añadir, quitar o renombrar uno es editar ese fichero; el `slug` es el identificador estable y no debe cambiar una vez publicado.
+
 ## 🏢 Alta de un centro nuevo
 
 Un centro nuevo (su organización, su administrador, sus entrenadores y un catálogo inicial de ejercicios) se crea con un comando que se ejecuta en el servidor. Usa la imagen que ya está desplegada, así que **solo funciona después de desplegar una release que lo incluya**.

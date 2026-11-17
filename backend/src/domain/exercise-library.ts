@@ -414,8 +414,16 @@ export const STARTER_EXERCISES: LibraryExercise[] = EXERCISE_LIBRARY.filter((exe
 
 const ORIGINAL_SLUGS = ORIGINAL_EXERCISES.map((exercise) => exercise.slug);
 
-/** The seven exercises the demo data (sessions and series) is built on. */
-export const BASE_EXERCISES: LibraryExercise[] = EXERCISE_LIBRARY.filter((exercise) => ORIGINAL_SLUGS.includes(exercise.slug));
+/**
+ * The seven exercises the demo data (sessions and series) is built on.
+ * The order is part of the contract: the seed spreads them across sessions by position,
+ * so changing it would reassign exercises in databases that are already seeded.
+ */
+export const BASE_EXERCISES: LibraryExercise[] = ORIGINAL_SLUGS.map((slug) => {
+  const exercise = EXERCISE_LIBRARY.find((candidate) => candidate.slug === slug);
+  if (!exercise) throw new Error(`Original exercise missing from the library: ${slug}`);
+  return exercise;
+});
 
 export function findLibraryExercise(slug: string): LibraryExercise | undefined {
   return EXERCISE_LIBRARY.find((exercise) => exercise.slug === slug);

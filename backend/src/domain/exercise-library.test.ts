@@ -56,10 +56,10 @@ describe('exercise library', () => {
   });
 
   it('keeps the seven exercises the demo data depends on, with their variants', () => {
+    // Order matters: the seed assigns exercises to sessions by position.
     expect(BASE_EXERCISES.map((exercise) => exercise.slug)).toEqual(
-      expect.arrayContaining(['dominadas', 'peso_muerto', 'sentadilla', 'zancadas', 'plancha_frontal', 'burpees', 'carrera']),
+      ['dominadas', 'peso_muerto', 'sentadilla', 'zancadas', 'plancha_frontal', 'burpees', 'carrera'],
     );
-    expect(BASE_EXERCISES).toHaveLength(7);
     expect(findLibraryExercise('dominadas')?.variantGroups.map((group) => group.key)).toEqual(['agarre', 'asistencia']);
     expect(findLibraryExercise('carrera')?.improvementDirection).toBe('lower');
     expect(findLibraryExercise('no-existe')).toBeUndefined();

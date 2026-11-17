@@ -99,6 +99,7 @@ Las siguientes capturas muestran el estado actual de la aplicación en su versi�
 - **SaaS multi-tenant:** aislamiento de datos por centro con una identidad visual única de producto.
 - **Administración:** dashboard de actividad del centro (sesiones y series de los últimos 28 días frente a los 28 anteriores, sesiones en curso, ranking del equipo y clientes a reactivar) y gestión de clientes, entrenadores y ejercicios evaluables.
 - **Clientes:** ficha individual, estado, histórico, sesiones completadas, exportación y anonimización RGPD.
+- **Biblioteca de ejercicios:** 66 ejercicios organizados por grupo muscular (pecho, espalda, hombros, bíceps, tríceps, piernas, glúteos, core, funcional y cardio). Cada centro nuevo empieza con un pack básico y añade el resto con un clic; también puede crear los suyos.
 - **Rendimiento:** plantillas de medición, marcas actuales, mejores registros e histórico de progreso.
 - **Sesiones:** selección de cliente, sesión activa única por entrenador, ejercicios dinámicos y múltiples series editables.
 - **Auditoría:** registro básico de acciones relevantes.
