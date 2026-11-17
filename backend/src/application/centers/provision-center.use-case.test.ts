@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BASE_EXERCISES } from '../../domain/exercise-library';
+import { STARTER_EXERCISES } from '../../domain/exercise-library';
 import type { CenterRepository, ProvisionCenterData } from '../../domain/repositories';
 import type { PasswordGenerator, PasswordHasher } from '../ports';
 import { parseTrainerOption } from './parse-trainer-option';
@@ -37,13 +37,13 @@ describe('ProvisionCenterUseCase', () => {
       slug: 'one-life-one-body',
       admin: { email: 'ana@ejemplo.com', created: true, generatedPassword: 'Hk7p-9mQx-Tr3w-Zc8n' },
       trainers: [],
-      exercisesCreated: BASE_EXERCISES.length,
+      exercisesCreated: STARTER_EXERCISES.length,
     });
     const data = vi.mocked(centers.provision).mock.calls[0][0];
     expect(data.admin.passwordHash).toBe('hashed:Hk7p-9mQx-Tr3w-Zc8n');
     expect(JSON.stringify(data)).not.toContain('"Hk7p-9mQx-Tr3w-Zc8n"');
     expect(data.organization).toEqual({ name: 'One Life One body', slug: 'one-life-one-body' });
-    expect(data.exercises.map((exercise) => exercise.name)).toEqual(BASE_EXERCISES.map((exercise) => exercise.name));
+    expect(data.exercises.map((exercise) => exercise.name)).toEqual(STARTER_EXERCISES.map((exercise) => exercise.name));
   });
 
   it('uses a provided password and never echoes it back', async () => {
@@ -91,7 +91,7 @@ describe('ProvisionCenterUseCase', () => {
 
     const result = await useCase.execute({ ...baseInput, dryRun: true });
 
-    expect(result).toMatchObject({ status: 'dry-run', exercisesCreated: BASE_EXERCISES.length, organizationId: null });
+    expect(result).toMatchObject({ status: 'dry-run', exercisesCreated: STARTER_EXERCISES.length, organizationId: null });
     expect(centers.provision).not.toHaveBeenCalled();
   });
 

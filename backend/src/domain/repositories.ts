@@ -77,6 +77,8 @@ export interface ExerciseRepository {
   list(tenantId: string, includeInactive: boolean): Promise<Exercise[]>;
   findById(tenantId: string, id: string): Promise<Exercise | null>;
   create(tenantId: string, data: CreateExerciseData): Promise<Exercise>;
+  /** Creates several exercises at once and returns how many were created. */
+  createMany(tenantId: string, data: CreateExerciseData[]): Promise<number>;
   update(tenantId: string, id: string, data: UpdateExerciseData): Promise<Exercise>;
 }
 
@@ -90,6 +92,8 @@ export type CreateExerciseData = {
   measurementFields: string;
   variantGroups: string;
   description?: string;
+  muscleGroup?: string | null;
+  libraryKey?: string | null;
   status?: Status;
 };
 

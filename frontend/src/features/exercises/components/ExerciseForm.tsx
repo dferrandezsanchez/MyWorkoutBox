@@ -1,3 +1,4 @@
+import { MUSCLE_GROUPS } from '@features/exercises/utils/muscle-groups';
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@shared/components/ui';
@@ -165,6 +166,7 @@ export default function ExerciseForm({
   const initialPreset = EVALUATION_PRESETS[initialEvaluation] ?? EVALUATION_PRESETS.repetitions;
   const [name, setName] = useState(initial?.name ?? '');
   const [category, setCategory] = useState<ExerciseCategory | string>(initial?.category ?? 'strength');
+  const [muscleGroup, setMuscleGroup] = useState<string>(initial?.muscleGroup ?? '');
   const [movementPattern, setMovementPattern] = useState<MovementPattern | string>(
     initial?.movementPattern ?? 'general',
   );
@@ -235,6 +237,7 @@ export default function ExerciseForm({
       await onSubmit({
         name: name.trim(),
         category,
+        muscleGroup: muscleGroup || null,
         movementPattern,
         evaluationType,
         improvementDirection,
@@ -261,10 +264,20 @@ export default function ExerciseForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-[1.4fr_1fr]">
+      <div>
+        <label className={labelClass} htmlFor="ex-name">Nombre</label>
+        <input id="ex-name" autoFocus className={inputClass} value={name} onChange={(e) => setName(e.target.value)} required />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className={labelClass} htmlFor="ex-name">Nombre</label>
-          <input id="ex-name" autoFocus className={inputClass} value={name} onChange={(e) => setName(e.target.value)} required />
+          <label className={labelClass} htmlFor="ex-muscle-group">Grupo muscular</label>
+          <select id="ex-muscle-group" className={inputClass} value={muscleGroup} onChange={(e) => setMuscleGroup(e.target.value)}>
+            <option value="">Sin grupo</option>
+            {MUSCLE_GROUPS.map((group) => (
+              <option key={group.key} value={group.key}>{group.label}</option>
+            ))}
+          </select>
         </div>
 
         <div>
@@ -359,8 +372,9 @@ export default function ExerciseForm({
             </p>
           )}
 
+          {/* Index key on purpose: group.key is derived from the label, so keying by it remounts the row (and drops focus) on every keystroke. The inputs are fully controlled. */}
           {variantGroups.map((group, index) => (
-            <div key={`${group.key}-${index}`} className="rounded-xl border border-white/[0.08] bg-background/40 p-3.5">
+            <div key={index} className="rounded-xl border border-white/[0.08] bg-background/40 p-3.5">
               <div className="grid gap-3 sm:grid-cols-[0.9fr_1.4fr_auto]">
                 <div>
                   <label className={labelClass} htmlFor={`variant-label-${index}`}>Nombre</label>

@@ -27,6 +27,8 @@ async function seedBaseExercises(tenantId: string, idPrefix: string) {
         measurementFields: JSON.stringify(exercise.measurementFields),
         variantGroups: JSON.stringify(exercise.variantGroups),
         description: exercise.description,
+        muscleGroup: exercise.muscleGroup,
+        libraryKey: exercise.slug,
         status: Status.ACTIVE,
       },
       create: {
@@ -41,6 +43,8 @@ async function seedBaseExercises(tenantId: string, idPrefix: string) {
         measurementFields: JSON.stringify(exercise.measurementFields),
         variantGroups: JSON.stringify(exercise.variantGroups),
         description: exercise.description,
+        muscleGroup: exercise.muscleGroup,
+        libraryKey: exercise.slug,
         status: Status.ACTIVE,
       },
     });

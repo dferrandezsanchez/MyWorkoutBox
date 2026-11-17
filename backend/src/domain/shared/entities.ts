@@ -86,6 +86,9 @@ export interface Exercise {
   measurementFields: string;
   variantGroups: string;
   description: string | null;
+  muscleGroup: string | null;
+  /** Slug of the library exercise this one was created from, if any. */
+  libraryKey: string | null;
   status: Status;
   createdAt: Date;
   updatedAt: Date;
