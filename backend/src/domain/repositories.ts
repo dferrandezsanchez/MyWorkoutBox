@@ -182,3 +182,25 @@ export interface DashboardRepository {
   /** Active clients with the start date of their latest training session. */
   listActiveClientsWithLastSession(tenantId: string): Promise<DashboardClientRow[]>;
 }
+
+export interface ProvisionCenterData {
+  organization: { name: string; slug: string };
+  tenant: { name: string; slug: string };
+  admin: { name: string; email: string; passwordHash: string };
+  exercises: CreateExerciseData[];
+}
+
+export interface ProvisionedCenter {
+  organizationId: string;
+  tenantId: string;
+  adminUserId: string;
+  /** False when the email already belonged to a user: they keep their password and gain access to the new center. */
+  adminCreated: boolean;
+  exercisesCreated: number;
+}
+
+export interface CenterRepository {
+  findOrganizationBySlug(slug: string): Promise<{ id: string; tenantId: string | null } | null>;
+  /** Creates the organization, center, admin access and starter exercises atomically. */
+  provision(data: ProvisionCenterData): Promise<ProvisionedCenter>;
+}

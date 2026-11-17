@@ -3,6 +3,11 @@ export interface PasswordHasher {
   compare(password: string, hash: string): Promise<boolean>;
 }
 
+export interface PasswordGenerator {
+  /** A random, human-readable password strong enough to hand over once. */
+  generate(): string;
+}
+
 export interface TokenPayload {
   sub: string;
   tenantId?: string;

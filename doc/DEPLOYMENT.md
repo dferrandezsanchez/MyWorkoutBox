@@ -166,6 +166,44 @@ docker compose --env-file /var/www/stelios/.env.docker up -d --wait database
 
 No elimines la base anterior hasta conservar varios backups verificados de la nueva instalación.
 
+## 🏢 Alta de un centro nuevo
+
+Un centro nuevo (su organización, su administrador y un catálogo inicial de ejercicios) se crea con un comando que se ejecuta en el servidor. Usa la imagen que ya está desplegada, así que **solo funciona después de desplegar una release que lo incluya**.
+
+Entra como el usuario de despliegue, desde la carpeta del repositorio:
+
+```bash
+cd /var/www/vhosts/steliosapp.com/stelios/repo
+```
+
+1. **Simulación.** Valida los datos y muestra qué se crearía, sin escribir nada:
+
+   ```bash
+   docker compose --env-file ../.env.docker run --rm migrate node dist/main/create-center.js \
+     --name "Nombre del centro" --admin-name "Nombre Apellido" --admin-email correo@ejemplo.com \
+     --dry-run
+   ```
+
+2. **Alta real.** El mismo comando sin `--dry-run`:
+
+   ```bash
+   docker compose --env-file ../.env.docker run --rm migrate node dist/main/create-center.js \
+     --name "Nombre del centro" --admin-name "Nombre Apellido" --admin-email correo@ejemplo.com
+   ```
+
+   Se genera una contraseña segura y se **muestra una sola vez** en la terminal: no se guarda en claro en ningún sitio. Entrégasela al administrador por un canal privado; puede cambiarla desde «Cuenta».
+
+Comportamiento a tener en cuenta:
+
+- **Es seguro repetirlo.** Si ya existe un centro con ese identificador no cambia nada, ni la contraseña ni los ejercicios. El identificador sale del nombre (por ejemplo `one-life-one-body`); usa `--slug` si necesitas otro.
+- **Es atómico.** Si algo falla no queda un centro a medias.
+- **No toca otros centros.** Los datos del nuevo centro están aislados de los demás.
+- **Si el email ya tenía cuenta**, conserva su contraseña y gana acceso al centro nuevo; al entrar podrá elegir entre sus centros. Si la cuenta está desactivada, el comando se detiene.
+- `--no-starter-exercises` crea el centro con el catálogo vacío.
+- **No uses el `seed` en producción para esto.** Además de datos de demostración, restablece las contraseñas de los usuarios de ejemplo.
+
+Después, el administrador del centro crea desde la aplicación a sus entrenadores, sus clientes y sus propios ejercicios.
+
 ## 🔀 Migración desde la instalación MyWorkoutBox
 
 El producto pasó a llamarse STELIOS y cambiaron los nombres internos por defecto: proyecto Compose `stelios`, imágenes `stelios-backend`/`stelios-frontend`, base de datos y usuario `stelios`. Una instalación existente con `COMPOSE_PROJECT_NAME=myworkoutbox` sigue funcionando con su `.env.docker`, pero para adoptar los nombres nuevos (y un dominio nuevo) se monta un stack paralelo y se migran los datos:
