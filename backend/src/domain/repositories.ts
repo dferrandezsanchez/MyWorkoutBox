@@ -186,6 +186,37 @@ export interface DashboardRepository {
   listActiveClientsWithLastSession(tenantId: string): Promise<DashboardClientRow[]>;
 }
 
+export interface ProvisionCenterUser {
+  name: string;
+  email: string;
+  passwordHash: string;
+}
+
+export interface ProvisionCenterData {
+  organization: { name: string; slug: string };
+  tenant: { name: string; slug: string };
+  admin: ProvisionCenterUser;
+  trainers: ProvisionCenterUser[];
+  exercises: CreateExerciseData[];
+}
+
+export interface ProvisionedCenter {
+  organizationId: string;
+  tenantId: string;
+  adminUserId: string;
+  /** False when the email already belonged to a user: they keep their password and gain access to the new center. */
+  adminCreated: boolean;
+  /** One entry per requested trainer, in the same order. `created` is false for emails that already had an account. */
+  trainers: Array<{ email: string; created: boolean }>;
+  exercisesCreated: number;
+}
+
+export interface CenterRepository {
+  findOrganizationBySlug(slug: string): Promise<{ id: string; tenantId: string | null } | null>;
+  /** Creates the organization, center, admin access and starter exercises atomically. */
+  provision(data: ProvisionCenterData): Promise<ProvisionedCenter>;
+}
+
 export type MeasurementValues = {
   measuredAt: Date;
   weight: number | null;

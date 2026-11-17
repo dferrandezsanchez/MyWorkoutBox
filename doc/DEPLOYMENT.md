@@ -166,6 +166,46 @@ docker compose --env-file /var/www/stelios/.env.docker up -d --wait database
 
 No elimines la base anterior hasta conservar varios backups verificados de la nueva instalación.
 
+## 🏢 Alta de un centro nuevo
+
+Un centro nuevo (su organización, su administrador, sus entrenadores y un catálogo inicial de ejercicios) se crea con un comando que se ejecuta en el servidor. Usa la imagen que ya está desplegada, así que **solo funciona después de desplegar una release que lo incluya**.
+
+Entra como el usuario de despliegue, desde la carpeta del repositorio:
+
+```bash
+cd /var/www/vhosts/steliosapp.com/stelios/repo
+```
+
+1. **Simulación.** Valida los datos y muestra qué se crearía, sin escribir nada:
+
+   ```bash
+   docker compose --env-file ../.env.docker run --rm migrate node dist/main/create-center.js \
+     --name "Nombre del centro" --admin-name "Nombre Apellido" --admin-email correo@ejemplo.com \
+     --trainer "Nombre Apellido <entrenador@ejemplo.com>" \
+     --dry-run
+   ```
+
+2. **Alta real.** El mismo comando sin `--dry-run`:
+
+   ```bash
+   docker compose --env-file ../.env.docker run --rm migrate node dist/main/create-center.js \
+     --name "Nombre del centro" --admin-name "Nombre Apellido" --admin-email correo@ejemplo.com \
+     --trainer "Nombre Apellido <entrenador@ejemplo.com>"
+   ```
+
+   `--trainer` es opcional y se puede repetir, una vez por entrenador. Cada persona recibe su propia contraseña segura, que se **muestra una sola vez** en la terminal: no se guarda en claro en ningún sitio. Entrégasela por un canal privado; cada uno puede cambiarla desde «Cuenta».
+
+Comportamiento a tener en cuenta:
+
+- **Es seguro repetirlo.** Si ya existe un centro con ese identificador no cambia nada, ni la contraseña ni los ejercicios. El identificador sale del nombre (por ejemplo `one-life-one-body`); usa `--slug` si necesitas otro.
+- **Es atómico.** Si algo falla no queda un centro a medias.
+- **No toca otros centros.** Los datos del nuevo centro están aislados de los demás.
+- **Si un email ya tenía cuenta**, conserva su contraseña y gana acceso al centro nuevo; al entrar podrá elegir entre sus centros. Si la cuenta está desactivada, el comando se detiene sin crear nada. Un mismo email no puede repetirse entre administrador y entrenadores.
+- `--no-starter-exercises` crea el centro con el catálogo vacío.
+- **No uses el `seed` en producción para esto.** Además de datos de demostración, restablece las contraseñas de los usuarios de ejemplo.
+
+Después, el administrador del centro puede dar de alta a más entrenadores, y crear sus clientes y sus propios ejercicios, desde la aplicación.
+
 ## 📏 Mediciones de clientes (desde v1.1.0)
 
 La migración `20261117120000_add_client_measurements` crea el historial de mediciones, el objetivo del cliente y el ajuste por centro (activado por defecto). Se aplica sola en el despliegue y no toca datos existentes.
