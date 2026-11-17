@@ -7,8 +7,8 @@ import TenantSettingsPage from './TenantSettingsPage';
 const { mutateAsync, tenantQuery } = vi.hoisted(() => ({
   mutateAsync: vi.fn(),
   tenantQuery: {
-    data: { id: 'tenant-1', organizationId: 'org-1', name: 'TuMeta Personal Training', slug: 'tumeta' } as
-      | { id: string; organizationId: string; name: string; slug: string }
+    data: { id: 'tenant-1', organizationId: 'org-1', name: 'TuMeta Personal Training', slug: 'tumeta', measurementsEnabled: true } as
+      | { id: string; organizationId: string; name: string; slug: string; measurementsEnabled: boolean }
       | undefined,
     isLoading: false,
     isError: false,
@@ -71,5 +71,19 @@ describe('TenantSettingsPage', () => {
     tenantQuery.isError = true;
     render(<TenantSettingsPage />);
     expect(screen.getByText('No se pudieron cargar los ajustes')).toBeInTheDocument();
+  });
+
+  it('switches measurement tracking for the center', async () => {
+    mutateAsync.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('network'));
+    const user = userEvent.setup();
+    render(<TenantSettingsPage />);
+
+    const toggle = screen.getByRole('switch', { name: 'Seguimiento de mediciones y objetivos' });
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+    await user.click(toggle);
+    expect(mutateAsync).toHaveBeenCalledWith({ measurementsEnabled: false });
+
+    await user.click(toggle);
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo guardar el ajuste.');
   });
 });

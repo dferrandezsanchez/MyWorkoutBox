@@ -84,3 +84,46 @@ export async function ensureTenantMembership(userId: string, role: Role): Promis
     create: { userId, tenantId: TEST_TENANT_ID, role, active: true },
   });
 }
+
+/**
+ * Creates a throwaway center (and its organization) so a test can change tenant
+ * settings without racing other test files that share the default test tenant.
+ */
+export async function createIsolatedTenant(key: string, settings: { measurementsEnabled?: boolean } = {}): Promise<string> {
+  const organizationId = `org_${key}`;
+  const tenantId = `tenant_${key}`;
+  await prisma.organization.upsert({
+    where: { id: organizationId },
+    update: {},
+    create: { id: organizationId, name: `Org ${key}`, slug: `org-${key}`, active: true },
+  });
+  await prisma.tenant.upsert({
+    where: { id: tenantId },
+    update: { measurementsEnabled: settings.measurementsEnabled ?? true },
+    create: {
+      id: tenantId,
+      organizationId,
+      name: `Center ${key}`,
+      slug: `center-${key}`,
+      appName: 'STELIOS',
+      shortName: 'Test',
+      mark: 'S',
+      claim: '',
+      description: '',
+      primary: '#14B8A6',
+      primaryHover: '#2DD4BF',
+      primarySoft: '#5EEAD4',
+      measurementsEnabled: settings.measurementsEnabled ?? true,
+      active: true,
+    },
+  });
+  return tenantId;
+}
+
+export async function addMembership(userId: string, tenantId: string, role: Role): Promise<void> {
+  await prisma.userTenantMembership.upsert({
+    where: { userId_tenantId: { userId, tenantId } },
+    update: { role, active: true },
+    create: { userId, tenantId, role, active: true },
+  });
+}

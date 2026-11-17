@@ -1,5 +1,6 @@
 import type { Role, Status } from './shared/enums';
 import type {
+  ClientMeasurement,
   AuditLog,
   Client,
   Exercise,
@@ -44,7 +45,7 @@ export interface MembershipRepository {
 
 export interface TenantRepository {
   findActiveById(id: string): Promise<Tenant | null>;
-  updateName(tenantId: string, name: string): Promise<void>;
+  updateSettings(tenantId: string, data: { name?: string; measurementsEnabled?: boolean }): Promise<void>;
 }
 
 export interface ClientRepository {
@@ -62,6 +63,8 @@ export type CreateClientData = {
   weight?: number;
   bodyFatPercentage?: number;
   notes?: string;
+  goal?: string | null;
+  goalDate?: Date | null;
   status?: Status;
 };
 
@@ -181,4 +184,21 @@ export interface DashboardRepository {
   listSessionsSince(tenantId: string, since: Date): Promise<DashboardSessionRow[]>;
   /** Active clients with the start date of their latest training session. */
   listActiveClientsWithLastSession(tenantId: string): Promise<DashboardClientRow[]>;
+}
+
+export type MeasurementValues = {
+  measuredAt: Date;
+  weight: number | null;
+  bodyFatPercentage: number | null;
+  muscleMass: number | null;
+  notes: string | null;
+};
+
+export interface MeasurementRepository {
+  listByClient(tenantId: string, clientId: string): Promise<ClientMeasurement[]>;
+  findById(tenantId: string, id: string): Promise<ClientMeasurement | null>;
+  create(data: MeasurementValues & { tenantId: string; clientId: string; createdById: string }): Promise<ClientMeasurement>;
+  update(id: string, data: MeasurementValues): Promise<ClientMeasurement>;
+  delete(id: string): Promise<void>;
+  deleteByClient(tenantId: string, clientId: string): Promise<void>;
 }

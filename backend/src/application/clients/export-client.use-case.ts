@@ -1,6 +1,7 @@
 import type {
   AuditLogRepository,
   ClientRepository,
+  MeasurementRepository,
   PerformanceRepository,
   TrainingSessionRepository,
 } from '../../domain/repositories';
@@ -15,6 +16,7 @@ export class ExportClientUseCase {
     private readonly performances: PerformanceRepository,
     private readonly trainingSessions: TrainingSessionRepository,
     private readonly auditLogs: AuditLogRepository,
+    private readonly measurements: MeasurementRepository,
   ) {
     this.getClient = new GetClientUseCase(clients);
   }
@@ -25,9 +27,10 @@ export class ExportClientUseCase {
     actorUserId: string,
   ): Promise<ClientExportData> {
     const client = await this.getClient.execute(tenantId, id);
-    const [performances, trainingSessions] = await Promise.all([
+    const [performances, trainingSessions, measurements] = await Promise.all([
       this.performances.findByClient(tenantId, id),
       this.trainingSessions.listByClient(tenantId, id),
+      this.measurements.listByClient(tenantId, id),
     ]);
     await this.auditLogs.create({
       tenantId,
@@ -36,6 +39,6 @@ export class ExportClientUseCase {
       entityType: 'Client',
       entityId: id,
     });
-    return { client, performances, trainingSessions };
+    return { client, performances, trainingSessions, measurements };
   }
 }
