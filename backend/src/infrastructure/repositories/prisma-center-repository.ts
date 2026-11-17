@@ -1,4 +1,4 @@
-import type { CenterRepository, ProvisionCenterData, ProvisionedCenter } from '../../domain/repositories';
+import type { CenterRepository, ProvisionCenterData, ProvisionedCenter, ProvisionCenterUser } from '../../domain/repositories';
 import { Role, Status } from '../../domain/shared/enums';
 import { conflict } from '../../domain/shared/errors';
 import prisma from '../prisma/prisma-client';
@@ -44,19 +44,26 @@ export class PrismaCenterRepository implements CenterRepository {
           },
         });
 
-        const existingUser = await tx.user.findUnique({ where: { email: data.admin.email } });
-        if (existingUser && !existingUser.active) {
-          throw conflict('Ese email pertenece a un usuario desactivado; actívalo o usa otro email');
-        }
-        const admin =
-          existingUser ??
-          (await tx.user.create({
-            data: { name: data.admin.name, email: data.admin.email, passwordHash: data.admin.passwordHash, role: Role.ADMIN, active: true },
-          }));
+        const addAccess = async (person: ProvisionCenterUser, role: Role) => {
+          const existingUser = await tx.user.findUnique({ where: { email: person.email } });
+          if (existingUser && !existingUser.active) {
+            throw conflict(`El email ${person.email} pertenece a un usuario desactivado; actívalo o usa otro email`);
+          }
+          const user =
+            existingUser ??
+            (await tx.user.create({
+              data: { name: person.name, email: person.email, passwordHash: person.passwordHash, role, active: true },
+            }));
+          await tx.userTenantMembership.create({ data: { userId: user.id, tenantId: tenant.id, role, active: true } });
+          return { id: user.id, created: !existingUser };
+        };
 
-        await tx.userTenantMembership.create({
-          data: { userId: admin.id, tenantId: tenant.id, role: Role.ADMIN, active: true },
-        });
+        const admin = await addAccess(data.admin, Role.ADMIN);
+        const trainers: ProvisionedCenter['trainers'] = [];
+        for (const trainer of data.trainers) {
+          const access = await addAccess(trainer, Role.TRAINER);
+          trainers.push({ email: trainer.email, created: access.created });
+        }
 
         const exercises = await tx.exercise.createMany({
           data: data.exercises.map((exercise) => ({ ...exercise, tenantId: tenant.id, status: Status.ACTIVE })),
@@ -66,7 +73,8 @@ export class PrismaCenterRepository implements CenterRepository {
           organizationId: organization.id,
           tenantId: tenant.id,
           adminUserId: admin.id,
-          adminCreated: !existingUser,
+          adminCreated: admin.created,
+          trainers,
           exercisesCreated: exercises.count,
         };
       });

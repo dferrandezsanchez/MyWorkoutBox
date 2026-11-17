@@ -61,10 +61,10 @@ describe('center provisioning', () => {
 
     const result = await useCase.execute(input);
 
-    expect(result).toMatchObject({ status: 'created', slug: input.slug, adminCreated: true, exercisesCreated: BASE_EXERCISES.length });
-    expect(result.generatedPassword).toMatch(/^\S{4}(-\S{4}){3}$/);
+    expect(result).toMatchObject({ status: 'created', slug: input.slug, admin: { created: true }, exercisesCreated: BASE_EXERCISES.length });
+    expect(result.admin.generatedPassword).toMatch(/^\S{4}(-\S{4}){3}$/);
 
-    const session = await login(input.adminEmail, result.generatedPassword!).expect(200);
+    const session = await login(input.adminEmail, result.admin.generatedPassword!).expect(200);
     expect(session.body.user).toMatchObject({ email: input.adminEmail, role: Role.ADMIN, tenantId: result.tenantId });
     expect(session.body.tenant).toMatchObject({ name: input.name, slug: input.slug });
 
@@ -90,10 +90,11 @@ describe('center provisioning', () => {
 
     const second = await useCase.execute({ ...input, adminEmail: `otro-${input.adminEmail}` });
 
-    expect(second).toMatchObject({ status: 'exists', organizationId: first.organizationId, tenantId: first.tenantId, generatedPassword: null });
+    expect(second).toMatchObject({ status: 'exists', organizationId: first.organizationId, tenantId: first.tenantId });
+    expect(second.admin.generatedPassword).toBeNull();
     expect(await prisma.exercise.count({ where: { tenantId: first.tenantId! } })).toBe(exercisesBefore);
     expect(await prisma.user.findUnique({ where: { email: `otro-${input.adminEmail}` } })).toBeNull();
-    await login(input.adminEmail, first.generatedPassword!).expect(200);
+    await login(input.adminEmail, first.admin.generatedPassword!).expect(200);
   });
 
   it('gives an existing user access to the new center without touching their password', async () => {
@@ -105,7 +106,7 @@ describe('center provisioning', () => {
 
     const result = await useCase.execute(input);
 
-    expect(result).toMatchObject({ status: 'created', adminCreated: false, generatedPassword: null });
+    expect(result).toMatchObject({ status: 'created', admin: { created: false, generatedPassword: null } });
     const session = await login(input.adminEmail, 'clave-que-ya-tenia').expect(200);
     expect(session.body.tenantSelectionRequired).toBe(true);
     expect(session.body.tenants.map((tenant: { name: string }) => tenant.name)).toContain(input.name);
@@ -121,6 +122,41 @@ describe('center provisioning', () => {
 
     expect(await prisma.organization.findUnique({ where: { slug: input.slug } })).toBeNull();
     expect(await prisma.tenant.findUnique({ where: { slug: input.slug } })).toBeNull();
+  });
+
+  it('creates the trainers with their own access and the right permissions', async () => {
+    const input = newCenter('equipo');
+    const trainerEmail = `entrenador-${input.slug}@centro.test`;
+    emails.push(trainerEmail);
+
+    const result = await useCase.execute({ ...input, trainers: [{ name: 'Entrenador Uno', email: trainerEmail }] });
+
+    expect(result.trainers).toHaveLength(1);
+    expect(result.trainers[0]).toMatchObject({ created: true, email: trainerEmail });
+    expect(result.trainers[0].generatedPassword).not.toBe(result.admin.generatedPassword);
+
+    const session = await login(trainerEmail, result.trainers[0].generatedPassword!).expect(200);
+    expect(session.body.user).toMatchObject({ role: Role.TRAINER, tenantId: result.tenantId });
+    const auth = { Authorization: `Bearer ${session.body.token}` };
+    expect((await request(app).get('/exercises').set(auth).expect(200)).body).toHaveLength(BASE_EXERCISES.length);
+    // Trainers cannot manage the team: that stays with the admin.
+    await request(app).get('/trainers').set(auth).expect(403);
+
+    const admin = await login(input.adminEmail, result.admin.generatedPassword!).expect(200);
+    const team = await request(app).get('/trainers').set({ Authorization: `Bearer ${admin.body.token}` }).expect(200);
+    expect(team.body.map((member: { email: string }) => member.email)).toEqual([trainerEmail]);
+  });
+
+  it('creates nothing when a trainer email belongs to a deactivated user', async () => {
+    const input = newCenter('equipo-baja');
+    const trainerEmail = `baja-${input.slug}@centro.test`;
+    emails.push(trainerEmail);
+    await prisma.user.create({ data: { name: 'Baja', email: trainerEmail, passwordHash: 'x', role: Role.TRAINER, active: false } });
+
+    await expect(useCase.execute({ ...input, trainers: [{ name: 'Baja', email: trainerEmail }] })).rejects.toMatchObject({ code: 'CONFLICT' });
+
+    expect(await prisma.organization.findUnique({ where: { slug: input.slug } })).toBeNull();
+    expect(await prisma.user.findUnique({ where: { email: input.adminEmail } })).toBeNull();
   });
 
   it('creates an empty catalog when asked', async () => {

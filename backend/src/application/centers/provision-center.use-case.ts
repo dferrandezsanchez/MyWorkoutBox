@@ -1,10 +1,15 @@
 import { BASE_EXERCISES } from '../../domain/exercise-library';
-import { badRequest } from '../../domain/shared/errors';
-import type { CenterRepository, CreateExerciseData } from '../../domain/repositories';
 import type { LibraryExercise } from '../../domain/exercise-library';
+import type { CenterRepository, CreateExerciseData, ProvisionCenterUser } from '../../domain/repositories';
+import { badRequest } from '../../domain/shared/errors';
 import type { PasswordGenerator, PasswordHasher } from '../ports';
 import { normalizeEmail, normalizeName, validatePassword } from '../trainers/trainer-inputs';
 import { normalizeCenterName, resolveCenterSlug } from './center-naming';
+
+export interface CenterPersonInput {
+  name: string;
+  email: string;
+}
 
 export interface ProvisionCenterInput {
   name: string;
@@ -12,6 +17,8 @@ export interface ProvisionCenterInput {
   adminEmail: string;
   /** When omitted a strong password is generated and returned once. */
   adminPassword?: string;
+  /** Trainers created together with the center. Each gets their own generated password. */
+  trainers?: CenterPersonInput[];
   slug?: string;
   /** Load the starter exercise catalog. Defaults to true. */
   starterExercises?: boolean;
@@ -19,16 +26,23 @@ export interface ProvisionCenterInput {
   dryRun?: boolean;
 }
 
+export interface ProvisionedPersonResult {
+  name: string;
+  email: string;
+  /** False when the email already had an account: they keep their password and gain access to the new center. */
+  created: boolean;
+  /** Only set for new accounts with a generated password. Show it once. */
+  generatedPassword: string | null;
+}
+
 export interface ProvisionCenterResult {
   status: 'created' | 'exists' | 'dry-run';
   name: string;
   slug: string;
-  adminEmail: string;
+  admin: ProvisionedPersonResult;
+  trainers: ProvisionedPersonResult[];
   organizationId: string | null;
   tenantId: string | null;
-  adminCreated: boolean;
-  /** Only set when a new admin was created with a generated password. Show it once. */
-  generatedPassword: string | null;
   exercisesCreated: number;
 }
 
@@ -56,15 +70,15 @@ function isEmailLike(email: string): boolean {
   return local.length > 0 && dot > 0 && dot < domain.length - 1;
 }
 
-function parseAdminEmail(raw: string): string {
-  const email = normalizeEmail(raw);
-  if (!isEmailLike(email)) throw badRequest('El email del administrador no es válido', ['adminEmail']);
-  return email;
+function parsePerson(person: CenterPersonInput, role: 'administrador' | 'entrenador'): CenterPersonInput {
+  const email = normalizeEmail(person.email);
+  if (!isEmailLike(email)) throw badRequest(`El email del ${role} no es válido: ${email}`, [role === 'administrador' ? 'adminEmail' : 'trainers']);
+  return { name: normalizeName(person.name), email };
 }
 
 /**
- * Creates a new training center with its first admin. Shared by the operator
- * script today and by self-service sign-up later.
+ * Creates a new training center with its first admin and, optionally, its trainers.
+ * Shared by the operator command today and by self-service sign-up later.
  *
  * Safe to repeat: if a center with the same identifier already exists nothing is
  * changed. Other centers are never touched, and an existing user keeps their password.
@@ -79,45 +93,58 @@ export class ProvisionCenterUseCase {
   async execute(input: ProvisionCenterInput): Promise<ProvisionCenterResult> {
     const name = normalizeCenterName(input.name);
     const slug = resolveCenterSlug(name, input.slug);
-    const adminName = normalizeName(input.adminName);
-    const adminEmail = parseAdminEmail(input.adminEmail);
+    const admin = parsePerson({ name: input.adminName, email: input.adminEmail }, 'administrador');
+    const trainers = (input.trainers ?? []).map((trainer) => parsePerson(trainer, 'entrenador'));
     const providedPassword = input.adminPassword === undefined ? undefined : validatePassword(input.adminPassword);
     const exercises = input.starterExercises === false ? [] : BASE_EXERCISES.map(toExerciseData);
 
-    const base = { name, slug, adminEmail };
+    const emails = [admin.email, ...trainers.map((trainer) => trainer.email)];
+    if (new Set(emails).size !== emails.length) {
+      throw badRequest('Un mismo email no puede repetirse entre el administrador y los entrenadores', ['trainers']);
+    }
+
+    const untouched = (person: CenterPersonInput): ProvisionedPersonResult => ({ ...person, created: false, generatedPassword: null });
+    const base = { name, slug, admin: untouched(admin), trainers: trainers.map(untouched) };
+
     const existing = await this.centers.findOrganizationBySlug(slug);
     if (existing) {
-      return {
-        ...base,
-        status: 'exists',
-        organizationId: existing.id,
-        tenantId: existing.tenantId,
-        adminCreated: false,
-        generatedPassword: null,
-        exercisesCreated: 0,
-      };
+      return { ...base, status: 'exists', organizationId: existing.id, tenantId: existing.tenantId, exercisesCreated: 0 };
     }
-
     if (input.dryRun) {
-      return { ...base, status: 'dry-run', organizationId: null, tenantId: null, adminCreated: false, generatedPassword: null, exercisesCreated: exercises.length };
+      return { ...base, status: 'dry-run', organizationId: null, tenantId: null, exercisesCreated: exercises.length };
     }
 
-    const password = providedPassword ?? this.passwordGenerator.generate();
+    const adminPassword = providedPassword ?? this.passwordGenerator.generate();
+    const trainerPasswords = trainers.map(() => this.passwordGenerator.generate());
+    const withHash = async (person: CenterPersonInput, password: string): Promise<ProvisionCenterUser> => ({
+      ...person,
+      passwordHash: await this.passwordHasher.hash(password),
+    });
+
     const provisioned = await this.centers.provision({
       organization: { name, slug },
       tenant: { name, slug },
-      admin: { name: adminName, email: adminEmail, passwordHash: await this.passwordHasher.hash(password) },
+      admin: await withHash(admin, adminPassword),
+      trainers: await Promise.all(trainers.map((trainer, index) => withHash(trainer, trainerPasswords[index]))),
       exercises,
     });
 
     return {
-      ...base,
       status: 'created',
+      name,
+      slug,
       organizationId: provisioned.organizationId,
       tenantId: provisioned.tenantId,
-      adminCreated: provisioned.adminCreated,
-      generatedPassword: provisioned.adminCreated && !providedPassword ? password : null,
       exercisesCreated: provisioned.exercisesCreated,
+      admin: {
+        ...admin,
+        created: provisioned.adminCreated,
+        generatedPassword: provisioned.adminCreated && !providedPassword ? adminPassword : null,
+      },
+      trainers: trainers.map((trainer, index) => {
+        const created = provisioned.trainers[index]?.created ?? false;
+        return { ...trainer, created, generatedPassword: created ? trainerPasswords[index] : null };
+      }),
     };
   }
 }
