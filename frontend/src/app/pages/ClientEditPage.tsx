@@ -52,10 +52,10 @@ export default function ClientEditPage() {
               lastName: client.lastName,
               birthDate: client.birthDate,
               height: client.height,
-              weight: client.weight,
-              bodyFatPercentage: client.bodyFatPercentage,
               status: client.status,
               notes: client.notes ?? undefined,
+              goal: client.goal,
+              goalDate: client.goalDate,
             }}
             onSubmit={async (data) => {
               await updateMutation.mutateAsync({ id: client.id, data });

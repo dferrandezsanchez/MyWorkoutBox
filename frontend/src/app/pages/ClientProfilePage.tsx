@@ -3,11 +3,14 @@ import { CalendarDays, ChevronLeft, ChevronRight, ClipboardList, History, Play, 
 import Avatar from '@shared/components/Avatar';
 import AppShell from '@app/layout/AppShell';
 import { Button, EmptyState, Panel, StatusBadge } from '@shared/components/ui';
+import { ClientGoalCard } from '@features/clients/components/ClientGoalCard';
 import { useClient } from '@features/clients/hooks/useClients';
+import { MeasurementsSection } from '@features/measurements/components/MeasurementsSection';
 import { useCurrentPerformances } from '@features/performances/hooks/usePerformances';
 import { formatPerformance } from '@features/performances/utils/exerciseTemplates';
 import { getPerformanceTrend, getTrendBars } from '@features/performances/utils/performanceTrend';
 import { useActiveSession, useClientSessions, useStartSession } from '@features/training-sessions/hooks/useTrainingSessions';
+import { useActiveTenant } from '@shared/tenant/useActiveTenant';
 import type { CurrentMark } from '@shared/types/api';
 
 function calculateAge(birthDate: string): number {
@@ -34,6 +37,8 @@ export default function ClientProfilePage() {
   const { data: activeSession } = useActiveSession();
   const { data: clientSessions = [] } = useClientSessions(clientId!);
   const startSession = useStartSession();
+  const { tenant } = useActiveTenant();
+  const measurementsEnabled = tenant?.measurementsEnabled ?? false;
 
   const isLoading = isLoadingClient || isLoadingPerformances;
   const isError = isErrorClient || isErrorPerformances;
@@ -91,7 +96,6 @@ export default function ClientProfilePage() {
                 <p className="tabular mt-1 text-sm text-text-secondary">
                   {formatAge(client.birthDate)}
                   {client.height != null ? ` · ${client.height} cm` : ''}
-                  {client.weight != null ? ` · ${client.weight} kg` : ''}
                 </p>
               </div>
             </div>
@@ -103,12 +107,18 @@ export default function ClientProfilePage() {
           </div>
         </Panel>
 
+        {measurementsEnabled && <ClientGoalCard client={client} />}
+
         <section>
           <p className="eyebrow mb-3 flex items-center gap-2 px-1"><ClipboardList size={14} />Notas importantes</p>
           <Panel className="border-l-2 border-l-primary/70 p-4 sm:p-5">
             <p className="leading-7 text-text-secondary">{client.notes || 'No hay observaciones registradas para este cliente.'}</p>
           </Panel>
         </section>
+
+        {measurementsEnabled && (
+          <MeasurementsSection clientId={client.id} clientName={`${client.firstName} ${client.lastName}`} goalDate={client.goalDate} />
+        )}
 
         <section>
           <div className="mb-3 px-1">

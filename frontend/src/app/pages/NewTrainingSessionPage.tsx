@@ -98,7 +98,7 @@ export default function NewTrainingSessionPage() {
               <Avatar firstName={selected.firstName} lastName={selected.lastName} size="md" />
               <div className="min-w-0">
                 <h2 className="truncate text-2xl font-bold text-text-primary">{selected.firstName} {selected.lastName}</h2>
-                <p className="tabular mt-0.5 text-sm text-text-secondary">{age(selected.birthDate)} años{selected.height ? ` · ${selected.height} cm` : ''}{selected.weight ? ` · ${selected.weight} kg` : ''}</p>
+                <p className="tabular mt-0.5 text-sm text-text-secondary">{age(selected.birthDate)} años{selected.height ? ` · ${selected.height} cm` : ''}</p>
               </div>
             </div>
           </div>
