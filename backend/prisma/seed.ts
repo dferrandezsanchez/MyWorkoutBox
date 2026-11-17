@@ -258,6 +258,9 @@ async function seedDemoTenant() {
   }
   console.log(`✓ Demo clients ready: ${clients.length}`);
 
+  const measurementCount = await seedMeasurementsAndGoals(tenant.id, clients, admin.id);
+  console.log(`✓ Demo measurements ready: ${measurementCount}`);
+
   const records = [
     ['demo_perf_alex_dominadas_1', 'demo_client_alex', 'demo_ex_dominadas', '5', PerformanceUnit.repetitions, '2026-04-10T10:00:00.000Z', null, 5, null, null, 'Agarre prono'],
     ['demo_perf_alex_dominadas_2', 'demo_client_alex', 'demo_ex_dominadas', '7', PerformanceUnit.repetitions, '2026-05-08T10:00:00.000Z', null, 7, null, null, 'Agarre supino'],
@@ -360,6 +363,59 @@ function seriesValues(slug: (typeof SESSION_EXERCISE_SLUGS)[number], sessionInde
     default:
       return { value: '10', unit: PerformanceUnit.repetitions, repetitions: 10 };
   }
+}
+
+const MEASUREMENTS_PER_CLIENT = 6;
+const MEASUREMENT_EVERY_DAYS = 14;
+const DEMO_GOALS: Array<{ goal: string; monthsAhead: number | null }> = [
+  { goal: 'Preparar la media maratón de Valencia', monthsAhead: 4 },
+  { goal: 'Boda: llegar a 75 kg con más masa muscular', monthsAhead: 7 },
+  { goal: 'Volver a correr sin molestias de rodilla', monthsAhead: null },
+];
+
+/** Biweekly measurements trending in the right direction, plus goals for the first clients. Dates are relative to the run day. */
+async function seedMeasurementsAndGoals(
+  tenantId: string,
+  clients: Array<{ id: string; weight: number | null; bodyFatPercentage: number | null }>,
+  createdById: string,
+): Promise<number> {
+  const today = new Date();
+  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 12);
+  let count = 0;
+
+  for (const [clientIndex, client] of clients.entries()) {
+    const goal = DEMO_GOALS[clientIndex];
+    const goalDate = goal?.monthsAhead ? new Date(todayUtc) : null;
+    goalDate?.setUTCMonth(goalDate.getUTCMonth() + (goal?.monthsAhead ?? 0));
+    await prisma.client.update({
+      where: { id: client.id },
+      data: { goal: goal?.goal ?? null, goalDate },
+    });
+
+    const baseWeight = client.weight ?? 75;
+    const baseFat = client.bodyFatPercentage ?? 20;
+    const baseMuscle = Math.round(baseWeight * 0.42 * 10) / 10;
+
+    for (let index = 0; index < MEASUREMENTS_PER_CLIENT; index += 1) {
+      const stepsAgo = MEASUREMENTS_PER_CLIENT - 1 - index;
+      const measuredAt = new Date(todayUtc - (stepsAgo * MEASUREMENT_EVERY_DAYS + 2 + (clientIndex % 4)) * DAY_MS);
+      const id = `demo_measurement_${clientIndex}_${index}`;
+      const values = {
+        tenantId,
+        clientId: client.id,
+        measuredAt,
+        weight: Math.round((baseWeight + stepsAgo * 0.45) * 10) / 10,
+        bodyFatPercentage: Math.round((baseFat + stepsAgo * 0.35) * 10) / 10,
+        muscleMass: Math.round((baseMuscle - stepsAgo * 0.15) * 10) / 10,
+        notes: null,
+        createdById,
+      };
+      await prisma.clientMeasurement.upsert({ where: { id }, update: values, create: { id, ...values } });
+      count += 1;
+    }
+  }
+
+  return count;
 }
 
 async function seedTrainingSessions(tenantId: string, trainerId: string, clientIds: string[]): Promise<number> {

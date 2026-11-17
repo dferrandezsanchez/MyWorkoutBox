@@ -146,8 +146,8 @@ export class PrismaTenantRepository implements TenantRepository {
     return tenant ? toTenant(tenant) : null;
   }
 
-  async updateName(tenantId: string, name: string): Promise<void> {
-    await prisma.tenant.update({ where: { id: tenantId }, data: { name } });
+  async updateSettings(tenantId: string, data: { name?: string; measurementsEnabled?: boolean }): Promise<void> {
+    await prisma.tenant.update({ where: { id: tenantId }, data });
   }
 }
 
@@ -438,6 +438,7 @@ function toTenant(tenant: {
   primary: string;
   primaryHover: string;
   primarySoft: string;
+  measurementsEnabled: boolean;
   active: boolean;
 }): Tenant {
   return tenant;
@@ -486,6 +487,8 @@ function toClient(client: {
   weight: number | null;
   bodyFatPercentage: number | null;
   notes: string | null;
+  goal: string | null;
+  goalDate: Date | null;
   status: string;
   anonymizedAt: Date | null;
   createdAt: Date;

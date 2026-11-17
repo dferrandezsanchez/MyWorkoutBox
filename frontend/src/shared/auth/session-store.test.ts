@@ -24,6 +24,7 @@ const tenant: ActiveTenant = {
   organizationId: 'org-1',
   name: 'Demo Center',
   slug: 'demo-center',
+  measurementsEnabled: true,
 };
 
 describe('session-store', () => {
