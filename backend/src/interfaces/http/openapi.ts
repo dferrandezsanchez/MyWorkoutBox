@@ -112,12 +112,13 @@ export const openApiDocument: OpenApiDocument = {
       Tenant: {
         type: 'object',
         description: 'Active training center. Visual branding is fixed by the platform and is not configurable per tenant.',
-        required: ['id', 'organizationId', 'name', 'slug'],
+        required: ['id', 'organizationId', 'name', 'slug', 'measurementsEnabled'],
         properties: {
           id: { type: 'string' },
           organizationId: { type: 'string' },
           name: { type: 'string' },
           slug: { type: 'string' },
+          measurementsEnabled: { type: 'boolean', description: 'Whether the center tracks client measurements and goals.' },
         },
       },
       TenantOption: {
@@ -190,9 +191,10 @@ export const openApiDocument: OpenApiDocument = {
       },
       TenantUpdateInput: {
         type: 'object',
-        required: ['name'],
+        description: 'Send at least one field.',
         properties: {
           name: { type: 'string', minLength: 1, maxLength: 191 },
+          measurementsEnabled: { type: 'boolean' },
         },
       },
       LoginSuccessResponse: {
@@ -226,6 +228,8 @@ export const openApiDocument: OpenApiDocument = {
           weight: { type: 'number', nullable: true },
           bodyFatPercentage: { type: 'number', nullable: true },
           notes: { type: 'string', nullable: true },
+          goal: { type: 'string', nullable: true, description: 'Free-text goal: reason and target (e.g. a race, a wedding, health).' },
+          goalDate: { type: 'string', format: 'date-time', nullable: true },
           status: { $ref: '#/components/schemas/Status' },
           anonymizedAt: { type: 'string', format: 'date-time', nullable: true },
           createdAt: { type: 'string', format: 'date-time' },
@@ -241,15 +245,62 @@ export const openApiDocument: OpenApiDocument = {
           height: { type: 'number', example: 178 },
           weight: { type: 'number', example: 78.5 },
           bodyFatPercentage: { type: 'number', minimum: 0, maximum: 100, example: 16.5 },
-          notes: { type: 'string', example: 'Objetivo: mejorar fuerza relativa.' },
+          notes: { type: 'string', example: 'Lesión antigua de rodilla.' },
+          goal: { type: 'string', maxLength: 500, nullable: true, example: 'Preparar la media maratón de Valencia' },
+          goalDate: { type: 'string', format: 'date', nullable: true, example: '2027-03-21' },
           status: { $ref: '#/components/schemas/Status' },
         },
       },
       ClientCreateInput: {
         allOf: [
           { $ref: '#/components/schemas/ClientInput' },
-          { type: 'object', required: ['firstName', 'lastName', 'birthDate'] },
+          {
+            type: 'object',
+            required: ['firstName', 'lastName', 'birthDate'],
+            properties: {
+              initialMeasurement: {
+                allOf: [{ $ref: '#/components/schemas/ClientMeasurementInput' }],
+                description: 'Optional first measurement, stored as the first entry of the history when the center has measurements enabled.',
+              },
+            },
+          },
         ],
+      },
+      ClientGoalInput: {
+        type: 'object',
+        properties: {
+          goal: { type: 'string', maxLength: 500, nullable: true },
+          goalDate: { type: 'string', format: 'date', nullable: true },
+        },
+      },
+      ClientMeasurement: {
+        type: 'object',
+        required: ['id', 'tenantId', 'clientId', 'measuredAt', 'weight', 'bodyFatPercentage', 'muscleMass', 'notes', 'createdById', 'createdAt', 'updatedAt'],
+        properties: {
+          id: { type: 'string' },
+          tenantId: { type: 'string' },
+          clientId: { type: 'string' },
+          measuredAt: { type: 'string', format: 'date-time' },
+          weight: { type: 'number', nullable: true, description: 'kg' },
+          bodyFatPercentage: { type: 'number', nullable: true, description: '%' },
+          muscleMass: { type: 'number', nullable: true, description: 'kg' },
+          notes: { type: 'string', nullable: true },
+          createdById: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      ClientMeasurementInput: {
+        type: 'object',
+        required: ['measuredAt'],
+        description: 'At least one of weight, bodyFatPercentage or muscleMass is required.',
+        properties: {
+          measuredAt: { type: 'string', format: 'date', example: '2026-11-17' },
+          weight: { type: 'number', minimum: 20, maximum: 400, nullable: true, example: 78.4 },
+          bodyFatPercentage: { type: 'number', minimum: 2, maximum: 75, nullable: true, example: 18.2 },
+          muscleMass: { type: 'number', minimum: 5, maximum: 150, nullable: true, example: 34.6 },
+          notes: { type: 'string', maxLength: 1000, nullable: true },
+        },
       },
       TrainingSessionExercise: {
         type: 'object',
@@ -285,11 +336,12 @@ export const openApiDocument: OpenApiDocument = {
       },
       ClientExport: {
         type: 'object',
-        required: ['client', 'performances', 'trainingSessions'],
+        required: ['client', 'performances', 'trainingSessions', 'measurements'],
         properties: {
           client: { $ref: '#/components/schemas/Client' },
           performances: { type: 'array', items: { $ref: '#/components/schemas/PerformanceRecord' } },
           trainingSessions: { type: 'array', items: { $ref: '#/components/schemas/TrainingSession' } },
+          measurements: { type: 'array', items: { $ref: '#/components/schemas/ClientMeasurement' } },
         },
       },
       Exercise: {
@@ -594,7 +646,7 @@ export const openApiDocument: OpenApiDocument = {
       put: {
         tags: ['Auth'],
         security: [{ bearerAuth: [] }],
-        summary: 'Rename the active tenant',
+        summary: 'Update active tenant settings (name, measurement tracking)',
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/TenantUpdateInput' } } } },
         responses: {
           200: { description: 'Tenant updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Tenant' } } } },
@@ -724,6 +776,40 @@ Object.assign(openApiDocument.paths, {
       summary: 'Get performance history',
       parameters: [{ name: 'clientId', in: 'path', required: true, schema: { type: 'string' } }, { name: 'exerciseId', in: 'path', required: true, schema: { type: 'string' } }],
       responses: { 200: { description: 'Performance history', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/PerformanceRecord' } } } } }, ...authResponses },
+    },
+  },
+  '/clients/{id}/goal': {
+    patch: {
+      tags: ['Clients'], security: [{ bearerAuth: [] }], summary: 'Update the client goal and target date',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientGoalInput' } } } },
+      responses: { 200: { description: 'Client updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Client' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...authResponses },
+    },
+  },
+  '/clients/{id}/measurements': {
+    get: {
+      tags: ['Clients'], security: [{ bearerAuth: [] }], summary: 'List client measurements, newest first',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Measurement history', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/ClientMeasurement' } } } } }, ...authResponses },
+    },
+    post: {
+      tags: ['Clients'], security: [{ bearerAuth: [] }], summary: 'Add a client measurement',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientMeasurementInput' } } } },
+      responses: { 201: { description: 'Measurement created', content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientMeasurement' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...authResponses },
+    },
+  },
+  '/clients/{id}/measurements/{measurementId}': {
+    put: {
+      tags: ['Clients'], security: [{ bearerAuth: [] }], summary: 'Correct a client measurement',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'measurementId', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientMeasurementInput' } } } },
+      responses: { 200: { description: 'Measurement updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientMeasurement' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...authResponses },
+    },
+    delete: {
+      tags: ['Clients'], security: [{ bearerAuth: [] }], summary: 'Delete a client measurement',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }, { name: 'measurementId', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 204: { description: 'Measurement deleted' }, ...authResponses },
     },
   },
   '/clients/{id}/training-sessions': {
@@ -878,6 +964,11 @@ const operationMetadata: Record<string, OperationMetadata> = {
   'GET /clients/{id}/export': { operationId: 'exportClientData', roles: ['ADMIN'] },
   'POST /clients/{id}/anonymize': { operationId: 'anonymizeClient', roles: ['ADMIN'] },
   'GET /clients/{id}/training-sessions': { operationId: 'listClientTrainingSessions', roles: ['ADMIN', 'TRAINER'] },
+  'PATCH /clients/{id}/goal': { operationId: 'updateClientGoal', roles: ['ADMIN', 'TRAINER'] },
+  'GET /clients/{id}/measurements': { operationId: 'listClientMeasurements', roles: ['ADMIN', 'TRAINER'] },
+  'POST /clients/{id}/measurements': { operationId: 'createClientMeasurement', roles: ['ADMIN', 'TRAINER'] },
+  'PUT /clients/{id}/measurements/{measurementId}': { operationId: 'updateClientMeasurement', roles: ['ADMIN', 'TRAINER'] },
+  'DELETE /clients/{id}/measurements/{measurementId}': { operationId: 'deleteClientMeasurement', roles: ['ADMIN', 'TRAINER'] },
   'GET /exercises': { operationId: 'listExercises', roles: ['ADMIN', 'TRAINER'] },
   'POST /exercises': { operationId: 'createExercise', roles: ['ADMIN'] },
   'GET /exercises/{id}': { operationId: 'getExercise', roles: ['ADMIN', 'TRAINER'] },

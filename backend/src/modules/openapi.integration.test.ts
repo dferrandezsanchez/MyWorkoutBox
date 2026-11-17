@@ -107,7 +107,7 @@ describe('OpenAPI documentation', () => {
     expect(body.components.schemas.Client.properties).not.toHaveProperty('sessionExerciseId');
     expect(body.components.schemas.PerformanceRecord.properties).toHaveProperty('sessionExerciseId');
     expect(body.components.schemas.ClientExport).toMatchObject({
-      required: ['client', 'performances', 'trainingSessions'],
+      required: ['client', 'performances', 'trainingSessions', 'measurements'],
     });
     expect(body.paths['/clients/{id}/export'].get.responses[200].content['application/json'].schema).toEqual({
       $ref: '#/components/schemas/ClientExport',

@@ -4,13 +4,13 @@ import bcrypt from 'bcrypt';
 import app from '../../index';
 import prisma from '../../infrastructure/prisma/prisma-client';
 import { Role } from '../../types/domain';
-import { ensureTenantMembership, TEST_TENANT_ID } from '../../test/tenant';
+import { addMembership, createIsolatedTenant, ensureTenantMembership, TEST_TENANT_ID } from '../../test/tenant';
 
 const runId = Date.now();
 const adminEmail = `tenant-admin-${runId}@gym.com`;
 const trainerEmail = `tenant-trainer-${runId}@gym.com`;
 const password = 'TenantTest1234!';
-const TENANT_KEYS = ['id', 'organizationId', 'name', 'slug'];
+const TENANT_KEYS = ['id', 'organizationId', 'name', 'slug', 'measurementsEnabled'];
 
 let adminToken: string;
 let trainerToken: string;
@@ -95,5 +95,22 @@ describe('active tenant API', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: '   ' })
       .expect(400);
+  });
+
+  it('lets admins switch measurement tracking', async () => {
+    // Isolated center: toggling the shared test tenant would race other test files.
+    const tenantId = await createIsolatedTenant(`toggle_${runId}`);
+    const email = `toggle-admin-${runId}@gym.com`;
+    const user = await prisma.user.create({
+      data: { name: email, email, passwordHash: await bcrypt.hash(password, 10), role: Role.ADMIN, active: true },
+    });
+    await addMembership(user.id, tenantId, Role.ADMIN);
+    const login = await request(app).post('/auth/login').send({ email, password }).expect(200);
+    const token = `Bearer ${login.body.token}`;
+
+    const { body } = await request(app).put('/auth/tenant').set('Authorization', token).send({ measurementsEnabled: false }).expect(200);
+    expect(body.measurementsEnabled).toBe(false);
+    const current = await request(app).get('/auth/tenant').set('Authorization', token).expect(200);
+    expect(current.body.measurementsEnabled).toBe(false);
   });
 });
