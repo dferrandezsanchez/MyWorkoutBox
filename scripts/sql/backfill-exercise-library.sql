@@ -13,7 +13,7 @@ JOIN (
   UNION ALL SELECT 'plancha_frontal', 'Plancha frontal', 'core'
   UNION ALL SELECT 'burpees', 'Burpees', 'functional'
   UNION ALL SELECT 'carrera', 'Carrera', 'cardio'
-) AS known ON LOWER(e.name) = LOWER(known.name) COLLATE utf8mb4_unicode_ci
+) AS known ON LOWER(e.name) = LOWER(known.name)
 SET e.libraryKey = known.libraryKey,
     e.muscleGroup = COALESCE(e.muscleGroup, known.muscleGroup)
 WHERE e.libraryKey IS NULL;
