@@ -19,6 +19,8 @@ import { BRAND } from '@shared/config/branding';
 import { useActiveTenant } from '@shared/tenant/useActiveTenant';
 import { getAppMode, getModePath } from '@app/mode/app-mode';
 import { UserMenu } from '@app/layout/UserMenu';
+import { OnboardingTour } from '@app/onboarding/OnboardingTour';
+import { useOnboardingTour } from '@app/onboarding/useOnboardingTour';
 
 interface AppShellProps {
   children: ReactNode;
@@ -47,6 +49,8 @@ export function AppShell({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false);
   const displayUser = fullUser ?? user;
+  // Never interrupt a live training session with the first-visit tour.
+  const tour = useOnboardingTour(displayUser?.id, mode, location.pathname.startsWith('/trainer/sessions/'));
 
   const requestLogout = () => {
     if (activeSession) {
@@ -58,21 +62,23 @@ export function AppShell({
 
   const navItems = isAdminMode
     ? [
-        { label: 'Dashboard', mobileLabel: 'Inicio', path: '/admin', icon: LayoutDashboard, active: location.pathname === '/admin' },
-        { label: 'Clientes', path: '/admin/clients', icon: Users, active: location.pathname.startsWith('/admin/clients') },
-        { label: 'Entrenadores', mobileLabel: 'Equipo', path: '/admin/trainers', icon: User, active: location.pathname.startsWith('/admin/trainers') },
-        { label: 'Ejercicios', path: '/admin/exercises', icon: Dumbbell, active: location.pathname.startsWith('/admin/exercises') },
-        { label: 'Ajustes', path: '/admin/settings', icon: Settings, active: location.pathname.startsWith('/admin/settings') },
+        { label: 'Dashboard', mobileLabel: 'Inicio', tourId: 'admin-home', path: '/admin', icon: LayoutDashboard, active: location.pathname === '/admin' },
+        { label: 'Clientes', tourId: 'admin-clients', path: '/admin/clients', icon: Users, active: location.pathname.startsWith('/admin/clients') },
+        { label: 'Entrenadores', mobileLabel: 'Equipo', tourId: 'admin-trainers', path: '/admin/trainers', icon: User, active: location.pathname.startsWith('/admin/trainers') },
+        { label: 'Ejercicios', tourId: 'admin-exercises', path: '/admin/exercises', icon: Dumbbell, active: location.pathname.startsWith('/admin/exercises') },
+        { label: 'Ajustes', tourId: 'admin-settings', path: '/admin/settings', icon: Settings, active: location.pathname.startsWith('/admin/settings') },
       ]
     : [
         {
           label: 'Inicio',
+          tourId: 'trainer-home',
           path: '/trainer',
           icon: LayoutDashboard,
           active: location.pathname === '/trainer',
         },
         {
           label: 'Clientes',
+          tourId: 'trainer-clients',
           path: '/trainer/clients',
           icon: Users,
           active: location.pathname === '/trainer/clients' || location.pathname.startsWith('/clients/'),
@@ -81,12 +87,14 @@ export function AppShell({
           label: activeSession ? 'Sesión activa' : 'Nueva sesión',
           mobileLabel: activeSession ? 'En curso' : 'Entrenar',
           primary: true,
+          tourId: 'trainer-train',
           path: activeSession ? `/trainer/sessions/${activeSession.id}` : '/trainer/sessions/new',
           icon: Dumbbell,
           active: location.pathname.startsWith('/trainer/sessions'),
         },
         {
           label: 'Cuenta',
+          tourId: 'trainer-account',
           path: '/account',
           icon: User,
           active: location.pathname === '/account',
@@ -128,6 +136,7 @@ export function AppShell({
             return (
               <button
                 key={`${item.label}-${item.path}`}
+                data-tour={item.tourId}
                 onClick={() => navigate(item.path)}
                 aria-current={item.active ? 'page' : undefined}
                 className={`relative flex min-h-[46px] w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold transition-colors duration-150 focus-ring ${
@@ -201,6 +210,7 @@ export function AppShell({
 
             <button
               type="button"
+              data-tour="user-menu"
               onClick={() => setUserMenuOpen(true)}
               aria-label="Abrir cuenta"
               className="flex min-h-[44px] items-center gap-3 rounded-full py-1 pl-1 pr-1 text-left transition-colors hover:bg-white/[0.04] focus-ring sm:pr-4"
@@ -240,6 +250,7 @@ export function AppShell({
             return (
               <button
                 key={`mobile-${item.path}`}
+                data-tour={item.tourId}
                 onClick={() => navigate(item.path)}
                 aria-current={item.active ? 'page' : undefined}
                 aria-label={item.label}
@@ -259,6 +270,7 @@ export function AppShell({
           return (
             <button
               key={`mobile-${item.label}-${item.path}`}
+              data-tour={item.tourId}
               onClick={() => navigate(item.path)}
               aria-current={item.active ? 'page' : undefined}
               className={`flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold transition-colors duration-150 focus-ring ${
@@ -283,8 +295,11 @@ export function AppShell({
           onClose={() => setUserMenuOpen(false)}
           onNavigate={navigate}
           onLogout={requestLogout}
+          onOpenGuide={tour.start}
         />
       )}
+
+      <OnboardingTour mode={mode} open={tour.open} onFinish={tour.finish} />
 
       {logoutConfirmationOpen && (
         <ConfirmDialog

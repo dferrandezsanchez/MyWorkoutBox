@@ -11,7 +11,7 @@ describe('UserMenu', () => {
     const user = userEvent.setup();
     const navigate = vi.fn();
     const close = vi.fn();
-    render(<UserMenu open user={admin} tenantName="Demo Center" mode="admin" onClose={close} onNavigate={navigate} onLogout={vi.fn()} />);
+    render(<UserMenu open user={admin} tenantName="Demo Center" mode="admin" onClose={close} onNavigate={navigate} onLogout={vi.fn()} onOpenGuide={vi.fn()} />);
 
     expect(screen.getByText('admin@example.com')).toBeInTheDocument();
     expect(screen.getByText('Demo Center')).toBeInTheDocument();
@@ -25,7 +25,7 @@ describe('UserMenu', () => {
     const user = userEvent.setup();
     const navigate = vi.fn();
     const logout = vi.fn();
-    render(<UserMenu open user={{ ...admin, role: 'TRAINER' }} tenantName="Demo Center" mode="trainer" onClose={vi.fn()} onNavigate={navigate} onLogout={logout} />);
+    render(<UserMenu open user={{ ...admin, role: 'TRAINER' }} tenantName="Demo Center" mode="trainer" onClose={vi.fn()} onNavigate={navigate} onLogout={logout} onOpenGuide={vi.fn()} />);
 
     expect(screen.queryByRole('button', { name: 'Admin' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Cuenta y seguridad/ }));
@@ -36,10 +36,21 @@ describe('UserMenu', () => {
 
   it('closes with Escape and renders nothing while closed', async () => {
     const close = vi.fn();
-    const view = render(<UserMenu open user={admin} tenantName="Demo" mode="admin" onClose={close} onNavigate={vi.fn()} onLogout={vi.fn()} />);
+    const view = render(<UserMenu open user={admin} tenantName="Demo" mode="admin" onClose={close} onNavigate={vi.fn()} onLogout={vi.fn()} onOpenGuide={vi.fn()} />);
     await userEvent.keyboard('{Escape}');
     expect(close).toHaveBeenCalled();
-    view.rerender(<UserMenu open={false} user={admin} tenantName="Demo" mode="admin" onClose={close} onNavigate={vi.fn()} onLogout={vi.fn()} />);
+    view.rerender(<UserMenu open={false} user={admin} tenantName="Demo" mode="admin" onClose={close} onNavigate={vi.fn()} onLogout={vi.fn()} onOpenGuide={vi.fn()} />);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('reopens the STELIOS guide from the menu', async () => {
+    const user = userEvent.setup();
+    const close = vi.fn();
+    const openGuide = vi.fn();
+    render(<UserMenu open user={admin} tenantName="Demo" mode="admin" onClose={close} onNavigate={vi.fn()} onLogout={vi.fn()} onOpenGuide={openGuide} />);
+
+    await user.click(screen.getByRole('button', { name: /Guía de STELIOS/ }));
+    expect(close).toHaveBeenCalled();
+    expect(openGuide).toHaveBeenCalled();
   });
 });

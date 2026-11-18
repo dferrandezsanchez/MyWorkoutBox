@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Building2, Dumbbell, LayoutDashboard, LogOut, Settings, UserRound, X } from 'lucide-react';
+import { Building2, Compass, Dumbbell, LayoutDashboard, LogOut, Settings, UserRound, X } from 'lucide-react';
 import type { AppMode } from '@app/mode/app-mode';
 import { getAvailableModes, getModePath } from '@app/mode/app-mode';
 import type { AuthUser } from '@shared/types/auth';
@@ -12,9 +12,10 @@ interface UserMenuProps {
   onClose: () => void;
   onNavigate: (path: string) => void;
   onLogout: () => void;
+  onOpenGuide: () => void;
 }
 
-export function UserMenu({ open, user, tenantName, mode, onClose, onNavigate, onLogout }: UserMenuProps) {
+export function UserMenu({ open, user, tenantName, mode, onClose, onNavigate, onLogout, onOpenGuide }: UserMenuProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const modes = getAvailableModes(user.role);
 
@@ -65,6 +66,7 @@ export function UserMenu({ open, user, tenantName, mode, onClose, onNavigate, on
         )}
 
         <div className="mt-5 space-y-1 border-t border-white/[0.08] pt-4">
+          <button type="button" onClick={() => { onClose(); onOpenGuide(); }} className="flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold text-text-primary transition-colors hover:bg-white/[0.04] focus-ring"><Compass size={18} className="text-text-secondary" />Guía de STELIOS</button>
           <button type="button" onClick={() => goTo(`/account?mode=${mode}`)} className="flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold text-text-primary transition-colors hover:bg-white/[0.04] focus-ring"><Settings size={18} className="text-text-secondary" />Cuenta y seguridad</button>
           <button type="button" onClick={() => { onClose(); onLogout(); }} className="flex min-h-[48px] w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold text-red-300 transition-colors hover:bg-danger/10 focus-ring"><LogOut size={18} />Cerrar sesión</button>
         </div>
