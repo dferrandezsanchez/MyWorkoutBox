@@ -1,12 +1,14 @@
 import type { Role, Status } from './shared/enums';
 import type {
   ClientMeasurement,
+  ClientRoutinePlan,
   AuditLog,
   Client,
   Exercise,
   Membership,
   PerformanceRecord,
   PerformanceRecordWithTrainerName,
+  RoutineTemplate,
   Tenant,
   TrainingSession,
   TrainingSessionDetail,
@@ -41,6 +43,11 @@ export interface MembershipRepository {
   upsert(input: { userId: string; tenantId: string; role: Role; active: boolean }): Promise<Membership>;
   updateActive(userId: string, tenantId: string, active: boolean): Promise<void>;
   findTrainers(tenantId: string, includeInactive: boolean): Promise<Membership[]>;
+  /** All staff of a tenant (ADMIN and TRAINER memberships) with their user. */
+  findStaff(tenantId: string, includeInactive: boolean): Promise<Membership[]>;
+  updateAccess(userId: string, tenantId: string, data: { role?: Role; canManageRoutines?: boolean }): Promise<Membership>;
+  /** Active ADMIN memberships whose user is also active. */
+  countActiveAdmins(tenantId: string): Promise<number>;
 }
 
 export interface TenantRepository {
@@ -151,12 +158,73 @@ export interface TrainingSessionRepository {
   findDetail(tenantId: string, id: string): Promise<TrainingSessionDetail | null>;
   listByClient(tenantId: string, clientId: string): Promise<TrainingSessionDetail[]>;
   listByTrainer(tenantId: string, trainerId: string, limit: number): Promise<TrainingSessionDetail[]>;
-  create(data: { tenantId: string; clientId: string; trainerId: string; startedAt: Date }): Promise<TrainingSession>;
+  create(data: {
+    tenantId: string;
+    clientId: string;
+    trainerId: string;
+    startedAt: Date;
+    routineTemplateId?: string;
+    routinePlanId?: string;
+    routinePlanPosition?: number;
+  }): Promise<TrainingSession>;
+  /**
+   * Series recorded for `exerciseId` in the client's most recent COMPLETED session
+   * that included that exercise (excluding `excludeSessionId`), ordered by series number.
+   */
+  findPreviousSeries(
+    tenantId: string,
+    clientId: string,
+    exerciseId: string,
+    excludeSessionId?: string,
+  ): Promise<PerformanceRecordWithTrainerName[]>;
   complete(id: string, completedAt: Date, notes?: string): Promise<TrainingSession>;
   delete(id: string): Promise<void>;
   addExercise(sessionId: string, exerciseId: string): Promise<TrainingSessionExercise>;
   findExercise(sessionId: string, id: string): Promise<TrainingSessionExercise | null>;
   removeExercise(sessionId: string, id: string): Promise<void>;
+}
+
+export type RoutineTemplateExerciseInput = {
+  exerciseId: string;
+  targetSets?: number | null;
+  targetReps?: string | null;
+  notes?: string | null;
+};
+
+export interface RoutineTemplateRepository {
+  list(tenantId: string, includeInactive: boolean): Promise<RoutineTemplate[]>;
+  findById(tenantId: string, id: string): Promise<RoutineTemplate | null>;
+  create(data: {
+    tenantId: string;
+    name: string;
+    notes?: string | null;
+    createdById: string;
+    exercises: RoutineTemplateExerciseInput[];
+  }): Promise<RoutineTemplate>;
+  /** Updates fields; when `exercises` is given, replaces the whole ordered list (positions 1..n). */
+  update(tenantId: string, id: string, data: {
+    name?: string;
+    notes?: string | null;
+    status?: Status;
+    exercises?: RoutineTemplateExerciseInput[];
+  }): Promise<RoutineTemplate>;
+}
+
+export interface ClientRoutinePlanRepository {
+  /** The client's active plan with items (ordered) and their templates + exercises. */
+  findActiveByClient(tenantId: string, clientId: string): Promise<ClientRoutinePlan | null>;
+  findById(tenantId: string, id: string): Promise<ClientRoutinePlan | null>;
+  /** Deactivates any existing active plan of the client and creates a new one (positions 1..n). */
+  replaceActive(data: {
+    tenantId: string;
+    clientId: string;
+    name: string;
+    createdById: string;
+    templateIds: string[];
+    nextPosition?: number;
+  }): Promise<ClientRoutinePlan>;
+  deactivate(tenantId: string, id: string): Promise<void>;
+  setNextPosition(tenantId: string, id: string, nextPosition: number): Promise<void>;
 }
 
 export interface AuditLogRepository {

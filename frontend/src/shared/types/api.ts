@@ -105,10 +105,18 @@ export interface Trainer {
   id: string;
   name: string;
   email: string;
-  role: 'TRAINER';
+  role: 'TRAINER' | 'ADMIN';
+  /** Explicit routine-management permission (ADMIN always can). */
+  canManageRoutines?: boolean;
   active: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+/** PATCH /trainers/:id/access */
+export interface UpdateStaffAccessData {
+  role?: 'TRAINER' | 'ADMIN';
+  canManageRoutines?: boolean;
 }
 
 // Performance record (with trainerName resolved via JOIN)
@@ -151,6 +159,8 @@ export interface TrainingSessionExercise {
   createdAt: string;
   exercise: Exercise;
   series: PerformanceRecord[];
+  /** Series from the client's last completed session with this exercise (for prefill). */
+  previousSeries?: PerformanceRecord[];
 }
 
 export interface TrainingSession {
@@ -163,10 +173,93 @@ export interface TrainingSession {
   startedAt: string;
   completedAt?: string | null;
   notes?: string | null;
+  routineTemplateId?: string | null;
+  routinePlanId?: string | null;
+  routinePlanPosition?: number | null;
   createdAt: string;
   updatedAt: string;
   client: Client;
   exercises: TrainingSessionExercise[];
+}
+
+// Routine templates (GET/POST /routines, GET/PUT /routines/:id, PATCH /routines/:id/status)
+export interface RoutineTemplateExercise {
+  id: string;
+  templateId: string;
+  exerciseId: string;
+  position: number;
+  targetSets: number | null;
+  targetReps: string | null;
+  notes: string | null;
+  exercise: Exercise;
+}
+
+export interface RoutineTemplate {
+  id: string;
+  tenantId: string;
+  name: string;
+  notes: string | null;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+  exercises: RoutineTemplateExercise[];
+}
+
+export interface RoutineTemplateExerciseInput {
+  exerciseId: string;
+  targetSets?: number | null;
+  targetReps?: string | null;
+  notes?: string | null;
+}
+
+export interface RoutineTemplateInput {
+  name: string;
+  notes?: string | null;
+  exercises: RoutineTemplateExerciseInput[];
+}
+
+// Client routine plan A->B->C (GET/PUT/DELETE /clients/:id/routine-plan)
+export interface ClientRoutinePlanItem {
+  id: string;
+  planId: string;
+  templateId: string;
+  position: number;
+  template: RoutineTemplate;
+}
+
+export interface ClientRoutinePlan {
+  id: string;
+  clientId: string;
+  name: string;
+  active: boolean;
+  /** 1-based position suggested for the next session. */
+  nextPosition: number;
+  createdAt: string;
+  updatedAt: string;
+  items: ClientRoutinePlanItem[];
+}
+
+export interface ClientRoutinePlanInput {
+  name: string;
+  templateIds: string[];
+  nextPosition?: number;
+}
+
+// GET /clients/:id/session-options
+export interface SessionStartOptions {
+  plan: ClientRoutinePlan | null;
+  /** Routine that corresponds next in the client's plan, if any. */
+  nextRoutine: { position: number; template: RoutineTemplate } | null;
+  templates: RoutineTemplate[];
+}
+
+// POST /training-sessions
+export type StartSessionMode = 'free' | 'plan' | 'template';
+export interface StartSessionData {
+  clientId: string;
+  mode?: StartSessionMode;
+  templateId?: string;
 }
 
 // Export data for GDPR portability

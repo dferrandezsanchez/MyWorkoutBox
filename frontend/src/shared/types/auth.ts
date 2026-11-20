@@ -48,4 +48,6 @@ export interface AuthUser {
   role: Role;
   tenantId: string;
   organizationId: string;
+  /** Can create/edit routine templates and client plans (always true for ADMIN). */
+  canManageRoutines?: boolean;
 }
