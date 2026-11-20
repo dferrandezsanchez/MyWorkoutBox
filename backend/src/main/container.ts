@@ -39,6 +39,17 @@ import {
   GetPerformanceHistoryUseCase,
 } from '../application/performances';
 import {
+  AssignClientRoutinePlanUseCase,
+  CreateRoutineTemplateUseCase,
+  GetClientRoutinePlanUseCase,
+  GetRoutineTemplateUseCase,
+  ListRoutineTemplatesUseCase,
+  RemoveClientRoutinePlanUseCase,
+  SetClientRoutinePlanNextUseCase,
+  SetRoutineTemplateStatusUseCase,
+  UpdateRoutineTemplateUseCase,
+} from '../application/routines';
+import {
   CreateTrainerUseCase,
   GetTrainerUseCase,
   ListTrainersUseCase,
@@ -146,6 +157,17 @@ export function createContainer() {
       create: new CreateClientMeasurementUseCase(measurements, clients, tenants, auditLogs, clock),
       update: new UpdateClientMeasurementUseCase(measurements, clients, tenants, auditLogs, clock),
       delete: new DeleteClientMeasurementUseCase(measurements, clients, tenants, auditLogs),
+    },
+    routines: {
+      list: new ListRoutineTemplatesUseCase(routineTemplates),
+      get: new GetRoutineTemplateUseCase(routineTemplates),
+      create: new CreateRoutineTemplateUseCase(routineTemplates, exercises, memberships, auditLogs),
+      update: new UpdateRoutineTemplateUseCase(routineTemplates, exercises, memberships, auditLogs),
+      setStatus: new SetRoutineTemplateStatusUseCase(routineTemplates, memberships, auditLogs),
+      getClientPlan: new GetClientRoutinePlanUseCase(routinePlans, clients),
+      assignClientPlan: new AssignClientRoutinePlanUseCase(routinePlans, routineTemplates, clients, memberships, auditLogs),
+      removeClientPlan: new RemoveClientRoutinePlanUseCase(routinePlans, clients, memberships, auditLogs),
+      setClientPlanNext: new SetClientRoutinePlanNextUseCase(routinePlans, clients, memberships, auditLogs),
     },
     dashboard: {
       overview: new GetDashboardOverviewUseCase(dashboard, clock),

@@ -132,5 +132,49 @@ export function createClientsRouter(container: AppContainer): Router {
     }
   });
 
+  router.get('/:id/routine-plan', auth, async (req, res, next): Promise<void> => {
+    try {
+      res.status(200).json(await container.routines.getClientPlan.execute(req.user!.tenantId, req.params.id));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.put('/:id/routine-plan', auth, async (req, res, next): Promise<void> => {
+    try {
+      res.status(200).json(await container.routines.assignClientPlan.execute(
+        req.user!.tenantId,
+        req.user!.userId,
+        req.params.id,
+        req.body ?? {},
+      ));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.patch('/:id/routine-plan/next', auth, async (req, res, next): Promise<void> => {
+    try {
+      const { nextPosition } = (req.body ?? {}) as { nextPosition?: unknown };
+      res.status(200).json(await container.routines.setClientPlanNext.execute(
+        req.user!.tenantId,
+        req.user!.userId,
+        req.params.id,
+        nextPosition,
+      ));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.delete('/:id/routine-plan', auth, async (req, res, next): Promise<void> => {
+    try {
+      await container.routines.removeClientPlan.execute(req.user!.tenantId, req.user!.userId, req.params.id);
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  });
+
   return router;
 }

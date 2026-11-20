@@ -29,6 +29,7 @@ function expressOperations(): string[] {
     ['trainers.routes.ts', '/trainers'],
     ['dashboard.routes.ts', '/dashboard'],
     ['training-sessions.routes.ts', '/training-sessions'],
+    ['routines.routes.ts', '/routines'],
     ['performances.routes.ts', ''],
   ];
   const operations = ['GET /health'];
@@ -96,6 +97,11 @@ describe('OpenAPI documentation', () => {
       '/trainers',
       '/trainers/{id}',
       '/trainers/{id}/password',
+      '/routines',
+      '/routines/{id}',
+      '/routines/{id}/status',
+      '/clients/{id}/routine-plan',
+      '/clients/{id}/routine-plan/next',
     ];
 
     for (const path of expectedPaths) {
