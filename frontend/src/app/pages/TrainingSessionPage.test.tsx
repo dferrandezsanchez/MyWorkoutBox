@@ -22,9 +22,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock('react-router-dom', () => ({ useNavigate: () => mocks.navigate, useParams: () => ({ id: 'session-1' }) }));
 vi.mock('@app/layout/AppShell', () => ({ default: ({ children }: { children: ReactNode }) => <>{children}</> }));
 vi.mock('@features/performances/components/PerformanceForm', () => ({
-  default: ({ onSave, onClose }: { onSave: (data: CreatePerformanceData) => Promise<unknown>; onClose: () => void }) => (
+  default: ({ onSave, onClose, initialRecord, copyMode, referenceLabel }: { onSave: (data: CreatePerformanceData) => Promise<unknown>; onClose: () => void; initialRecord?: PerformanceRecord; copyMode?: boolean; referenceLabel?: string }) => (
     <div>
       <span>Nueva serie abierta</span>
+      {initialRecord && <span>{`Precargado ${initialRecord.id}${copyMode ? ' (copia)' : ''}`}</span>}
+      {referenceLabel && <span>{referenceLabel}</span>}
       <button onClick={() => void onSave({ value: 10, unit: 'repetitions', date: '2026-07-01' })}>Guardar serie simulada</button>
       <button onClick={onClose}>Cerrar serie simulada</button>
     </div>
@@ -240,5 +242,66 @@ describe('TrainingSessionPage', () => {
     failed.rerender(<TrainingSessionPage />);
     expect(screen.getByText('Alex Molina')).toBeInTheDocument();
     expect(screen.queryByText('No se pudo cargar la sesión')).not.toBeInTheDocument();
+  });
+
+  describe('routine sessions and last time prefill', () => {
+    const kgRecord = (id: string, value: number, repetitions: number, seriesNumber: number): PerformanceRecord => ({
+      ...record, id, exerciseId: 'exercise-2', unit: 'kg', value, repetitions, seriesNumber,
+    });
+    const previousSeries = [kgRecord('old-1', 60, 10, 1), kgRecord('old-2', 60, 10, 2), kgRecord('old-3', 60, 10, 3)];
+
+    function routineSession(series: PerformanceRecord[]): TrainingSession {
+      return {
+        ...activeSession([{
+          id: 'item-2', sessionId: 'session-1', exerciseId: 'exercise-2', position: 1, createdAt: '2026-07-01T10:00:00.000Z', exercise: exercises[1], series, previousSeries,
+        }]),
+        routineTemplateId: 'tpl-b', routinePlanId: 'plan-1', routinePlanPosition: 2,
+      };
+    }
+
+    it('shows the routine letter and what the client did last time', () => {
+      mocks.useTrainingSession.mockReturnValue({ data: routineSession([]), isLoading: false, isError: false });
+      render(<TrainingSessionPage />);
+
+      expect(screen.getByText('Rutina B')).toBeInTheDocument();
+      expect(screen.getByText('Última vez · 3×10 · 60 kg')).toBeInTheDocument();
+    });
+
+    it('prefills the first series with the same series of last time without saving it', async () => {
+      const user = userEvent.setup();
+      mocks.useTrainingSession.mockReturnValue({ data: routineSession([]), isLoading: false, isError: false });
+      render(<TrainingSessionPage />);
+
+      await user.click(screen.getByRole('button', { name: /Añadir serie/ }));
+      expect(screen.getByText('Precargado old-1 (copia)')).toBeInTheDocument();
+      expect(screen.getByText('Última vez, serie 1 · 60 kg × 10')).toBeInTheDocument();
+      expect(mocks.createSeries).not.toHaveBeenCalled();
+    });
+
+    it("copies today's last series afterwards and keeps last time as reference", async () => {
+      const user = userEvent.setup();
+      mocks.useTrainingSession.mockReturnValue({ data: routineSession([kgRecord('today-1', 62.5, 10, 1)]), isLoading: false, isError: false });
+      render(<TrainingSessionPage />);
+
+      await user.click(screen.getByRole('button', { name: /Añadir serie/ }));
+      expect(screen.getByText('Precargado today-1 (copia)')).toBeInTheDocument();
+      expect(screen.getByText('Última vez, serie 2 · 60 kg × 10')).toBeInTheDocument();
+    });
+
+    it('hides the last time line on completed sessions and without history', () => {
+      mocks.useTrainingSession.mockReturnValue({
+        data: { ...routineSession([kgRecord('today-1', 62.5, 10, 1)]), status: 'COMPLETED', completedAt: '2026-07-01T11:00:00.000Z' },
+        isLoading: false,
+        isError: false,
+      });
+      const completed = render(<TrainingSessionPage />);
+      expect(screen.queryByText(/Última vez/)).not.toBeInTheDocument();
+      completed.unmount();
+
+      mocks.useTrainingSession.mockReturnValue({ data: sessionWithSeries, isLoading: false, isError: false });
+      render(<TrainingSessionPage />);
+      expect(screen.queryByText(/Última vez/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Rutina/)).not.toBeInTheDocument();
+    });
   });
 });

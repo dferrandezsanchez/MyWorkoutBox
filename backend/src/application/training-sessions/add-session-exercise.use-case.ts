@@ -1,6 +1,7 @@
 import type { ExerciseRepository, TrainingSessionRepository } from '../../domain/repositories';
 import { Status } from '../../domain/shared/enums';
 import { badRequest, conflict, notFound } from '../../domain/shared/errors';
+import { loadSessionDetail } from './session-detail';
 import { requireOwnedActiveSession } from './session-rules';
 
 export class AddSessionExerciseUseCase {
@@ -15,6 +16,6 @@ export class AddSessionExerciseUseCase {
     if (exercise.status !== Status.ACTIVE) throw badRequest('El ejercicio no está activo');
     if (session.exercises.some((item) => item.exerciseId === exerciseId)) throw conflict('El ejercicio ya está en la sesión');
     await this.sessions.addExercise(sessionId, exerciseId);
-    return this.sessions.findDetail(tenantId, sessionId);
+    return loadSessionDetail(this.sessions, tenantId, sessionId);
   }
 }

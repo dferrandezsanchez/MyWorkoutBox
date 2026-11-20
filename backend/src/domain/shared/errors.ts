@@ -41,3 +41,10 @@ export function conflict(message: string): ApplicationError {
 export function internal(message = 'Error interno del servidor'): ApplicationError {
   return new ApplicationError('INTERNAL', message);
 }
+
+export const LAST_ADMIN_MESSAGE = 'El centro necesita al menos un administrador activo';
+
+/** A change would leave a tenant without any active admin. */
+export function lastAdminConflict(): ApplicationError {
+  return conflict(LAST_ADMIN_MESSAGE);
+}

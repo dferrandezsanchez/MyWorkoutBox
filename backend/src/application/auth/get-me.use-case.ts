@@ -1,6 +1,7 @@
 import { notFound } from '../../domain/shared/errors';
 import type { MembershipRepository, UserRepository } from '../../domain/repositories';
 import type { PublicUser } from './auth-dtos';
+import { canManageRoutines } from './auth-dtos';
 
 export class GetMeUseCase {
   constructor(
@@ -21,6 +22,7 @@ export class GetMeUseCase {
       name: user.name,
       email: user.email,
       role: membership.role,
+      canManageRoutines: canManageRoutines(membership),
       tenantId,
       organizationId,
     };

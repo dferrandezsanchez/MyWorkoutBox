@@ -5,3 +5,4 @@ export * from './reset-trainer-password.use-case';
 export * from './set-trainer-active.use-case';
 export * from './trainer-inputs';
 export * from './update-trainer.use-case';
+export * from './update-staff-access.use-case';

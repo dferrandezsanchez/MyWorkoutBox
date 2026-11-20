@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import type { AppContainer } from '../../../main/container';
-import { Role } from '../../../domain/shared/enums';
 import { authenticate } from '../middleware/authenticate';
-import { authorize } from '../middleware/authorize';
+import { authorizeAdmin } from '../middleware/authorize';
 
 export function createAuthRouter(container: AppContainer): Router {
   const router = Router();
   const auth = authenticate(container.tokenService);
+  const adminOnly = authorizeAdmin(container);
 
   router.post('/login', async (req, res, next): Promise<void> => {
     try {
@@ -63,7 +63,7 @@ export function createAuthRouter(container: AppContainer): Router {
     }
   });
 
-  router.put('/tenant', auth, authorize(Role.ADMIN), async (req, res, next): Promise<void> => {
+  router.put('/tenant', auth, adminOnly, async (req, res, next): Promise<void> => {
     try {
       res.status(200).json(await container.auth.updateCurrentTenant.execute(req.user!.tenantId, req.body));
     } catch (err) {

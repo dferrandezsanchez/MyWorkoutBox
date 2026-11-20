@@ -2,7 +2,7 @@ import { conflict } from '../../domain/shared/errors';
 import type { MembershipRepository, UserRepository } from '../../domain/repositories';
 import type { TrainerUser, UpdateTrainerInput } from './trainer-inputs';
 import { normalizeEmail, normalizeName } from './trainer-inputs';
-import { GetTrainerUseCase } from './get-trainer.use-case';
+import { assertNotSelfDeactivation, GetTrainerUseCase } from './get-trainer.use-case';
 
 export class UpdateTrainerUseCase {
   private readonly getTrainer: GetTrainerUseCase;
@@ -14,7 +14,8 @@ export class UpdateTrainerUseCase {
     this.getTrainer = new GetTrainerUseCase(memberships);
   }
 
-  async execute(tenantId: string, id: string, data: UpdateTrainerInput): Promise<TrainerUser> {
+  async execute(tenantId: string, id: string, data: UpdateTrainerInput, actorUserId?: string): Promise<TrainerUser> {
+    if (data.active !== undefined) assertNotSelfDeactivation(actorUserId, id, Boolean(data.active));
     await this.getTrainer.execute(tenantId, id);
     const updateData: { name?: string; email?: string; active?: boolean } = {};
 
@@ -25,8 +26,9 @@ export class UpdateTrainerUseCase {
     }
     if (data.active !== undefined) updateData.active = Boolean(data.active);
 
-    await this.users.update(id, updateData);
+    // Membership first: it enforces the last-admin rule and aborts before touching the user.
     if (data.active !== undefined) await this.memberships.updateActive(id, tenantId, Boolean(data.active));
+    await this.users.update(id, updateData);
     return this.getTrainer.execute(tenantId, id);
   }
 

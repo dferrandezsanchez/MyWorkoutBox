@@ -29,6 +29,8 @@ function expressOperations(): string[] {
     ['trainers.routes.ts', '/trainers'],
     ['dashboard.routes.ts', '/dashboard'],
     ['training-sessions.routes.ts', '/training-sessions'],
+    ['routines.routes.ts', '/routines'],
+    ['routine-programs.routes.ts', '/routine-programs'],
     ['performances.routes.ts', ''],
   ];
   const operations = ['GET /health'];
@@ -87,6 +89,7 @@ describe('OpenAPI documentation', () => {
       '/clients/{clientId}/current-performances',
       '/clients/{clientId}/exercises/{exerciseId}/performances',
       '/clients/{id}/training-sessions',
+      '/clients/{id}/session-options',
       '/training-sessions',
       '/training-sessions/active',
       '/training-sessions/{id}',
@@ -96,6 +99,15 @@ describe('OpenAPI documentation', () => {
       '/trainers',
       '/trainers/{id}',
       '/trainers/{id}/password',
+      '/routines',
+      '/routines/{id}',
+      '/routines/{id}/status',
+      '/clients/{id}/routine-plan',
+      '/clients/{id}/routine-plan/next',
+      '/routine-programs',
+      '/routine-programs/{id}',
+      '/routine-programs/{id}/status',
+      '/routine-programs/{id}/clients',
     ];
 
     for (const path of expectedPaths) {
@@ -119,6 +131,35 @@ describe('OpenAPI documentation', () => {
     expect(body.components.schemas.ExerciseCreateInput.allOf[1].required).toEqual(['name', 'category', 'defaultUnit']);
     expect(body.components.schemas.TrainerCreateInput.allOf[1].required).toEqual(['name', 'email', 'password']);
     expect(body.components.schemas.TrainerInput.properties).not.toHaveProperty('password');
+  });
+
+  it('documents staff access management and the effective routine permission', async () => {
+    const { body } = await request(app).get('/openapi.json').expect(200);
+    const operation = body.paths['/trainers/{id}/access'].patch;
+
+    expect(operation.operationId).toBe('updateStaffAccess');
+    expect(operation['x-required-roles']).toEqual(['ADMIN']);
+    expect(operation.responses).toHaveProperty('409');
+    expect(body.components.schemas.StaffAccessInput.properties).toHaveProperty('role');
+    expect(body.components.schemas.StaffAccessInput.properties).toHaveProperty('canManageRoutines');
+    expect(body.components.schemas.Trainer.required).toContain('canManageRoutines');
+    expect(body.components.schemas.User.required).toContain('canManageRoutines');
+  });
+
+  it('documents routine programs and plans that follow them', async () => {
+    const { body } = await request(app).get('/openapi.json').expect(200);
+    expect(body.paths['/routine-programs'].post['x-required-permission']).toBe('canManageRoutines');
+    expect(body.paths['/routine-programs/{id}'].put['x-required-permission']).toBe('canManageRoutines');
+    expect(body.paths['/routine-programs/{id}/status'].patch['x-required-permission']).toBe('canManageRoutines');
+    expect(body.paths['/routine-programs/{id}'].get).not.toHaveProperty('x-required-permission');
+    expect(body.paths['/routine-programs/{id}/clients'].get.operationId).toBe('listRoutineProgramClients');
+    expect(body.components.schemas.RoutineProgramInput.required).toEqual(['name', 'templateIds']);
+    expect(body.components.schemas.ClientRoutinePlan.properties).toHaveProperty('programId');
+    expect(body.components.schemas.ClientRoutinePlan.properties).toHaveProperty('program');
+    expect(body.components.schemas.ClientRoutinePlanInput.oneOf).toEqual([
+      { $ref: '#/components/schemas/ClientRoutinePlanProgramInput' },
+      { $ref: '#/components/schemas/ClientRoutinePlanCustomInput' },
+    ]);
   });
 
   it('matches every Express API route and method', async () => {

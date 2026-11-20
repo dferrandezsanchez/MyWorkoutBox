@@ -1,5 +1,6 @@
 import {
   ChangePasswordUseCase,
+  GetActiveRoleUseCase,
   GetCurrentTenantUseCase,
   GetMeUseCase,
   LoginUseCase,
@@ -39,11 +40,29 @@ import {
   GetPerformanceHistoryUseCase,
 } from '../application/performances';
 import {
+  AssignClientRoutinePlanUseCase,
+  CreateRoutineProgramUseCase,
+  CreateRoutineTemplateUseCase,
+  GetClientRoutinePlanUseCase,
+  GetRoutineProgramUseCase,
+  GetRoutineTemplateUseCase,
+  ListRoutineProgramClientsUseCase,
+  ListRoutineProgramsUseCase,
+  ListRoutineTemplatesUseCase,
+  RemoveClientRoutinePlanUseCase,
+  SetClientRoutinePlanNextUseCase,
+  SetRoutineProgramStatusUseCase,
+  SetRoutineTemplateStatusUseCase,
+  UpdateRoutineProgramUseCase,
+  UpdateRoutineTemplateUseCase,
+} from '../application/routines';
+import {
   CreateTrainerUseCase,
   GetTrainerUseCase,
   ListTrainersUseCase,
   ResetTrainerPasswordUseCase,
   SetTrainerActiveUseCase,
+  UpdateStaffAccessUseCase,
   UpdateTrainerUseCase,
 } from '../application/trainers';
 import {
@@ -53,6 +72,7 @@ import {
   DeleteSessionSeriesUseCase,
   DiscardTrainingSessionUseCase,
   GetActiveTrainingSessionUseCase,
+  GetSessionOptionsUseCase,
   GetTrainingSessionUseCase,
   ListClientTrainingSessionsUseCase,
   ListTrainerTrainingSessionsUseCase,
@@ -70,6 +90,11 @@ import {
   PrismaTrainingSessionRepository,
   PrismaUserRepository,
 } from '../infrastructure/repositories/prisma-repositories';
+import {
+  PrismaClientRoutinePlanRepository,
+  PrismaRoutineProgramRepository,
+  PrismaRoutineTemplateRepository,
+} from '../infrastructure/repositories/prisma-routine-repositories';
 import { PrismaDashboardRepository } from '../infrastructure/repositories/prisma-dashboard-repository';
 import { PrismaMeasurementRepository } from '../infrastructure/repositories/prisma-measurement-repository';
 import { BcryptPasswordHasher } from '../infrastructure/security/bcrypt-password-hasher';
@@ -86,6 +111,9 @@ export function createContainer() {
   const auditLogs = new PrismaAuditLogRepository();
   const trainingSessions = new PrismaTrainingSessionRepository();
   const dashboard = new PrismaDashboardRepository();
+  const routineTemplates = new PrismaRoutineTemplateRepository();
+  const routinePlans = new PrismaClientRoutinePlanRepository();
+  const routinePrograms = new PrismaRoutineProgramRepository();
   const measurements = new PrismaMeasurementRepository();
 
   const passwordHasher = new BcryptPasswordHasher();
@@ -102,6 +130,7 @@ export function createContainer() {
       changePassword: new ChangePasswordUseCase(users, passwordHasher),
       getCurrentTenant: new GetCurrentTenantUseCase(tenants),
       updateCurrentTenant: new UpdateCurrentTenantUseCase(tenants),
+      getActiveRole: new GetActiveRoleUseCase(memberships),
     },
     clients: {
       list: new ListClientsUseCase(clients),
@@ -134,6 +163,7 @@ export function createContainer() {
       update: new UpdateTrainerUseCase(users, memberships),
       setActive: new SetTrainerActiveUseCase(memberships),
       resetPassword: new ResetTrainerPasswordUseCase(users, memberships, passwordHasher),
+      updateAccess: new UpdateStaffAccessUseCase(memberships, auditLogs),
     },
     measurements: {
       list: new ListClientMeasurementsUseCase(measurements, clients, tenants),
@@ -141,11 +171,31 @@ export function createContainer() {
       update: new UpdateClientMeasurementUseCase(measurements, clients, tenants, auditLogs, clock),
       delete: new DeleteClientMeasurementUseCase(measurements, clients, tenants, auditLogs),
     },
+    routines: {
+      list: new ListRoutineTemplatesUseCase(routineTemplates),
+      get: new GetRoutineTemplateUseCase(routineTemplates),
+      create: new CreateRoutineTemplateUseCase(routineTemplates, exercises, memberships, auditLogs),
+      update: new UpdateRoutineTemplateUseCase(routineTemplates, exercises, memberships, auditLogs),
+      setStatus: new SetRoutineTemplateStatusUseCase(routineTemplates, memberships, auditLogs),
+      getClientPlan: new GetClientRoutinePlanUseCase(routinePlans, clients),
+      assignClientPlan: new AssignClientRoutinePlanUseCase(routinePlans, routineTemplates, clients, memberships, auditLogs, routinePrograms),
+      removeClientPlan: new RemoveClientRoutinePlanUseCase(routinePlans, clients, memberships, auditLogs),
+      setClientPlanNext: new SetClientRoutinePlanNextUseCase(routinePlans, clients, memberships, auditLogs),
+    },
+    routinePrograms: {
+      list: new ListRoutineProgramsUseCase(routinePrograms),
+      get: new GetRoutineProgramUseCase(routinePrograms),
+      create: new CreateRoutineProgramUseCase(routinePrograms, routineTemplates, memberships, auditLogs),
+      update: new UpdateRoutineProgramUseCase(routinePrograms, routineTemplates, routinePlans, memberships, auditLogs),
+      setStatus: new SetRoutineProgramStatusUseCase(routinePrograms, memberships, auditLogs),
+      listClients: new ListRoutineProgramClientsUseCase(routinePrograms, routinePlans, clients),
+    },
     dashboard: {
       overview: new GetDashboardOverviewUseCase(dashboard, clock),
     },
     trainingSessions: {
-      start: new StartTrainingSessionUseCase(trainingSessions, clients, auditLogs, clock),
+      start: new StartTrainingSessionUseCase(trainingSessions, clients, auditLogs, clock, routineTemplates, routinePlans),
+      options: new GetSessionOptionsUseCase(clients, routineTemplates, routinePlans),
       getActive: new GetActiveTrainingSessionUseCase(trainingSessions),
       get: new GetTrainingSessionUseCase(trainingSessions),
       listByClient: new ListClientTrainingSessionsUseCase(trainingSessions, clients),
@@ -155,7 +205,7 @@ export function createContainer() {
       createSeries: new CreateSessionSeriesUseCase(trainingSessions, performances, auditLogs, clock),
       updateSeries: new UpdateSessionSeriesUseCase(trainingSessions, performances, auditLogs, clock),
       deleteSeries: new DeleteSessionSeriesUseCase(trainingSessions, performances, auditLogs),
-      complete: new CompleteTrainingSessionUseCase(trainingSessions, auditLogs, clock),
+      complete: new CompleteTrainingSessionUseCase(trainingSessions, auditLogs, clock, routinePlans),
       discard: new DiscardTrainingSessionUseCase(trainingSessions, auditLogs),
     },
   };

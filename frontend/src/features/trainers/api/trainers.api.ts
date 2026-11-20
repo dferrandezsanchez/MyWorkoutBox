@@ -1,5 +1,5 @@
 import apiClient from '@shared/api/http-client';
-import type { CreateTrainerData, Trainer, UpdateTrainerData } from '@shared/types/api';
+import type { CreateTrainerData, Trainer, UpdateStaffAccessData, UpdateTrainerData } from '@shared/types/api';
 
 export async function listTrainers(includeInactive = true): Promise<Trainer[]> {
   const response = await apiClient.get<Trainer[]>('/trainers', {
@@ -20,6 +20,12 @@ export async function updateTrainer(id: string, data: UpdateTrainerData): Promis
 
 export async function setTrainerActive(id: string, active: boolean): Promise<Trainer> {
   const response = await apiClient.patch<Trainer>(`/trainers/${id}/status`, { active });
+  return response.data;
+}
+
+/** Promote/demote a staff member or change the trainer routine permission (ADMIN only). */
+export async function updateStaffAccess(id: string, data: UpdateStaffAccessData): Promise<Trainer> {
+  const response = await apiClient.patch<Trainer>(`/trainers/${id}/access`, data);
   return response.data;
 }
 

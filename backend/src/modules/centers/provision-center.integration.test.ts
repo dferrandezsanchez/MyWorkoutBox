@@ -73,7 +73,9 @@ describe('center provisioning', () => {
     expect(exercises.body.map((exercise: { name: string }) => exercise.name).sort((a: string, b: string) => a.localeCompare(b)))
       .toEqual(STARTER_EXERCISES.map((exercise) => exercise.name).sort((a, b) => a.localeCompare(b)));
     expect((await request(app).get('/clients').set(auth).expect(200)).body).toEqual([]);
-    expect((await request(app).get('/trainers').set(auth).expect(200)).body).toEqual([]);
+    // The staff list includes admins: a brand-new center only has its first admin.
+    expect((await request(app).get('/trainers').set(auth).expect(200)).body.map((member: { email: string; role: string }) => [member.email, member.role]))
+      .toEqual([[input.adminEmail, Role.ADMIN]]);
 
     // Isolation: another center cannot see any of the new center's exercises, and vice versa.
     const newIds = new Set(exercises.body.map((exercise: { id: string }) => exercise.id));
@@ -144,7 +146,9 @@ describe('center provisioning', () => {
 
     const admin = await login(input.adminEmail, result.admin.generatedPassword!).expect(200);
     const team = await request(app).get('/trainers').set({ Authorization: `Bearer ${admin.body.token}` }).expect(200);
-    expect(team.body.map((member: { email: string }) => member.email)).toEqual([trainerEmail]);
+    expect(team.body.map((member: { email: string }) => member.email))
+      .toEqual(expect.arrayContaining([input.adminEmail, trainerEmail]));
+    expect(team.body).toHaveLength(2);
   });
 
   it('creates nothing when a trainer email belongs to a deactivated user', async () => {

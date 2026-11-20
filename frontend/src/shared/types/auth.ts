@@ -29,7 +29,7 @@ export interface TenantOption {
 
 export interface LoginSuccessResponse {
   token: string;
-  user: { id: string; name: string; email: string; role: Role; tenantId: string; organizationId: string };
+  user: { id: string; name: string; email: string; role: Role; tenantId: string; organizationId: string; canManageRoutines?: boolean };
   tenant: ActiveTenant;
 }
 
@@ -48,4 +48,6 @@ export interface AuthUser {
   role: Role;
   tenantId: string;
   organizationId: string;
+  /** Can create/edit routine templates and client plans (always true for ADMIN). */
+  canManageRoutines?: boolean;
 }

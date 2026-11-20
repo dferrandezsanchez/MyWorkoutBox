@@ -25,8 +25,10 @@ import type {
   User,
 } from '../../domain/shared/entities';
 import { Role, Status } from '../../domain/shared/enums';
+import { lastAdminConflict } from '../../domain/shared/errors';
 import type { Prisma } from '@prisma/client';
 import prisma from '../prisma/prisma-client';
+import { runTransaction } from '../prisma/transaction';
 
 export class PrismaUserRepository implements UserRepository {
   async findById(id: string): Promise<User | null> {
@@ -119,10 +121,7 @@ export class PrismaMembershipRepository implements MembershipRepository {
   }
 
   async updateActive(userId: string, tenantId: string, active: boolean): Promise<void> {
-    await prisma.userTenantMembership.update({
-      where: { userId_tenantId: { userId, tenantId } },
-      data: { active },
-    });
+    await updateMembershipKeepingAnAdmin(userId, tenantId, { active });
   }
 
   async findTrainers(tenantId: string, includeInactive: boolean): Promise<Membership[]> {
@@ -138,6 +137,67 @@ export class PrismaMembershipRepository implements MembershipRepository {
     });
     return memberships.map(toMembership);
   }
+
+  async findStaff(tenantId: string, includeInactive: boolean): Promise<Membership[]> {
+    const memberships = await prisma.userTenantMembership.findMany({
+      where: {
+        tenantId,
+        role: { in: [Role.ADMIN, Role.TRAINER] },
+        ...(includeInactive ? {} : { active: true }),
+        user: includeInactive ? undefined : { active: true },
+      },
+      include: { user: true },
+      orderBy: { user: { name: 'asc' } },
+    });
+    return memberships.map(toMembership);
+  }
+
+  async updateAccess(userId: string, tenantId: string, data: { role?: Role; canManageRoutines?: boolean }): Promise<Membership> {
+    return toMembership(await updateMembershipKeepingAnAdmin(userId, tenantId, data));
+  }
+
+  countActiveAdmins(tenantId: string): Promise<number> {
+    return prisma.userTenantMembership.count({
+      where: { tenantId, role: Role.ADMIN, active: true, user: { active: true } },
+    });
+  }
+}
+
+/**
+ * Updates a membership inside a transaction that locks the tenant's ADMIN memberships, so two
+ * concurrent demotions/deactivations cannot both pass. Counts use locking reads, which always see
+ * the latest committed rows. Rolls back with `lastAdminConflict()` when the tenant had active
+ * admins before the change and would have none after it.
+ */
+async function updateMembershipKeepingAnAdmin(
+  userId: string,
+  tenantId: string,
+  data: { role?: Role; canManageRoutines?: boolean; active?: boolean },
+) {
+  return runTransaction(async (tx) => {
+    const countActiveAdmins = async () => {
+      const rows = await tx.$queryRaw<Array<{ total: bigint | number }>>`
+        SELECT COUNT(*) AS total
+        FROM user_tenant_memberships m
+        JOIN users u ON u.id = m.userId
+        WHERE m.tenantId = ${tenantId} AND m.role = ${Role.ADMIN} AND m.active = true AND u.active = true
+        FOR UPDATE`;
+      return Number(rows[0]?.total ?? 0);
+    };
+
+    await tx.$queryRaw`
+      SELECT id FROM user_tenant_memberships
+      WHERE tenantId = ${tenantId} AND (role = ${Role.ADMIN} OR userId = ${userId})
+      FOR UPDATE`;
+    const before = await countActiveAdmins();
+    const membership = await tx.userTenantMembership.update({
+      where: { userId_tenantId: { userId, tenantId } },
+      data,
+      include: { user: true },
+    });
+    if (before > 0 && (await countActiveAdmins()) === 0) throw lastAdminConflict();
+    return membership;
+  });
 }
 
 export class PrismaTenantRepository implements TenantRepository {
@@ -374,8 +434,44 @@ export class PrismaTrainingSessionRepository implements TrainingSessionRepositor
     return sessions.map(toTrainingSessionDetail);
   }
 
-  async create(data: { tenantId: string; clientId: string; trainerId: string; startedAt: Date }): Promise<TrainingSession> {
+  async create(data: {
+    tenantId: string;
+    clientId: string;
+    trainerId: string;
+    startedAt: Date;
+    routineTemplateId?: string;
+    routinePlanId?: string;
+    routinePlanPosition?: number;
+  }): Promise<TrainingSession> {
     return toTrainingSession(await prisma.trainingSession.create({ data }));
+  }
+
+  async findPreviousSeries(
+    tenantId: string,
+    clientId: string,
+    exerciseId: string,
+    excludeSessionId?: string,
+  ): Promise<PerformanceRecordWithTrainerName[]> {
+    const previous = await prisma.trainingSessionExercise.findFirst({
+      where: {
+        exerciseId,
+        series: { some: {} },
+        session: {
+          tenantId,
+          clientId,
+          status: 'COMPLETED',
+          ...(excludeSessionId ? { id: { not: excludeSessionId } } : {}),
+        },
+      },
+      orderBy: { session: { startedAt: 'desc' } },
+      include: {
+        series: {
+          orderBy: { seriesNumber: 'asc' },
+          include: { trainer: { select: { name: true } } },
+        },
+      },
+    });
+    return previous ? previous.series.map(toPerformanceWithTrainerName) : [];
   }
 
   async complete(id: string, completedAt: Date, notes?: string): Promise<TrainingSession> {
@@ -455,6 +551,7 @@ function toMembership(membership: {
   userId: string;
   tenantId: string;
   role: string;
+  canManageRoutines: boolean;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -475,6 +572,7 @@ function toMembership(membership: {
     userId: membership.userId,
     tenantId: membership.tenantId,
     role: membership.role as Role,
+    canManageRoutines: membership.canManageRoutines,
     active: membership.active,
     createdAt: membership.createdAt,
     updatedAt: membership.updatedAt,
@@ -503,7 +601,7 @@ function toClient(client: {
   return { ...client, status: client.status as Status };
 }
 
-function toExercise(exercise: {
+export function toExercise(exercise: {
   id: string;
   tenantId: string;
   name: string;
@@ -556,6 +654,9 @@ function toTrainingSession(session: {
   startedAt: Date;
   completedAt: Date | null;
   notes: string | null;
+  routineTemplateId: string | null;
+  routinePlanId: string | null;
+  routinePlanPosition: number | null;
   createdAt: Date;
   updatedAt: Date;
 }): TrainingSession {

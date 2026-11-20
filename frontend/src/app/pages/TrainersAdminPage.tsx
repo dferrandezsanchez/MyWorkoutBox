@@ -1,16 +1,18 @@
 import { FormEvent, useState } from 'react';
-import { Eye, EyeOff, KeyRound, Pencil, Power, UserCheck, UserCog, UserX } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, Pencil, Power, ShieldCheck, ShieldOff, UserCheck, UserCog, UserX } from 'lucide-react';
 import {
   useCreateTrainer,
   useResetTrainerPassword,
   useSetTrainerActive,
   useTrainers,
+  useUpdateStaffAccess,
   useUpdateTrainer,
 } from '@features/trainers/hooks/useTrainers';
+import { getAuthUser } from '@features/auth/model/auth-store';
 import type { Trainer } from '@shared/types/api';
 import AppShell from '@app/layout/AppShell';
 import { AdminManagementHeader, IconAction, ManagementSection, ManagementSummary, RowActionsMenu, RowIcon } from '@app/components/AdminManagement';
-import { Button, Dialog, EmptyState, StatusBadge, TextInput } from '@shared/components/ui';
+import { Button, ConfirmDialog, Dialog, EmptyState, StatusBadge, TextInput } from '@shared/components/ui';
 
 interface TrainerFormState {
   name: string;
@@ -50,12 +52,63 @@ function getErrorMessage(error: unknown): string {
   return 'No se pudo completar la operación';
 }
 
+function RoleBadge({ role }: { role: Trainer['role'] }) {
+  const admin = role === 'ADMIN';
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
+        admin
+          ? 'bg-white/[0.06] text-text-primary ring-white/[0.14]'
+          : 'bg-white/[0.03] text-text-secondary ring-white/[0.08]'
+      }`}
+    >
+      {admin && <ShieldCheck size={12} aria-hidden="true" />}
+      {admin ? 'Administrador' : 'Entrenador'}
+    </span>
+  );
+}
+
+function RoutinePermissionSwitch({
+  trainer,
+  pending,
+  onChange,
+}: {
+  trainer: Trainer;
+  pending: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  const admin = trainer.role === 'ADMIN';
+  const checked = admin || Boolean(trainer.canManageRoutines);
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={`Gestiona rutinas: ${trainer.name}`}
+      title={admin ? 'Los administradores siempre gestionan rutinas' : undefined}
+      disabled={admin || pending}
+      onClick={() => onChange(!checked)}
+      className="inline-flex min-h-[28px] items-center gap-2 rounded-full pr-1 text-xs font-medium text-text-secondary transition-opacity duration-150 disabled:cursor-not-allowed disabled:opacity-60 focus-ring"
+    >
+      <span
+        aria-hidden="true"
+        className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-150 ${checked ? 'bg-primary' : 'bg-white/15'}`}
+      >
+        <span className={`h-3 w-3 rounded-full bg-white shadow transition-transform duration-150 ${checked ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+      </span>
+      Gestiona rutinas
+    </button>
+  );
+}
+
 export default function TrainersAdminPage() {
   const { data: trainers, isLoading, isError } = useTrainers(true);
   const createMutation = useCreateTrainer();
   const updateMutation = useUpdateTrainer();
   const activeMutation = useSetTrainerActive();
   const resetPasswordMutation = useResetTrainerPassword();
+  const accessMutation = useUpdateStaffAccess();
+  const currentUserId = getAuthUser()?.id;
 
   const [showCreate, setShowCreate] = useState(false);
   const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null);
@@ -65,6 +118,8 @@ export default function TrainersAdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
+  const [roleTarget, setRoleTarget] = useState<Trainer | null>(null);
+  const [accessError, setAccessError] = useState<string | null>(null);
 
   const activeCount = trainers?.filter((trainer) => trainer.active).length ?? 0;
   const inactiveCount = trainers?.filter((trainer) => !trainer.active).length ?? 0;
@@ -143,10 +198,28 @@ export default function TrainersAdminPage() {
     }
   };
 
+  const isAccessPending = (trainer: Trainer) =>
+    accessMutation.isPending && accessMutation.variables?.id === trainer.id;
+
+  const changeAccess = async (trainer: Trainer, data: { role?: Trainer['role']; canManageRoutines?: boolean }) => {
+    setAccessError(null);
+    try {
+      await accessMutation.mutateAsync({ id: trainer.id, data });
+    } catch (err) {
+      setAccessError(getErrorMessage(err));
+    }
+  };
+
+  const confirmRoleChange = async () => {
+    if (!roleTarget) return;
+    await changeAccess(roleTarget, { role: roleTarget.role === 'ADMIN' ? 'TRAINER' : 'ADMIN' });
+    setRoleTarget(null);
+  };
+
   if (isLoading) {
     return (
       <AppShell>
-        <p className="text-text-secondary">Cargando entrenadores...</p>
+        <p className="text-text-secondary">Cargando equipo...</p>
       </AppShell>
     );
   }
@@ -154,7 +227,7 @@ export default function TrainersAdminPage() {
   if (isError) {
     return (
       <AppShell>
-        <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-red-200">Error al cargar entrenadores</p>
+        <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-red-200">Error al cargar el equipo</p>
       </AppShell>
     );
   }
@@ -164,8 +237,8 @@ export default function TrainersAdminPage() {
       <div className="mx-auto max-w-6xl space-y-6">
       <AdminManagementHeader
         eyebrow="Gestión del centro"
-        title="Entrenadores"
-        description="Gestiona accesos del equipo técnico que actualiza las marcas de clientes."
+        title="Equipo"
+        description="Gestiona los accesos y permisos de administradores y entrenadores."
         actionLabel="Nuevo entrenador"
         onAction={openCreate}
       />
@@ -176,21 +249,37 @@ export default function TrainersAdminPage() {
         { label: 'Inactivos', value: inactiveCount, icon: UserX, tone: 'muted' },
       ]} />
 
+      {accessError && (
+        <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-red-200">{accessError}</p>
+      )}
+
       <ManagementSection title="Equipo técnico" meta={`${trainers?.length ?? 0} accesos`}>
         {!trainers || trainers.length === 0 ? (
           <div className="p-4">
             <EmptyState title="No hay entrenadores" description="Crea el primer acceso para el equipo técnico." />
           </div>
         ) : (
-          trainers.map((trainer) => (
+          trainers.map((trainer) => {
+            const isSelf = trainer.id === currentUserId;
+            const isAdmin = trainer.role === 'ADMIN';
+            return (
             <div key={trainer.id} className="flex items-center gap-2 py-2.5 pl-3 pr-2 transition-colors duration-150 hover:bg-white/[0.02] sm:gap-3 sm:px-5 sm:py-3">
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <RowIcon icon={UserCog} tone={trainer.active ? 'primary' : 'muted'} />
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-text-primary">{trainer.name}</p>
+                  <p className="truncate font-semibold text-text-primary">
+                    {trainer.name}
+                    {isSelf && <span className="ml-1.5 text-xs font-medium text-text-muted">(tú)</span>}
+                  </p>
                   <p className="truncate text-sm text-text-secondary">{trainer.email}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <RoleBadge role={trainer.role} />
                     <StatusBadge status={trainer.active ? 'ACTIVE' : 'INACTIVE'} />
+                    <RoutinePermissionSwitch
+                      trainer={trainer}
+                      pending={isAccessPending(trainer)}
+                      onChange={(value) => void changeAccess(trainer, { canManageRoutines: value })}
+                    />
                     <span className="tabular text-xs text-text-muted">Alta {new Date(trainer.createdAt).toLocaleDateString('es-ES')}</span>
                   </div>
                 </div>
@@ -201,17 +290,25 @@ export default function TrainersAdminPage() {
                   subject={trainer.name}
                   actions={[
                     { label: 'Cambiar contraseña', icon: KeyRound, onSelect: () => { setPasswordTrainer(trainer); setPassword(''); setError(null); } },
-                    {
-                      label: trainer.active ? 'Desactivar acceso' : 'Activar acceso',
-                      icon: Power,
-                      tone: trainer.active ? 'danger' : 'default',
-                      onSelect: () => activeMutation.mutate({ id: trainer.id, active: !trainer.active }),
-                    },
+                    ...(isSelf ? [] : [
+                      {
+                        label: isAdmin ? 'Quitar administrador' : 'Hacer administrador',
+                        icon: isAdmin ? ShieldOff : ShieldCheck,
+                        onSelect: () => { setAccessError(null); setRoleTarget(trainer); },
+                      },
+                      {
+                        label: trainer.active ? 'Desactivar acceso' : 'Activar acceso',
+                        icon: Power,
+                        tone: trainer.active ? 'danger' as const : 'default' as const,
+                        onSelect: () => activeMutation.mutate({ id: trainer.id, active: !trainer.active }),
+                      },
+                    ]),
                   ]}
                 />
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </ManagementSection>
 
@@ -314,6 +411,20 @@ export default function TrainersAdminPage() {
             </div>
           </form>
         </Dialog>
+      )}
+
+      {roleTarget && (
+        <ConfirmDialog
+          title={roleTarget.role === 'ADMIN' ? 'Quitar administrador' : 'Hacer administrador'}
+          description={roleTarget.role === 'ADMIN'
+            ? `${roleTarget.name} pasará a ser entrenador y dejará de gestionar el centro.`
+            : `${roleTarget.name} podrá gestionar el centro: equipo, clientes, ejercicios y ajustes.`}
+          confirmLabel={roleTarget.role === 'ADMIN' ? 'Quitar administrador' : 'Hacer administrador'}
+          tone={roleTarget.role === 'ADMIN' ? 'danger' : 'primary'}
+          pending={accessMutation.isPending}
+          onConfirm={() => void confirmRoleChange()}
+          onCancel={() => setRoleTarget(null)}
+        />
       )}
 
       {passwordTrainer && (

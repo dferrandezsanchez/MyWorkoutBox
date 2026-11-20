@@ -60,6 +60,8 @@ export const openApiDocument: OpenApiDocument = {
     { name: 'Training Sessions', description: 'Trainer sessions, exercises, and series' },
     { name: 'Trainers', description: 'Trainer management' },
     { name: 'Dashboard', description: 'Center activity overview for administrators' },
+    { name: 'Routines', description: 'Routine templates and client routine plans (A→B→C)' },
+    { name: 'Routine Programs', description: 'Reusable sequences of routine templates that many clients can follow live' },
   ],
   components: {
     securitySchemes: {
@@ -92,12 +94,13 @@ export const openApiDocument: OpenApiDocument = {
       },
       User: {
         type: 'object',
-        required: ['id', 'name', 'email', 'role', 'tenantId', 'organizationId'],
+        required: ['id', 'name', 'email', 'role', 'canManageRoutines', 'tenantId', 'organizationId'],
         properties: {
           id: { type: 'string' },
           name: { type: 'string' },
           email: { type: 'string', format: 'email' },
           role: { $ref: '#/components/schemas/Role' },
+          canManageRoutines: { type: 'boolean', description: 'Effective routine permission in the current tenant. Always true for ADMIN.' },
           tenantId: { type: 'string' },
           organizationId: { type: 'string' },
         },
@@ -313,6 +316,11 @@ export const openApiDocument: OpenApiDocument = {
           createdAt: { type: 'string', format: 'date-time' },
           exercise: { $ref: '#/components/schemas/Exercise' },
           series: { type: 'array', items: { $ref: '#/components/schemas/PerformanceRecord' } },
+          previousSeries: {
+            type: 'array',
+            description: "Series of this exercise in the client's last completed session (excluding this one). Only used to prefill the series form; never stored automatically.",
+            items: { $ref: '#/components/schemas/PerformanceRecord' },
+          },
         },
       },
       TrainingSession: {
@@ -328,10 +336,49 @@ export const openApiDocument: OpenApiDocument = {
           startedAt: { type: 'string', format: 'date-time' },
           completedAt: { type: 'string', format: 'date-time', nullable: true },
           notes: { type: 'string', nullable: true },
+          routineTemplateId: { type: 'string', nullable: true, description: 'Routine template the session was started from.' },
+          routinePlanId: { type: 'string', nullable: true, description: 'Client routine plan the session was started from (mode "plan").' },
+          routinePlanPosition: { type: 'integer', minimum: 1, nullable: true, description: 'Plan position (A=1, B=2, ...) covered by the session.' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
           client: { $ref: '#/components/schemas/Client' },
           exercises: { type: 'array', items: { $ref: '#/components/schemas/TrainingSessionExercise' } },
+        },
+      },
+      StartTrainingSessionInput: {
+        type: 'object',
+        required: ['clientId'],
+        properties: {
+          clientId: { type: 'string' },
+          mode: {
+            type: 'string',
+            enum: ['free', 'plan', 'template'],
+            default: 'free',
+            description: 'free: empty session. plan: next routine of the client active plan (advances on completion). template: any active routine template.',
+          },
+          templateId: { type: 'string', description: 'Required when mode is "template".' },
+        },
+      },
+      SessionStartOptions: {
+        type: 'object',
+        required: ['plan', 'nextRoutine', 'templates'],
+        properties: {
+          plan: {
+            nullable: true,
+            description: 'Client active routine plan (A -> B -> C).',
+            allOf: [{ $ref: '#/components/schemas/ClientRoutinePlan' }],
+          },
+          nextRoutine: {
+            type: 'object',
+            nullable: true,
+            description: 'Routine that corresponds next in the plan, when it is active.',
+            required: ['position', 'template'],
+            properties: {
+              position: { type: 'integer', minimum: 1 },
+              template: { $ref: '#/components/schemas/RoutineTemplate' },
+            },
+          },
+          templates: { type: 'array', description: 'Active routine templates of the center.', items: { $ref: '#/components/schemas/RoutineTemplate' } },
         },
       },
       ClientExport: {
@@ -495,12 +542,14 @@ export const openApiDocument: OpenApiDocument = {
       },
       Trainer: {
         type: 'object',
-        required: ['id', 'name', 'email', 'role', 'active'],
+        description: 'Staff member of the center (ADMIN or TRAINER membership).',
+        required: ['id', 'name', 'email', 'role', 'canManageRoutines', 'active'],
         properties: {
           id: { type: 'string' },
           name: { type: 'string' },
           email: { type: 'string', format: 'email' },
           role: { $ref: '#/components/schemas/Role' },
+          canManageRoutines: { type: 'boolean', description: 'Effective routine permission. Always true for ADMIN.' },
           active: { type: 'boolean' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
@@ -514,6 +563,14 @@ export const openApiDocument: OpenApiDocument = {
           active: { type: 'boolean' },
         },
       },
+      StaffAccessInput: {
+        type: 'object',
+        minProperties: 1,
+        properties: {
+          role: { $ref: '#/components/schemas/Role' },
+          canManageRoutines: { type: 'boolean' },
+        },
+      },
       TrainerCreateInput: {
         allOf: [
           { $ref: '#/components/schemas/TrainerInput' },
@@ -523,6 +580,183 @@ export const openApiDocument: OpenApiDocument = {
             properties: { password: { type: 'string', minLength: 8 } },
           },
         ],
+      },
+      RoutineTemplateExercise: {
+        type: 'object',
+        required: ['id', 'templateId', 'exerciseId', 'position', 'targetSets', 'targetReps', 'notes', 'exercise'],
+        properties: {
+          id: { type: 'string' },
+          templateId: { type: 'string' },
+          exerciseId: { type: 'string' },
+          position: { type: 'integer', minimum: 1, description: '1-based order inside the template.' },
+          targetSets: { type: 'integer', minimum: 1, maximum: 20, nullable: true },
+          targetReps: { type: 'string', maxLength: 64, nullable: true, example: '8-10' },
+          notes: { type: 'string', nullable: true },
+          createdAt: { type: 'string', format: 'date-time' },
+          exercise: { $ref: '#/components/schemas/Exercise' },
+        },
+      },
+      RoutineTemplate: {
+        type: 'object',
+        required: ['id', 'tenantId', 'name', 'notes', 'status', 'createdById', 'createdAt', 'updatedAt', 'exercises'],
+        properties: {
+          id: { type: 'string' },
+          tenantId: { type: 'string' },
+          name: { type: 'string', example: 'Rutina A · Empuje' },
+          notes: { type: 'string', nullable: true },
+          status: { $ref: '#/components/schemas/Status' },
+          createdById: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+          exercises: { type: 'array', items: { $ref: '#/components/schemas/RoutineTemplateExercise' } },
+        },
+      },
+      RoutineTemplateExerciseInput: {
+        type: 'object',
+        required: ['exerciseId'],
+        properties: {
+          exerciseId: { type: 'string', description: 'Active exercise of the current center. Cannot repeat inside a template.' },
+          targetSets: { type: 'integer', minimum: 1, maximum: 20, nullable: true },
+          targetReps: { type: 'string', maxLength: 64, nullable: true, example: '8-10' },
+          notes: { type: 'string', nullable: true },
+        },
+      },
+      RoutineTemplateInput: {
+        type: 'object',
+        required: ['name', 'exercises'],
+        properties: {
+          name: { type: 'string', maxLength: 191, example: 'Rutina A · Empuje' },
+          notes: { type: 'string', nullable: true },
+          exercises: {
+            type: 'array',
+            minItems: 1,
+            maxItems: 50,
+            description: 'Ordered list; the array order becomes the template order. Replaces the whole list on update.',
+            items: { $ref: '#/components/schemas/RoutineTemplateExerciseInput' },
+          },
+        },
+      },
+      ClientRoutinePlanItem: {
+        type: 'object',
+        required: ['id', 'planId', 'templateId', 'position', 'template'],
+        properties: {
+          id: { type: 'string' },
+          planId: { type: 'string' },
+          templateId: { type: 'string' },
+          position: { type: 'integer', minimum: 1, description: '1-based order inside the plan (A=1, B=2, ...).' },
+          template: { $ref: '#/components/schemas/RoutineTemplate' },
+        },
+      },
+      ClientRoutinePlan: {
+        type: 'object',
+        description: 'Either a custom plan with its own items, or a plan following a program live (programId set): then items are the program current items and change when the program is edited.',
+        required: ['id', 'tenantId', 'clientId', 'name', 'active', 'nextPosition', 'programId', 'createdById', 'createdAt', 'updatedAt', 'items'],
+        properties: {
+          id: { type: 'string' },
+          tenantId: { type: 'string' },
+          clientId: { type: 'string' },
+          name: { type: 'string', example: 'Serie de rutinas', description: 'For program plans, the program name when it was assigned.' },
+          active: { type: 'boolean' },
+          nextPosition: { type: 'integer', minimum: 1, description: '1-based position of the routine suggested for the next session.' },
+          programId: { type: 'string', nullable: true, description: 'Program the plan follows live. Null for custom plans.' },
+          program: {
+            type: 'object',
+            nullable: true,
+            required: ['id', 'name', 'status'],
+            properties: { id: { type: 'string' }, name: { type: 'string' }, status: { $ref: '#/components/schemas/Status' } },
+          },
+          createdById: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+          items: { type: 'array', items: { $ref: '#/components/schemas/ClientRoutinePlanItem' } },
+        },
+      },
+      ClientRoutinePlanInput: {
+        description: 'Follow a program (programId) or define a custom sequence (templateIds). Sending both is rejected with 400.',
+        oneOf: [
+          { $ref: '#/components/schemas/ClientRoutinePlanProgramInput' },
+          { $ref: '#/components/schemas/ClientRoutinePlanCustomInput' },
+        ],
+      },
+      ClientRoutinePlanProgramInput: {
+        type: 'object',
+        required: ['programId'],
+        properties: {
+          programId: { type: 'string', description: 'Active program of the center. The plan takes its name and follows its items live.' },
+          nextPosition: { type: 'integer', minimum: 1, default: 1, description: 'Must be within 1..program items length.' },
+        },
+      },
+      ClientRoutinePlanCustomInput: {
+        type: 'object',
+        required: ['templateIds'],
+        properties: {
+          name: { type: 'string', maxLength: 191, description: 'Defaults to "Serie de rutinas" when empty.' },
+          templateIds: {
+            type: 'array',
+            minItems: 1,
+            maxItems: 10,
+            description: 'Ordered active templates of the center. The same template may repeat (A→B→A).',
+            items: { type: 'string' },
+          },
+          nextPosition: { type: 'integer', minimum: 1, default: 1, description: 'Must be within 1..templateIds.length.' },
+        },
+      },
+      RoutineProgramItem: {
+        type: 'object',
+        required: ['id', 'programId', 'templateId', 'position', 'template'],
+        properties: {
+          id: { type: 'string' },
+          programId: { type: 'string' },
+          templateId: { type: 'string' },
+          position: { type: 'integer', minimum: 1, description: '1-based order inside the program (A=1, B=2, ...).' },
+          template: { $ref: '#/components/schemas/RoutineTemplate' },
+        },
+      },
+      RoutineProgram: {
+        type: 'object',
+        required: ['id', 'tenantId', 'name', 'notes', 'status', 'createdById', 'createdAt', 'updatedAt', 'items', 'activeClientCount'],
+        properties: {
+          id: { type: 'string' },
+          tenantId: { type: 'string' },
+          name: { type: 'string', example: 'Fuerza 3 días' },
+          notes: { type: 'string', nullable: true },
+          status: { $ref: '#/components/schemas/Status' },
+          createdById: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+          items: { type: 'array', items: { $ref: '#/components/schemas/RoutineProgramItem' } },
+          activeClientCount: { type: 'integer', minimum: 0, description: 'Active client plans following the program.' },
+        },
+      },
+      RoutineProgramInput: {
+        type: 'object',
+        required: ['name', 'templateIds'],
+        properties: {
+          name: { type: 'string', maxLength: 191, example: 'Fuerza 3 días' },
+          notes: { type: 'string', maxLength: 2000, nullable: true },
+          templateIds: {
+            type: 'array',
+            minItems: 1,
+            maxItems: 10,
+            description: 'Ordered active templates of the center. The same template may repeat. Replaces the whole list on update; followers whose next routine falls beyond the new length restart at 1.',
+            items: { type: 'string' },
+          },
+        },
+      },
+      RoutineProgramClient: {
+        type: 'object',
+        required: ['clientId', 'firstName', 'lastName', 'nextPosition'],
+        properties: {
+          clientId: { type: 'string' },
+          firstName: { type: 'string' },
+          lastName: { type: 'string' },
+          nextPosition: { type: 'integer', minimum: 1 },
+        },
+      },
+      ClientRoutinePlanNextInput: {
+        type: 'object',
+        required: ['nextPosition'],
+        properties: { nextPosition: { type: 'integer', minimum: 1 } },
       },
       StatusInput: {
         type: 'object',
@@ -868,6 +1102,13 @@ Object.assign(openApiDocument.paths, {
       responses: { 200: { description: 'Training sessions', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/TrainingSession' } } } } }, ...authResponses },
     },
   },
+  '/clients/{id}/session-options': {
+    get: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Get the routines a session can start from for a client',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Session start options', content: { 'application/json': { schema: { $ref: '#/components/schemas/SessionStartOptions' } } } }, ...authResponses },
+    },
+  },
   '/training-sessions': {
     get: {
       tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'List recent completed training sessions for the current trainer',
@@ -876,8 +1117,8 @@ Object.assign(openApiDocument.paths, {
     },
     post: {
       tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Start an individual training session',
-      requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['clientId'], properties: { clientId: { type: 'string' } } } } } },
-      responses: { 201: { description: 'Training session started', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, 409: { $ref: '#/components/responses/Conflict' }, ...authResponses },
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/StartTrainingSessionInput' } } } },
+      responses: { 201: { description: 'Training session started (with routine exercises added in order when started from a routine)', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, 409: { $ref: '#/components/responses/Conflict' }, ...authResponses },
     },
   },
   '/training-sessions/active': {
@@ -978,6 +1219,20 @@ Object.assign(openApiDocument.paths, {
       responses: { 200: { description: 'Trainer updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Trainer' } } } }, ...adminResponses },
     },
   },
+  '/trainers/{id}/access': {
+    patch: {
+      tags: ['Trainers'],
+      security: [{ bearerAuth: [] }],
+      summary: 'Change a staff member role or routine permission',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/StaffAccessInput' } } } },
+      responses: {
+        200: { description: 'Staff access updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Trainer' } } } },
+        409: { $ref: '#/components/responses/Conflict' },
+        ...adminResponses,
+      },
+    },
+  },
   '/trainers/{id}/password': {
     put: {
       tags: ['Trainers'],
@@ -990,9 +1245,113 @@ Object.assign(openApiDocument.paths, {
   },
 });
 
+Object.assign(openApiDocument.paths, {
+  '/routines': {
+    get: {
+      tags: ['Routines'], security: [{ bearerAuth: [] }], summary: 'List routine templates with their ordered exercises',
+      parameters: [{ name: 'includeInactive', in: 'query', description: 'Include archived templates', schema: { type: 'boolean', default: false } }],
+      responses: { 200: { description: 'Routine templates', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/RoutineTemplate' } } } } }, ...authResponses },
+    },
+    post: {
+      tags: ['Routines'], security: [{ bearerAuth: [] }], summary: 'Create a routine template (routine managers)',
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineTemplateInput' } } } },
+      responses: { 201: { description: 'Routine template created', content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineTemplate' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...adminResponses },
+    },
+  },
+  '/routines/{id}': {
+    get: {
+      tags: ['Routines'], security: [{ bearerAuth: [] }], summary: 'Get a routine template',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Routine template', content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineTemplate' } } } }, 404: { $ref: '#/components/responses/NotFound' }, ...authResponses },
+    },
+    put: {
+      tags: ['Routines'], security: [{ bearerAuth: [] }], summary: 'Replace name, notes and ordered exercises of a routine template (routine managers)',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineTemplateInput' } } } },
+      responses: { 200: { description: 'Routine template updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineTemplate' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...adminResponses },
+    },
+  },
+  '/routines/{id}/status': {
+    patch: {
+      tags: ['Routines'], security: [{ bearerAuth: [] }], summary: 'Archive or restore a routine template (routine managers)',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/StatusInput' } } } },
+      responses: { 200: { description: 'Routine template updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineTemplate' } } } }, ...adminResponses },
+    },
+  },
+  '/clients/{id}/routine-plan': {
+    get: {
+      tags: ['Routines'], security: [{ bearerAuth: [] }], summary: 'Get the client active routine plan',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Active routine plan, or null when none is assigned', content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientRoutinePlan', nullable: true } } } }, ...authResponses },
+    },
+    put: {
+      tags: ['Routines'], security: [{ bearerAuth: [] }], summary: 'Assign or replace the client routine plan (routine managers)',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientRoutinePlanInput' } } } },
+      responses: { 200: { description: 'Routine plan assigned', content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientRoutinePlan' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...adminResponses },
+    },
+    delete: {
+      tags: ['Routines'], security: [{ bearerAuth: [] }], summary: 'Remove (deactivate) the client routine plan (routine managers)',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 204: { description: 'Routine plan removed' }, ...adminResponses },
+    },
+  },
+  '/clients/{id}/routine-plan/next': {
+    patch: {
+      tags: ['Routines'], security: [{ bearerAuth: [] }], summary: 'Choose which routine of the plan comes next (routine managers)',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientRoutinePlanNextInput' } } } },
+      responses: { 200: { description: 'Routine plan updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientRoutinePlan' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...adminResponses },
+    },
+  },
+  '/routine-programs': {
+    get: {
+      tags: ['Routine Programs'], security: [{ bearerAuth: [] }], summary: 'List routine programs with their ordered templates',
+      parameters: [{ name: 'includeInactive', in: 'query', description: 'Include archived programs', schema: { type: 'boolean', default: false } }],
+      responses: { 200: { description: 'Routine programs', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/RoutineProgram' } } } } }, ...authResponses },
+    },
+    post: {
+      tags: ['Routine Programs'], security: [{ bearerAuth: [] }], summary: 'Create a routine program (routine managers)',
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineProgramInput' } } } },
+      responses: { 201: { description: 'Routine program created', content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineProgram' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...adminResponses },
+    },
+  },
+  '/routine-programs/{id}': {
+    get: {
+      tags: ['Routine Programs'], security: [{ bearerAuth: [] }], summary: 'Get a routine program',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Routine program', content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineProgram' } } } }, 404: { $ref: '#/components/responses/NotFound' }, ...authResponses },
+    },
+    put: {
+      tags: ['Routine Programs'], security: [{ bearerAuth: [] }], summary: 'Replace name, notes and ordered templates of a routine program (routine managers)',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineProgramInput' } } } },
+      responses: { 200: { description: 'Routine program updated; clients following it see the change live', content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineProgram' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...adminResponses },
+    },
+  },
+  '/routine-programs/{id}/status': {
+    patch: {
+      tags: ['Routine Programs'], security: [{ bearerAuth: [] }], summary: 'Archive or restore a routine program (routine managers). Archived programs cannot be newly assigned; clients already following keep working.',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/StatusInput' } } } },
+      responses: { 200: { description: 'Routine program updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineProgram' } } } }, ...adminResponses },
+    },
+  },
+  '/routine-programs/{id}/clients': {
+    get: {
+      tags: ['Routine Programs'], security: [{ bearerAuth: [] }], summary: 'List clients whose active plan follows the program',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Clients following the program, sorted by name', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/RoutineProgramClient' } } } } }, 404: { $ref: '#/components/responses/NotFound' }, ...authResponses },
+    },
+  },
+});
+
 type OperationMetadata = {
   operationId: string;
   roles?: Array<'ADMIN' | 'TRAINER'>;
+  /** Extra membership permission required on top of the role (TRAINER with canManageRoutines). */
+  permission?: 'canManageRoutines';
 };
 
 const operationMetadata: Record<string, OperationMetadata> = {
@@ -1013,6 +1372,7 @@ const operationMetadata: Record<string, OperationMetadata> = {
   'GET /clients/{id}/export': { operationId: 'exportClientData', roles: ['ADMIN'] },
   'POST /clients/{id}/anonymize': { operationId: 'anonymizeClient', roles: ['ADMIN'] },
   'GET /clients/{id}/training-sessions': { operationId: 'listClientTrainingSessions', roles: ['ADMIN', 'TRAINER'] },
+  'GET /clients/{id}/session-options': { operationId: 'getSessionStartOptions', roles: ['ADMIN', 'TRAINER'] },
   'PATCH /clients/{id}/goal': { operationId: 'updateClientGoal', roles: ['ADMIN', 'TRAINER'] },
   'GET /clients/{id}/measurements': { operationId: 'listClientMeasurements', roles: ['ADMIN', 'TRAINER'] },
   'POST /clients/{id}/measurements': { operationId: 'createClientMeasurement', roles: ['ADMIN', 'TRAINER'] },
@@ -1038,12 +1398,28 @@ const operationMetadata: Record<string, OperationMetadata> = {
   'PUT /training-sessions/{id}/series/{recordId}': { operationId: 'updateTrainingSessionSeries', roles: ['ADMIN', 'TRAINER'] },
   'DELETE /training-sessions/{id}/series/{recordId}': { operationId: 'deleteTrainingSessionSeries', roles: ['ADMIN', 'TRAINER'] },
   'POST /training-sessions/{id}/complete': { operationId: 'completeTrainingSession', roles: ['ADMIN', 'TRAINER'] },
+  'GET /routines': { operationId: 'listRoutineTemplates', roles: ['ADMIN', 'TRAINER'] },
+  'POST /routines': { operationId: 'createRoutineTemplate', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'GET /routines/{id}': { operationId: 'getRoutineTemplate', roles: ['ADMIN', 'TRAINER'] },
+  'PUT /routines/{id}': { operationId: 'updateRoutineTemplate', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'PATCH /routines/{id}/status': { operationId: 'updateRoutineTemplateStatus', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'GET /clients/{id}/routine-plan': { operationId: 'getClientRoutinePlan', roles: ['ADMIN', 'TRAINER'] },
+  'PUT /clients/{id}/routine-plan': { operationId: 'assignClientRoutinePlan', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'DELETE /clients/{id}/routine-plan': { operationId: 'removeClientRoutinePlan', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'PATCH /clients/{id}/routine-plan/next': { operationId: 'setClientRoutinePlanNext', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'GET /routine-programs': { operationId: 'listRoutinePrograms', roles: ['ADMIN', 'TRAINER'] },
+  'POST /routine-programs': { operationId: 'createRoutineProgram', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'GET /routine-programs/{id}': { operationId: 'getRoutineProgram', roles: ['ADMIN', 'TRAINER'] },
+  'PUT /routine-programs/{id}': { operationId: 'updateRoutineProgram', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'PATCH /routine-programs/{id}/status': { operationId: 'updateRoutineProgramStatus', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'GET /routine-programs/{id}/clients': { operationId: 'listRoutineProgramClients', roles: ['ADMIN', 'TRAINER'] },
   'GET /dashboard/overview': { operationId: 'getDashboardOverview', roles: ['ADMIN'] },
   'GET /trainers': { operationId: 'listTrainers', roles: ['ADMIN'] },
   'POST /trainers': { operationId: 'createTrainer', roles: ['ADMIN'] },
   'GET /trainers/{id}': { operationId: 'getTrainer', roles: ['ADMIN'] },
   'PUT /trainers/{id}': { operationId: 'updateTrainer', roles: ['ADMIN'] },
   'PATCH /trainers/{id}/status': { operationId: 'updateTrainerStatus', roles: ['ADMIN'] },
+  'PATCH /trainers/{id}/access': { operationId: 'updateStaffAccess', roles: ['ADMIN'] },
   'PUT /trainers/{id}/password': { operationId: 'resetTrainerPassword', roles: ['ADMIN'] },
 };
 
@@ -1056,6 +1432,10 @@ for (const [key, metadata] of Object.entries(operationMetadata)) {
     operation['x-tenant-scoped'] = true;
     operation['x-required-roles'] = metadata.roles;
     operation.description = `Requires a tenant-scoped JWT. Available to ${metadata.roles.join(' and ')} users.`;
+    if (metadata.permission) {
+      operation['x-required-permission'] = metadata.permission;
+      operation.description += ' Writes are limited to routine managers: ADMIN, or TRAINER with canManageRoutines.';
+    }
     const responses = operation.responses as Record<string, unknown>;
     responses['401'] ??= { $ref: '#/components/responses/Unauthorized' };
     responses['403'] ??= { $ref: '#/components/responses/Forbidden' };

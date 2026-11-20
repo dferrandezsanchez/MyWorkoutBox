@@ -54,6 +54,7 @@ function membership(input: Partial<Membership> = {}): Membership {
     userId: input.userId ?? user.id,
     tenantId: input.tenantId ?? tenant.id,
     role: input.role ?? Role.ADMIN,
+    canManageRoutines: input.canManageRoutines ?? false,
     active: input.active ?? true,
     createdAt: now,
     updatedAt: now,
@@ -83,6 +84,9 @@ function createMembershipRepository(overrides: Partial<MembershipRepository> = {
     upsert: vi.fn(),
     updateActive: vi.fn(),
     findTrainers: vi.fn(),
+    findStaff: vi.fn(),
+    updateAccess: vi.fn(),
+    countActiveAdmins: vi.fn(),
     ...overrides,
   };
 }

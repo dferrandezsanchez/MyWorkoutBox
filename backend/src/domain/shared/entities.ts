@@ -49,6 +49,8 @@ export interface Membership {
   userId: string;
   tenantId: string;
   role: Role;
+  /** Explicit permission to manage routine templates and client plans. ADMIN always can. */
+  canManageRoutines: boolean;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -124,6 +126,12 @@ export interface TrainingSession {
   startedAt: Date;
   completedAt: Date | null;
   notes: string | null;
+  /** Template the session was started from, if any. */
+  routineTemplateId: string | null;
+  /** Client plan the session was started from (mode "plan"), if any. */
+  routinePlanId: string | null;
+  /** 1-based plan position the session covered; used to advance the plan on completion. */
+  routinePlanPosition: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -170,4 +178,79 @@ export interface ClientMeasurement {
   createdById: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface RoutineTemplateExercise {
+  id: string;
+  templateId: string;
+  exerciseId: string;
+  /** 1-based order inside the template. */
+  position: number;
+  targetSets: number | null;
+  targetReps: string | null;
+  notes: string | null;
+  createdAt: Date;
+  exercise?: Exercise;
+}
+
+export interface RoutineTemplate {
+  id: string;
+  tenantId: string;
+  name: string;
+  notes: string | null;
+  status: Status;
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  exercises: RoutineTemplateExercise[];
+}
+
+export interface ClientRoutinePlanItem {
+  id: string;
+  planId: string;
+  templateId: string;
+  /** 1-based order inside the plan (A=1, B=2, ...). */
+  position: number;
+  template?: RoutineTemplate;
+}
+
+export interface ClientRoutinePlan {
+  id: string;
+  tenantId: string;
+  clientId: string;
+  name: string;
+  active: boolean;
+  /** 1-based position of the routine suggested for the next session. */
+  nextPosition: number;
+  /** Program the plan follows live; its items then come from the program. Null for custom plans. */
+  programId: string | null;
+  program?: { id: string; name: string; status: Status } | null;
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  items: ClientRoutinePlanItem[];
+}
+
+export interface RoutineProgramItem {
+  id: string;
+  programId: string;
+  templateId: string;
+  /** 1-based order (A=1, B=2, ...). */
+  position: number;
+  template?: RoutineTemplate;
+}
+
+/** Reusable sequence of routine templates that many clients can follow. */
+export interface RoutineProgram {
+  id: string;
+  tenantId: string;
+  name: string;
+  notes: string | null;
+  status: Status;
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  items: RoutineProgramItem[];
+  /** Active client plans following this program. */
+  activeClientCount: number;
 }

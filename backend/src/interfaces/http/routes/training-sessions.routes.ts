@@ -23,7 +23,11 @@ export function createTrainingSessionsRouter(container: AppContainer): Router {
 
   router.post('/', async (req, res, next): Promise<void> => {
     try {
-      res.status(201).json(await container.trainingSessions.start.execute(req.user!.tenantId, req.user!.userId, req.body.clientId));
+      res.status(201).json(await container.trainingSessions.start.execute(req.user!.tenantId, req.user!.userId, {
+        clientId: req.body?.clientId,
+        mode: req.body?.mode,
+        templateId: req.body?.templateId,
+      }));
     } catch (error) { next(error); }
   });
 
