@@ -321,7 +321,7 @@ async function seedDemoTenant() {
   console.log(`✓ Demo training sessions ready: ${sessionCount}`);
 
   const routines = await seedRoutines(tenant.id, admin.id);
-  console.log(`✓ Demo routines ready: ${routines.templates} templates, ${routines.plans} client plans`);
+  console.log(`✓ Demo routines ready: ${routines.templates} templates, ${routines.programs} programs, ${routines.plans} client plans`);
 }
 
 type DemoRoutineExercise = [slug: string, targetSets: number | null, targetReps: string | null, notes?: string];
@@ -371,16 +371,29 @@ const DEMO_ROUTINES: Array<{ id: string; name: string; notes: string; exercises:
   },
 ];
 
-/** Client plans: template ids in order (A -> B -> C) and the 1-based routine that comes next. */
-const DEMO_PLANS: Array<{ id: string; clientId: string; name: string; templateIds: string[]; nextPosition: number }> = [
-  { id: 'demo_plan_alex', clientId: 'demo_client_alex', name: 'Fuerza 3 días', templateIds: ['demo_routine_a', 'demo_routine_b', 'demo_routine_c'], nextPosition: 2 },
-  { id: 'demo_plan_marta', clientId: 'demo_client_marta', name: 'Fuerza 2 días', templateIds: ['demo_routine_a', 'demo_routine_b'], nextPosition: 1 },
-  { id: 'demo_plan_javier', clientId: 'demo_client_javier', name: 'Fuerza 3 días', templateIds: ['demo_routine_a', 'demo_routine_b', 'demo_routine_c'], nextPosition: 3 },
-  { id: 'demo_plan_laura', clientId: 'demo_client_laura', name: 'Fuerza y cardio', templateIds: ['demo_routine_b', 'demo_routine_c', 'demo_routine_a', 'demo_routine_c'], nextPosition: 1 },
+/** Reusable programs: template ids in order (A -> B -> C). Several clients follow them live. */
+const DEMO_PROGRAMS: Array<{ id: string; name: string; notes: string; templateIds: string[] }> = [
+  { id: 'demo_program_fuerza3', name: 'Fuerza 3 días', notes: 'Lunes, miércoles y viernes.', templateIds: ['demo_routine_a', 'demo_routine_b', 'demo_routine_c'] },
+  { id: 'demo_program_fuerza2', name: 'Fuerza 2 días', notes: 'Para quien entrena dos días por semana.', templateIds: ['demo_routine_a', 'demo_routine_b'] },
+  { id: 'demo_program_mixto', name: 'Fuerza y cardio', notes: 'Alterna fuerza con acondicionamiento.', templateIds: ['demo_routine_b', 'demo_routine_c', 'demo_routine_a', 'demo_routine_c'] },
 ];
 
-/** Idempotent: re-running rewrites the demo templates and plans to this exact content. */
-async function seedRoutines(tenantId: string, createdById: string): Promise<{ templates: number; plans: number }> {
+/**
+ * Client plans with the 1-based routine that comes next: either following a program
+ * (`programId`, no own items) or a custom sequence (`templateIds`).
+ */
+const DEMO_PLANS: Array<{ id: string; clientId: string; nextPosition: number } & (
+  { programId: string } | { name: string; templateIds: string[] }
+)> = [
+  { id: 'demo_plan_alex', clientId: 'demo_client_alex', programId: 'demo_program_fuerza3', nextPosition: 2 },
+  { id: 'demo_plan_marta', clientId: 'demo_client_marta', programId: 'demo_program_fuerza2', nextPosition: 1 },
+  { id: 'demo_plan_javier', clientId: 'demo_client_javier', programId: 'demo_program_fuerza3', nextPosition: 3 },
+  { id: 'demo_plan_laura', clientId: 'demo_client_laura', programId: 'demo_program_mixto', nextPosition: 1 },
+  { id: 'demo_plan_carlos', clientId: 'demo_client_carlos', name: 'Arranque', templateIds: ['demo_routine_eval', 'demo_routine_a'], nextPosition: 1 },
+];
+
+/** Idempotent: re-running rewrites the demo templates, programs and plans to this exact content. */
+async function seedRoutines(tenantId: string, createdById: string): Promise<{ templates: number; programs: number; plans: number }> {
   for (const routine of DEMO_ROUTINES) {
     await prisma.routineTemplate.upsert({
       where: { id: routine.id },
@@ -400,7 +413,22 @@ async function seedRoutines(tenantId: string, createdById: string): Promise<{ te
     });
   }
 
+  for (const program of DEMO_PROGRAMS) {
+    await prisma.routineProgram.upsert({
+      where: { id: program.id },
+      update: { tenantId, name: program.name, notes: program.notes, status: Status.ACTIVE },
+      create: { id: program.id, tenantId, name: program.name, notes: program.notes, createdById, status: Status.ACTIVE },
+    });
+    await prisma.routineProgramItem.deleteMany({ where: { programId: program.id } });
+    await prisma.routineProgramItem.createMany({
+      data: program.templateIds.map((templateId, index) => ({ programId: program.id, templateId, position: index + 1 })),
+    });
+  }
+
+  const programNames = new Map(DEMO_PROGRAMS.map((program) => [program.id, program.name]));
   for (const plan of DEMO_PLANS) {
+    const programId = 'programId' in plan ? plan.programId : null;
+    const name = 'programId' in plan ? programNames.get(plan.programId) ?? '' : plan.name;
     // One active plan per client: retire any other plan (e.g. one created by hand in the demo).
     await prisma.clientRoutinePlan.updateMany({
       where: { tenantId, clientId: plan.clientId, active: true, id: { not: plan.id } },
@@ -408,16 +436,19 @@ async function seedRoutines(tenantId: string, createdById: string): Promise<{ te
     });
     await prisma.clientRoutinePlan.upsert({
       where: { id: plan.id },
-      update: { tenantId, name: plan.name, active: true, nextPosition: plan.nextPosition },
-      create: { id: plan.id, tenantId, clientId: plan.clientId, name: plan.name, nextPosition: plan.nextPosition, createdById },
+      update: { tenantId, name, active: true, nextPosition: plan.nextPosition, programId },
+      create: { id: plan.id, tenantId, clientId: plan.clientId, name, nextPosition: plan.nextPosition, programId, createdById },
     });
+    // Program plans have no items of their own: they mirror the program.
     await prisma.clientRoutinePlanItem.deleteMany({ where: { planId: plan.id } });
-    await prisma.clientRoutinePlanItem.createMany({
-      data: plan.templateIds.map((templateId, index) => ({ planId: plan.id, templateId, position: index + 1 })),
-    });
+    if ('templateIds' in plan) {
+      await prisma.clientRoutinePlanItem.createMany({
+        data: plan.templateIds.map((templateId, index) => ({ planId: plan.id, templateId, position: index + 1 })),
+      });
+    }
   }
 
-  return { templates: DEMO_ROUTINES.length, plans: DEMO_PLANS.length };
+  return { templates: DEMO_ROUTINES.length, programs: DEMO_PROGRAMS.length, plans: DEMO_PLANS.length };
 }
 
 const SESSION_EXERCISE_SLUGS = BASE_EXERCISES.map((exercise) => exercise.slug);
@@ -668,13 +699,13 @@ async function seedTuMetaTenant() {
   await seedBaseExercises(tenant.id, 'tumeta');
 }
 
-/** `SEED_ONLY=routines` adds/refreshes just the demo routines and plans, leaving other demo data untouched. */
+/** `SEED_ONLY=routines` adds/refreshes just the demo routines, programs and plans, leaving other demo data untouched. */
 async function seedDemoRoutinesOnly() {
   const admin = await prisma.user.findUnique({ where: { email: 'admin-demo@gym.com' } });
   const tenant = await prisma.tenant.findUnique({ where: { slug: 'demo' } }) ?? await prisma.tenant.findUnique({ where: { id: 'tenant_demo' } });
   if (!admin || !tenant) throw new Error('Demo tenant or admin-demo@gym.com not found: run the full seed first');
   const routines = await seedRoutines(tenant.id, admin.id);
-  console.log(`✓ Demo routines ready: ${routines.templates} templates, ${routines.plans} client plans`);
+  console.log(`✓ Demo routines ready: ${routines.templates} templates, ${routines.programs} programs, ${routines.plans} client plans`);
 }
 
 async function main() {

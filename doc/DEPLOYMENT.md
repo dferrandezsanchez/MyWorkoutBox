@@ -241,7 +241,9 @@ docker compose --env-file <DOCKER_ENV_FILE> exec -T database \
 
 La migración `20261120090000_add_routines_and_permissions` crea las plantillas de rutina, las series de rutinas por cliente, el origen de cada sesión y el permiso `canManageRoutines` por miembro (desactivado por defecto). Es aditiva, se aplica sola en el despliegue y no requiere scripts manuales ni variables nuevas.
 
-Para cargar en el centro demo las rutinas y series de ejemplo sin tocar el resto de datos demo, ejecuta el seed con `SEED_ONLY=routines` (idempotente; requiere que exista `admin-demo@gym.com`):
+La migración `20261120150000_add_routine_programs` añade los programas de rutinas (secuencias reutilizables que varios clientes siguen en vivo) y el campo `programId` de las series por cliente. También es aditiva.
+
+Para cargar en el centro demo las rutinas, programas y series de ejemplo sin tocar el resto de datos demo, ejecuta el seed con `SEED_ONLY=routines` (idempotente; requiere que exista `admin-demo@gym.com`):
 
 ```bash
 SEED_ONLY=routines npm --prefix backend run prisma:seed
