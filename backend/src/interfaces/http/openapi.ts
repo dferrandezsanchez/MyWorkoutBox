@@ -313,6 +313,11 @@ export const openApiDocument: OpenApiDocument = {
           createdAt: { type: 'string', format: 'date-time' },
           exercise: { $ref: '#/components/schemas/Exercise' },
           series: { type: 'array', items: { $ref: '#/components/schemas/PerformanceRecord' } },
+          previousSeries: {
+            type: 'array',
+            description: "Series of this exercise in the client's last completed session (excluding this one). Only used to prefill the series form; never stored automatically.",
+            items: { $ref: '#/components/schemas/PerformanceRecord' },
+          },
         },
       },
       TrainingSession: {
@@ -328,10 +333,100 @@ export const openApiDocument: OpenApiDocument = {
           startedAt: { type: 'string', format: 'date-time' },
           completedAt: { type: 'string', format: 'date-time', nullable: true },
           notes: { type: 'string', nullable: true },
+          routineTemplateId: { type: 'string', nullable: true, description: 'Routine template the session was started from.' },
+          routinePlanId: { type: 'string', nullable: true, description: 'Client routine plan the session was started from (mode "plan").' },
+          routinePlanPosition: { type: 'integer', minimum: 1, nullable: true, description: 'Plan position (A=1, B=2, ...) covered by the session.' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
           client: { $ref: '#/components/schemas/Client' },
           exercises: { type: 'array', items: { $ref: '#/components/schemas/TrainingSessionExercise' } },
+        },
+      },
+      StartTrainingSessionInput: {
+        type: 'object',
+        required: ['clientId'],
+        properties: {
+          clientId: { type: 'string' },
+          mode: {
+            type: 'string',
+            enum: ['free', 'plan', 'template'],
+            default: 'free',
+            description: 'free: empty session. plan: next routine of the client active plan (advances on completion). template: any active routine template.',
+          },
+          templateId: { type: 'string', description: 'Required when mode is "template".' },
+        },
+      },
+      SessionRoutineTemplate: {
+        type: 'object',
+        required: ['id', 'name', 'status', 'exercises'],
+        properties: {
+          id: { type: 'string' },
+          tenantId: { type: 'string' },
+          name: { type: 'string' },
+          notes: { type: 'string', nullable: true },
+          status: { type: 'string', enum: ['ACTIVE', 'INACTIVE'] },
+          createdById: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+          exercises: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['id', 'exerciseId', 'position'],
+              properties: {
+                id: { type: 'string' },
+                templateId: { type: 'string' },
+                exerciseId: { type: 'string' },
+                position: { type: 'integer', minimum: 1 },
+                targetSets: { type: 'integer', nullable: true },
+                targetReps: { type: 'string', nullable: true },
+                notes: { type: 'string', nullable: true },
+                exercise: { $ref: '#/components/schemas/Exercise' },
+              },
+            },
+          },
+        },
+      },
+      SessionStartOptions: {
+        type: 'object',
+        required: ['plan', 'nextRoutine', 'templates'],
+        properties: {
+          plan: {
+            type: 'object',
+            nullable: true,
+            description: 'Client active routine plan (A -> B -> C).',
+            properties: {
+              id: { type: 'string' },
+              clientId: { type: 'string' },
+              name: { type: 'string' },
+              active: { type: 'boolean' },
+              nextPosition: { type: 'integer', minimum: 1 },
+              items: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    planId: { type: 'string' },
+                    templateId: { type: 'string' },
+                    position: { type: 'integer', minimum: 1 },
+                    template: { $ref: '#/components/schemas/SessionRoutineTemplate' },
+                  },
+                },
+              },
+            },
+          },
+          nextRoutine: {
+            type: 'object',
+            nullable: true,
+            description: 'Routine that corresponds next in the plan, when it is active.',
+            required: ['position', 'template'],
+            properties: {
+              position: { type: 'integer', minimum: 1 },
+              template: { $ref: '#/components/schemas/SessionRoutineTemplate' },
+            },
+          },
+          templates: { type: 'array', description: 'Active routine templates of the center.', items: { $ref: '#/components/schemas/SessionRoutineTemplate' } },
         },
       },
       ClientExport: {
@@ -868,6 +963,13 @@ Object.assign(openApiDocument.paths, {
       responses: { 200: { description: 'Training sessions', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/TrainingSession' } } } } }, ...authResponses },
     },
   },
+  '/clients/{id}/session-options': {
+    get: {
+      tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Get the routines a session can start from for a client',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Session start options', content: { 'application/json': { schema: { $ref: '#/components/schemas/SessionStartOptions' } } } }, ...authResponses },
+    },
+  },
   '/training-sessions': {
     get: {
       tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'List recent completed training sessions for the current trainer',
@@ -876,8 +978,8 @@ Object.assign(openApiDocument.paths, {
     },
     post: {
       tags: ['Training Sessions'], security: [{ bearerAuth: [] }], summary: 'Start an individual training session',
-      requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['clientId'], properties: { clientId: { type: 'string' } } } } } },
-      responses: { 201: { description: 'Training session started', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, 409: { $ref: '#/components/responses/Conflict' }, ...authResponses },
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/StartTrainingSessionInput' } } } },
+      responses: { 201: { description: 'Training session started (with routine exercises added in order when started from a routine)', content: { 'application/json': { schema: { $ref: '#/components/schemas/TrainingSession' } } } }, 409: { $ref: '#/components/responses/Conflict' }, ...authResponses },
     },
   },
   '/training-sessions/active': {
@@ -1013,6 +1115,7 @@ const operationMetadata: Record<string, OperationMetadata> = {
   'GET /clients/{id}/export': { operationId: 'exportClientData', roles: ['ADMIN'] },
   'POST /clients/{id}/anonymize': { operationId: 'anonymizeClient', roles: ['ADMIN'] },
   'GET /clients/{id}/training-sessions': { operationId: 'listClientTrainingSessions', roles: ['ADMIN', 'TRAINER'] },
+  'GET /clients/{id}/session-options': { operationId: 'getSessionStartOptions', roles: ['ADMIN', 'TRAINER'] },
   'PATCH /clients/{id}/goal': { operationId: 'updateClientGoal', roles: ['ADMIN', 'TRAINER'] },
   'GET /clients/{id}/measurements': { operationId: 'listClientMeasurements', roles: ['ADMIN', 'TRAINER'] },
   'POST /clients/{id}/measurements': { operationId: 'createClientMeasurement', roles: ['ADMIN', 'TRAINER'] },

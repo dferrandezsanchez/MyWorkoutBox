@@ -87,6 +87,7 @@ describe('OpenAPI documentation', () => {
       '/clients/{clientId}/current-performances',
       '/clients/{clientId}/exercises/{exerciseId}/performances',
       '/clients/{id}/training-sessions',
+      '/clients/{id}/session-options',
       '/training-sessions',
       '/training-sessions/active',
       '/training-sessions/{id}',
