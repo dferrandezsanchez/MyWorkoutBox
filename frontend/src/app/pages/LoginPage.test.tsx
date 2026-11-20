@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginPage from './LoginPage';
 import { login, selectTenant } from '@features/auth/api/auth.api';
+import { queryClient } from '@shared/state/query-client';
 
 const navigate = vi.fn();
 let searchParams = new URLSearchParams();
@@ -23,7 +24,7 @@ vi.mock('@features/auth/model/auth-store', () => ({
 }));
 
 vi.mock('@shared/state/query-client', () => ({
-  queryClient: { clear: vi.fn() },
+  queryClient: { clear: vi.fn(), setQueryData: vi.fn() },
 }));
 
 async function loginAsAdmin() {
@@ -53,6 +54,14 @@ describe('LoginPage', () => {
     searchParams = new URLSearchParams({ next: '/admin/clients?page=2' });
     await loginAsAdmin();
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/admin/clients?page=2', { replace: true }));
+  });
+
+  it('seeds the session user so permissions are available before /auth/me resolves', async () => {
+    await loginAsAdmin();
+    await waitFor(() => expect(queryClient.setQueryData).toHaveBeenCalledWith(
+      ['authUser'],
+      expect.objectContaining({ id: 'user-1', role: 'ADMIN' }),
+    ));
   });
 
   it.each(['//evil.example', '/\\evil.example', 'https://evil.example', '/login?next=/admin'])(

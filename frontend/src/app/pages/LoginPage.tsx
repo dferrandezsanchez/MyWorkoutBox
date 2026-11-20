@@ -38,6 +38,8 @@ export default function LoginPage() {
 
   const completeLogin = (response: LoginSuccessResponse) => {
     queryClient.clear();
+    // Seed the current user (incl. canManageRoutines, not carried by the JWT) until /auth/me refreshes it.
+    queryClient.setQueryData(['authUser'], response.user);
     setStoredTenant(response.tenant);
     setToken(response.token);
     void navigate(getSafeNextPath() ?? (response.user.role === 'ADMIN' ? '/admin' : '/trainer'), {
