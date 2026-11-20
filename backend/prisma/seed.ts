@@ -319,6 +319,105 @@ async function seedDemoTenant() {
     clients.map((client) => client.id),
   );
   console.log(`✓ Demo training sessions ready: ${sessionCount}`);
+
+  const routines = await seedRoutines(tenant.id, admin.id);
+  console.log(`✓ Demo routines ready: ${routines.templates} templates, ${routines.plans} client plans`);
+}
+
+type DemoRoutineExercise = [slug: string, targetSets: number | null, targetReps: string | null, notes?: string];
+
+const DEMO_ROUTINES: Array<{ id: string; name: string; notes: string; exercises: DemoRoutineExercise[] }> = [
+  {
+    id: 'demo_routine_a',
+    name: 'Pierna y core',
+    notes: 'Calentamiento 10 min de movilidad de cadera. Descanso 2 min entre series de sentadilla.',
+    exercises: [
+      ['sentadilla', 4, '6'],
+      ['zancadas', 3, '10 por pierna'],
+      ['plancha_frontal', 3, '45 s'],
+    ],
+  },
+  {
+    id: 'demo_routine_b',
+    name: 'Tirón y bisagra',
+    notes: 'Priorizar técnica en peso muerto; subir carga solo si la última serie sale limpia.',
+    exercises: [
+      ['peso_muerto', 4, '5'],
+      ['dominadas', 4, 'Máx. con técnica', 'Banda si no llega a 5'],
+      ['plancha_frontal', 2, '60 s'],
+    ],
+  },
+  {
+    id: 'demo_routine_c',
+    name: 'Acondicionamiento',
+    notes: 'Formato circuito. Registrar tiempos para comparar semana a semana.',
+    exercises: [
+      ['burpees', 3, '12'],
+      ['carrera', 3, '1000 m'],
+      ['zancadas', 2, '12 por pierna'],
+    ],
+  },
+  {
+    id: 'demo_routine_eval',
+    name: 'Evaluación inicial',
+    notes: 'Primera sesión de un cliente nuevo: marcas de referencia en básicos.',
+    exercises: [
+      ['sentadilla', 1, 'RM 5'],
+      ['peso_muerto', 1, 'RM 5'],
+      ['dominadas', 1, 'Máx.'],
+      ['plancha_frontal', 1, 'Máx.'],
+      ['carrera', 1, '1000 m'],
+    ],
+  },
+];
+
+/** Client plans: template ids in order (A -> B -> C) and the 1-based routine that comes next. */
+const DEMO_PLANS: Array<{ id: string; clientId: string; name: string; templateIds: string[]; nextPosition: number }> = [
+  { id: 'demo_plan_alex', clientId: 'demo_client_alex', name: 'Fuerza 3 días', templateIds: ['demo_routine_a', 'demo_routine_b', 'demo_routine_c'], nextPosition: 2 },
+  { id: 'demo_plan_marta', clientId: 'demo_client_marta', name: 'Fuerza 2 días', templateIds: ['demo_routine_a', 'demo_routine_b'], nextPosition: 1 },
+  { id: 'demo_plan_javier', clientId: 'demo_client_javier', name: 'Fuerza 3 días', templateIds: ['demo_routine_a', 'demo_routine_b', 'demo_routine_c'], nextPosition: 3 },
+  { id: 'demo_plan_laura', clientId: 'demo_client_laura', name: 'Fuerza y cardio', templateIds: ['demo_routine_b', 'demo_routine_c', 'demo_routine_a', 'demo_routine_c'], nextPosition: 1 },
+];
+
+/** Idempotent: re-running rewrites the demo templates and plans to this exact content. */
+async function seedRoutines(tenantId: string, createdById: string): Promise<{ templates: number; plans: number }> {
+  for (const routine of DEMO_ROUTINES) {
+    await prisma.routineTemplate.upsert({
+      where: { id: routine.id },
+      update: { tenantId, name: routine.name, notes: routine.notes, status: Status.ACTIVE },
+      create: { id: routine.id, tenantId, name: routine.name, notes: routine.notes, createdById, status: Status.ACTIVE },
+    });
+    await prisma.routineTemplateExercise.deleteMany({ where: { templateId: routine.id } });
+    await prisma.routineTemplateExercise.createMany({
+      data: routine.exercises.map(([slug, targetSets, targetReps, notes], index) => ({
+        templateId: routine.id,
+        exerciseId: `demo_ex_${slug}`,
+        position: index + 1,
+        targetSets,
+        targetReps,
+        notes: notes ?? null,
+      })),
+    });
+  }
+
+  for (const plan of DEMO_PLANS) {
+    // One active plan per client: retire any other plan (e.g. one created by hand in the demo).
+    await prisma.clientRoutinePlan.updateMany({
+      where: { tenantId, clientId: plan.clientId, active: true, id: { not: plan.id } },
+      data: { active: false },
+    });
+    await prisma.clientRoutinePlan.upsert({
+      where: { id: plan.id },
+      update: { tenantId, name: plan.name, active: true, nextPosition: plan.nextPosition },
+      create: { id: plan.id, tenantId, clientId: plan.clientId, name: plan.name, nextPosition: plan.nextPosition, createdById },
+    });
+    await prisma.clientRoutinePlanItem.deleteMany({ where: { planId: plan.id } });
+    await prisma.clientRoutinePlanItem.createMany({
+      data: plan.templateIds.map((templateId, index) => ({ planId: plan.id, templateId, position: index + 1 })),
+    });
+  }
+
+  return { templates: DEMO_ROUTINES.length, plans: DEMO_PLANS.length };
 }
 
 const SESSION_EXERCISE_SLUGS = BASE_EXERCISES.map((exercise) => exercise.slug);
@@ -569,8 +668,23 @@ async function seedTuMetaTenant() {
   await seedBaseExercises(tenant.id, 'tumeta');
 }
 
+/** `SEED_ONLY=routines` adds/refreshes just the demo routines and plans, leaving other demo data untouched. */
+async function seedDemoRoutinesOnly() {
+  const admin = await prisma.user.findUnique({ where: { email: 'admin-demo@gym.com' } });
+  const tenant = await prisma.tenant.findUnique({ where: { slug: 'demo' } }) ?? await prisma.tenant.findUnique({ where: { id: 'tenant_demo' } });
+  if (!admin || !tenant) throw new Error('Demo tenant or admin-demo@gym.com not found: run the full seed first');
+  const routines = await seedRoutines(tenant.id, admin.id);
+  console.log(`✓ Demo routines ready: ${routines.templates} templates, ${routines.plans} client plans`);
+}
+
 async function main() {
   console.log('Starting database seed...');
+
+  if (process.env.SEED_ONLY === 'routines') {
+    await seedDemoRoutinesOnly();
+    console.log('Seed completed successfully.');
+    return;
+  }
 
   await seedDemoTenant();
   await seedTuMetaTenant();
