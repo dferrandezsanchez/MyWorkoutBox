@@ -6,6 +6,8 @@ import { Button, EmptyState, Panel, StatusBadge } from '@shared/components/ui';
 import { ClientGoalCard } from '@features/clients/components/ClientGoalCard';
 import { useClient } from '@features/clients/hooks/useClients';
 import { MeasurementsSection } from '@features/measurements/components/MeasurementsSection';
+import { ClientRoutinePlanSection } from '@features/routines/components/ClientRoutinePlanSection';
+import { useCanManageRoutines } from '@features/routines/hooks/useRoutines';
 import { useCurrentPerformances } from '@features/performances/hooks/usePerformances';
 import { formatPerformance } from '@features/performances/utils/exerciseTemplates';
 import { getPerformanceTrend, getTrendBars } from '@features/performances/utils/performanceTrend';
@@ -27,6 +29,8 @@ function formatAge(birthDate: string): string {
 export default function ClientProfilePage() {
   const { id: clientId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const canManageRoutines = useCanManageRoutines();
 
   const { data: client, isLoading: isLoadingClient, isError: isErrorClient } = useClient(clientId!);
   const {
@@ -115,6 +119,12 @@ export default function ClientProfilePage() {
             <p className="leading-7 text-text-secondary">{client.notes || 'No hay observaciones registradas para este cliente.'}</p>
           </Panel>
         </section>
+
+        <ClientRoutinePlanSection
+          clientId={client.id}
+          canManage={canManageRoutines && client.status === 'ACTIVE'}
+          onOpenRoutines={() => navigate(`/routines${location.search.includes('mode=admin') ? '?mode=admin' : ''}`)}
+        />
 
         {measurementsEnabled && (
           <MeasurementsSection clientId={client.id} clientName={`${client.firstName} ${client.lastName}`} goalDate={client.goalDate} />
