@@ -4,8 +4,10 @@ import type { TrainingSessionDetail } from '../../domain/shared/entities';
 import type {
   AuditLogRepository,
   ClientRepository,
+  ClientRoutinePlanRepository,
   ExerciseRepository,
   PerformanceRepository,
+  RoutineTemplateRepository,
   TrainingSessionRepository,
 } from '../../domain/repositories';
 import {
@@ -39,6 +41,7 @@ function detail(overrides: Partial<TrainingSessionDetail> = {}): TrainingSession
   return {
     id: 'session-1', tenantId: 'tenant-1', clientId: client.id, trainerId: 'trainer-1',
     status: TrainingSessionStatus.ACTIVE, startedAt: now, completedAt: null, notes: null,
+    routineTemplateId: null, routinePlanId: null, routinePlanPosition: null,
     createdAt: now, updatedAt: now, client, trainerName: 'Trainer', exercises: [], ...overrides,
   };
 }
@@ -64,6 +67,7 @@ function dependencies(initial = detail()) {
     }),
     findExercise: vi.fn(),
     removeExercise: vi.fn(async () => { current = detail({ ...current!, exercises: [] }); }),
+    findPreviousSeries: vi.fn(async () => []),
   };
   const performances: PerformanceRepository = {
     findByClientAndExercise: vi.fn(), findLatestByClientExercise: vi.fn(), findByClient: vi.fn(), findByClientWithTrainer: vi.fn(),
@@ -87,14 +91,16 @@ function dependencies(initial = detail()) {
   const exercises = { findById: vi.fn(async () => exercise) } as unknown as ExerciseRepository;
   const auditLogs = { create: vi.fn() } as AuditLogRepository;
   const clock = { now: () => now };
-  return { sessions, performances, clients, exercises, auditLogs, clock, getCurrent: () => current };
+  const templates = { list: vi.fn(async () => []), findById: vi.fn(async () => null) } as unknown as RoutineTemplateRepository;
+  const plans = { findActiveByClient: vi.fn(async () => null), findById: vi.fn(async () => null), setNextPosition: vi.fn() } as unknown as ClientRoutinePlanRepository;
+  return { sessions, performances, clients, exercises, auditLogs, clock, templates, plans, getCurrent: () => current };
 }
 
 describe('training session use cases', () => {
   it('starts, resumes, gets and lists sessions', async () => {
     const deps = dependencies();
     (deps.sessions.findActiveByTrainer as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
-    await expect(new StartTrainingSessionUseCase(deps.sessions, deps.clients, deps.auditLogs, deps.clock).execute('tenant-1', 'trainer-1', client.id)).resolves.toMatchObject({ id: 'session-1' });
+    await expect(new StartTrainingSessionUseCase(deps.sessions, deps.clients, deps.auditLogs, deps.clock, deps.templates, deps.plans).execute('tenant-1', 'trainer-1', { clientId: client.id })).resolves.toMatchObject({ id: 'session-1' });
     await expect(new GetActiveTrainingSessionUseCase(deps.sessions).execute('tenant-1', 'trainer-1')).resolves.toMatchObject({ id: 'session-1' });
     await expect(new GetTrainingSessionUseCase(deps.sessions).execute('tenant-1', 'trainer-1', 'session-1')).resolves.toMatchObject({ id: 'session-1' });
     await expect(new ListClientTrainingSessionsUseCase(deps.sessions, deps.clients).execute('tenant-1', client.id)).resolves.toHaveLength(1);
@@ -123,7 +129,7 @@ describe('training session use cases', () => {
   it('completes sessions with series and discards empty sessions', async () => {
     const record = await dependencies().performances.create({ tenantId: 'tenant-1', clientId: client.id, exerciseId: exercise.id, trainerId: 'trainer-1', value: '40', unit: 'kg', date: now, sessionExerciseId: 'item-1', seriesNumber: 1 });
     const deps = dependencies(detail({ exercises: [{ id: 'item-1', sessionId: 'session-1', exerciseId: exercise.id, position: 1, createdAt: now, exercise, series: [{ ...record, trainerName: 'Trainer' }] }] }));
-    await expect(new CompleteTrainingSessionUseCase(deps.sessions, deps.auditLogs, deps.clock).execute('tenant-1', 'trainer-1', 'session-1', { notes: 'Bien' })).resolves.toMatchObject({ status: TrainingSessionStatus.COMPLETED });
+    await expect(new CompleteTrainingSessionUseCase(deps.sessions, deps.auditLogs, deps.clock, deps.plans).execute('tenant-1', 'trainer-1', 'session-1', { notes: 'Bien' })).resolves.toMatchObject({ status: TrainingSessionStatus.COMPLETED });
 
     const empty = dependencies();
     await new DiscardTrainingSessionUseCase(empty.sessions, empty.auditLogs).execute('tenant-1', 'trainer-1', 'session-1');
@@ -132,8 +138,8 @@ describe('training session use cases', () => {
 
   it('rejects a second active session and finalizing an empty one', async () => {
     const deps = dependencies();
-    await expect(new StartTrainingSessionUseCase(deps.sessions, deps.clients, deps.auditLogs, deps.clock).execute('tenant-1', 'trainer-1', client.id)).rejects.toMatchObject({ code: 'CONFLICT' });
-    await expect(new CompleteTrainingSessionUseCase(deps.sessions, deps.auditLogs, deps.clock).execute('tenant-1', 'trainer-1', 'session-1', {})).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    await expect(new StartTrainingSessionUseCase(deps.sessions, deps.clients, deps.auditLogs, deps.clock, deps.templates, deps.plans).execute('tenant-1', 'trainer-1', { clientId: client.id })).rejects.toMatchObject({ code: 'CONFLICT' });
+    await expect(new CompleteTrainingSessionUseCase(deps.sessions, deps.auditLogs, deps.clock, deps.plans).execute('tenant-1', 'trainer-1', 'session-1', {})).rejects.toMatchObject({ code: 'BAD_REQUEST' });
   });
 
   it('rejects mutations after a session has been completed', async () => {
@@ -185,7 +191,7 @@ describe('training session use cases', () => {
     }));
 
     await expect(
-      new CompleteTrainingSessionUseCase(deps.sessions, deps.auditLogs, deps.clock).execute(
+      new CompleteTrainingSessionUseCase(deps.sessions, deps.auditLogs, deps.clock, deps.plans).execute(
         'tenant-1', 'trainer-1', 'session-1', {},
       ),
     ).rejects.toBe(writeFailure);

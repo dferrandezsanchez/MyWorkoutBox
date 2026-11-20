@@ -1,5 +1,6 @@
 import type { TrainingSessionRepository } from '../../domain/repositories';
 import { conflict, notFound } from '../../domain/shared/errors';
+import { loadSessionDetail } from './session-detail';
 import { requireOwnedActiveSession } from './session-rules';
 
 export class RemoveSessionExerciseUseCase {
@@ -13,6 +14,6 @@ export class RemoveSessionExerciseUseCase {
     if (!item) throw notFound();
     if (item.series.length > 0) throw conflict('No puedes quitar un ejercicio con series registradas');
     await this.sessions.removeExercise(sessionId, sessionExerciseId);
-    return this.sessions.findDetail(tenantId, sessionId);
+    return loadSessionDetail(this.sessions, tenantId, sessionId);
   }
 }
