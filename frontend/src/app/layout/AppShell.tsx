@@ -66,7 +66,7 @@ export function AppShell({
     ? [
         { label: 'Dashboard', mobileLabel: 'Inicio', tourId: 'admin-home', path: '/admin', icon: LayoutDashboard, active: location.pathname === '/admin' },
         { label: 'Clientes', tourId: 'admin-clients', path: '/admin/clients', icon: Users, active: location.pathname.startsWith('/admin/clients') },
-        { label: 'Entrenadores', mobileLabel: 'Equipo', tourId: 'admin-trainers', path: '/admin/trainers', icon: User, active: location.pathname.startsWith('/admin/trainers') },
+        { label: 'Equipo', mobileLabel: 'Equipo', tourId: 'admin-trainers', path: '/admin/trainers', icon: User, active: location.pathname.startsWith('/admin/trainers') },
         { label: 'Ejercicios', tourId: 'admin-exercises', path: '/admin/exercises', icon: Dumbbell, active: location.pathname.startsWith('/admin/exercises') },
         { label: 'Rutinas', tourId: 'admin-routines', path: '/routines?mode=admin', icon: ClipboardList, active: location.pathname.startsWith('/routines') },
         { label: 'Ajustes', tourId: 'admin-settings', path: '/admin/settings', icon: Settings, active: location.pathname.startsWith('/admin/settings') },
