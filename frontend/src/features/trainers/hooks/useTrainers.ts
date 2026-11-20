@@ -4,9 +4,10 @@ import {
   listTrainers,
   resetTrainerPassword,
   setTrainerActive,
+  updateStaffAccess,
   updateTrainer,
 } from '@features/trainers/api/trainers.api';
-import type { CreateTrainerData, UpdateTrainerData } from '@shared/types/api';
+import type { CreateTrainerData, UpdateStaffAccessData, UpdateTrainerData } from '@shared/types/api';
 
 export function useTrainers(includeInactive = true) {
   return useQuery({
@@ -41,6 +42,17 @@ export function useSetTrainerActive() {
   return useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) =>
       setTrainerActive(id, active),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['trainers'] });
+    },
+  });
+}
+
+export function useUpdateStaffAccess() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateStaffAccessData }) =>
+      updateStaffAccess(id, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['trainers'] });
     },
