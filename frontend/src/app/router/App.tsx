@@ -19,6 +19,7 @@ const NewTrainingSessionPage = React.lazy(() => import('@app/pages/NewTrainingSe
 const TrainerClientsPage = React.lazy(() => import('@app/pages/TrainerClientsPage'));
 const RoutinesPage = React.lazy(() => import('@app/pages/RoutinesPage'));
 const RoutineEditorPage = React.lazy(() => import('@app/pages/RoutineEditorPage'));
+const RoutineProgramEditorPage = React.lazy(() => import('@app/pages/RoutineProgramEditorPage'));
 
 const LoadingFallback = (
   <div className="flex min-h-dvh items-center justify-center">
@@ -46,6 +47,9 @@ export default function App() {
           <Route path="/routines" element={<RoutinesPage />} />
           <Route path="/routines/new" element={<RoutineEditorPage />} />
           <Route path="/routines/:id" element={<RoutineEditorPage />} />
+          <Route path="/routines/programs" element={<Navigate to="/routines?tab=programas" replace />} />
+          <Route path="/routines/programs/new" element={<RoutineProgramEditorPage />} />
+          <Route path="/routines/programs/:id" element={<RoutineProgramEditorPage />} />
           <Route
             path="/clients/:id/exercises/:exerciseId"
             element={<ExerciseHistoryPage />}
