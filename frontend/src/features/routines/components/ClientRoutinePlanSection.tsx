@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { ArrowDown, ArrowUp, ListOrdered, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useClientRoutinePlan, useClientRoutinePlanActions, useRoutines } from '@features/routines/hooks/useRoutines';
-import { exerciseCountLabel, planLetter } from '@features/routines/utils/routine-labels';
+import { Link, useLocation } from 'react-router-dom';
+import { Layers, ListOrdered, Pencil, Plus, Trash2 } from 'lucide-react';
+import { RoutineSequenceChips } from '@features/routines/components/RoutineSequenceChips';
+import { RoutineSequenceEditor } from '@features/routines/components/RoutineSequenceEditor';
+import { useClientRoutinePlan, useClientRoutinePlanActions, useRoutinePrograms, useRoutines } from '@features/routines/hooks/useRoutines';
+import { planLetter, sortedProgramItems } from '@features/routines/utils/routine-labels';
 import { Button, ConfirmDialog, Dialog, EmptyState, Panel, TextInput } from '@shared/components/ui';
-import type { ClientRoutinePlan, ClientRoutinePlanInput, RoutineTemplate } from '@shared/types/api';
+import type { ClientRoutinePlan, ClientRoutinePlanInput, RoutineProgram, RoutineTemplate } from '@shared/types/api';
 
-const MAX_PLAN_ROUTINES = 10;
 const DEFAULT_PLAN_NAME = 'Serie de rutinas';
 
 function errorMessage(err: unknown, fallback: string): string {
@@ -26,6 +28,7 @@ export function ClientRoutinePlanSection({ clientId, canManage, onOpenRoutines }
   const [editing, setEditing] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const followsProgram = Boolean(plan?.programId && plan.program);
 
   const setNext = async (position: number) => {
     setError(null);
@@ -55,7 +58,7 @@ export function ClientRoutinePlanSection({ clientId, canManage, onOpenRoutines }
   } else if (!plan) {
     body = (
       <div className="space-y-3">
-        <EmptyState title="Sin serie de rutinas" description={canManage ? 'Asigna las rutinas que irá alternando (A → B → C).' : undefined} />
+        <EmptyState title="Sin serie de rutinas" description={canManage ? 'Asigna un programa o las rutinas que irá alternando (A → B → C).' : undefined} />
         {canManage && (
           <Button variant="primary" onClick={() => setEditing(true)} className="inline-flex w-full items-center justify-center gap-2 sm:w-auto">
             <Plus size={17} />
@@ -93,9 +96,11 @@ export function ClientRoutinePlanSection({ clientId, canManage, onOpenRoutines }
 
       {confirmRemove && (
         <ConfirmDialog
-          title="¿Quitar la serie de rutinas?"
-          description="El cliente dejará de tener una rutina sugerida para la próxima sesión. Las rutinas no se borran."
-          confirmLabel="Quitar serie"
+          title={followsProgram ? '¿Dejar de seguir el programa?' : '¿Quitar la serie de rutinas?'}
+          description={followsProgram
+            ? 'El cliente dejará de tener una rutina sugerida para la próxima sesión. El programa no cambia.'
+            : 'El cliente dejará de tener una rutina sugerida para la próxima sesión. Las rutinas no se borran.'}
+          confirmLabel={followsProgram ? 'Quitar programa' : 'Quitar serie'}
           pending={actions.remove.isPending}
           onCancel={() => setConfirmRemove(false)}
           onConfirm={() => void remove()}
@@ -113,79 +118,196 @@ function PlanSummary({ plan, canManage, pending, onSetNext, onEdit, onRemove }: 
   onEdit: () => void;
   onRemove: () => void;
 }) {
+  const location = useLocation();
+  const modeQuery = location.search.includes('mode=admin') ? '?mode=admin' : '';
   const next = plan.items.find((item) => item.position === plan.nextPosition);
+  const program = plan.programId ? plan.program : null;
+
   return (
     <Panel className="p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          {plan.name !== DEFAULT_PLAN_NAME && <p className="mb-0.5 truncate font-display text-base font-bold text-text-primary">{plan.name}</p>}
+          {program ? (
+            <div className="mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <Layers size={15} aria-hidden="true" className="shrink-0 text-primary-soft" />
+              <Link to={`/routines/programs/${program.id}${modeQuery}`} className="truncate font-display text-base font-bold text-text-primary underline-offset-4 hover:text-primary-soft hover:underline focus-ring">
+                {program.name}
+              </Link>
+              {program.status === 'INACTIVE' && <span className="shrink-0 rounded-full bg-white/[0.04] px-2 py-0.5 text-xs font-semibold text-text-secondary ring-1 ring-white/[0.08]">Programa archivado</span>}
+            </div>
+          ) : (
+            plan.name !== DEFAULT_PLAN_NAME && <p className="mb-0.5 truncate font-display text-base font-bold text-text-primary">{plan.name}</p>
+          )}
           {next && (
             <p className="truncate text-sm text-text-secondary">
               Siguiente: <span className="font-semibold text-primary-soft">{planLetter(next.position)} · {next.template.name}</span>
             </p>
           )}
         </div>
-        {canManage && (
+        {canManage && (program ? (
+          <div className="flex shrink-0 gap-1">
+            <Button variant="ghost" onClick={onEdit} className="min-h-10 px-3 text-sm">Cambiar</Button>
+            <Button variant="ghost" onClick={onRemove} className="min-h-10 px-3 text-sm">Quitar</Button>
+          </div>
+        ) : (
           <div className="flex shrink-0 gap-1">
             <button type="button" onClick={onEdit} aria-label="Editar serie" className="flex h-10 w-10 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-white/[0.05] hover:text-text-primary focus-ring"><Pencil size={17} /></button>
             <button type="button" onClick={onRemove} aria-label="Quitar serie" className="flex h-10 w-10 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-danger/10 hover:text-red-200 focus-ring"><Trash2 size={17} /></button>
           </div>
-        )}
+        ))}
       </div>
 
-      <ol className="mt-4 flex flex-wrap gap-2" aria-label="Orden de la serie">
-        {plan.items.map((item) => {
-          const isNext = item.position === plan.nextPosition;
-          const archived = item.template.status === 'INACTIVE';
-          const chipClass = `inline-flex min-h-[40px] max-w-full items-center gap-2 rounded-full border px-3 text-sm font-semibold ${
-            isNext ? 'border-primary bg-primary/15 text-text-primary' : 'border-white/[0.11] text-text-secondary'
-          }`;
-          const content = (
-            <>
-              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${isNext ? 'bg-primary text-primary-contrast' : 'bg-white/[0.06] text-text-secondary'}`}>{planLetter(item.position)}</span>
-              <span className="truncate">{item.template.name}</span>
-              {archived && <span className="shrink-0 text-xs font-normal text-warning">archivada</span>}
-              {isNext && <span className="sr-only">(siguiente)</span>}
-            </>
-          );
-          return (
-            <li key={item.id} className="max-w-full">
-              {canManage && !isNext ? (
-                <button type="button" disabled={pending} onClick={() => onSetNext(item.position)} aria-label={`Marcar ${planLetter(item.position)} · ${item.template.name} como siguiente`} className={`${chipClass} transition-colors hover:border-primary/50 hover:text-text-primary disabled:opacity-50 focus-ring`}>
-                  {content}
-                </button>
-              ) : (
-                <span className={chipClass} aria-current={isNext ? 'step' : undefined}>{content}</span>
-              )}
-            </li>
-          );
-        })}
-      </ol>
+      <div className="mt-4">
+        <RoutineSequenceChips items={plan.items} nextPosition={plan.nextPosition} onSelect={canManage ? onSetNext : undefined} disabled={pending} />
+      </div>
       {canManage && plan.items.length > 1 && <p className="mt-3 text-xs text-text-muted">Toca una rutina para marcarla como la siguiente.</p>}
     </Panel>
   );
 }
+
+type PlanMode = 'program' | 'custom';
 
 export function PlanEditorDialog({ plan, onClose, onSave }: {
   plan: ClientRoutinePlan | null;
   onClose: () => void;
   onSave: (data: ClientRoutinePlanInput) => Promise<void>;
 }) {
+  const [mode, setMode] = useState<PlanMode>(plan && !plan.programId ? 'custom' : 'program');
+
+  return (
+    <Dialog label={plan ? 'Editar serie de rutinas' : 'Asignar serie de rutinas'} onClose={onClose} className="max-w-lg">
+      <h2 className="pr-10 text-xl font-bold text-text-primary">{plan ? 'Editar serie' : 'Asignar serie'}</h2>
+      <div role="radiogroup" aria-label="Tipo de serie" className="mt-4 grid grid-cols-2 gap-1 rounded-full border border-white/[0.08] bg-background/60 p-1">
+        {([
+          { key: 'program', label: 'Seguir un programa' },
+          { key: 'custom', label: 'Serie personalizada' },
+        ] as const).map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            role="radio"
+            aria-checked={mode === option.key}
+            onClick={() => setMode(option.key)}
+            className={`min-h-[40px] rounded-full px-3 text-sm font-semibold transition-colors duration-150 focus-ring ${
+              mode === option.key ? 'bg-primary text-primary-contrast' : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      {mode === 'program'
+        ? <ProgramPlanForm plan={plan} onClose={onClose} onSave={onSave} />
+        : <CustomPlanForm plan={plan} onClose={onClose} onSave={onSave} />}
+    </Dialog>
+  );
+}
+
+interface PlanFormProps {
+  plan: ClientRoutinePlan | null;
+  onClose: () => void;
+  onSave: (data: ClientRoutinePlanInput) => Promise<void>;
+}
+
+function DialogFooter({ onClose, onSave, saving, label }: { onClose: () => void; onSave: () => void; saving: boolean; label: string }) {
+  return (
+    <div className="mt-6 grid grid-cols-2 gap-2">
+      <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+      <Button type="button" variant="primary" onClick={onSave} disabled={saving}>{saving ? 'Guardando...' : label}</Button>
+    </div>
+  );
+}
+
+function FormError({ error }: { error: string | null }) {
+  return error ? <p role="alert" className="mt-4 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-red-200">{error}</p> : null;
+}
+
+function ProgramPlanForm({ plan, onClose, onSave }: PlanFormProps) {
+  const { data: programs = [], isLoading } = useRoutinePrograms();
+  const [programId, setProgramId] = useState<string | null>(plan?.programId ?? null);
+  const [nextPosition, setNextPosition] = useState(plan?.programId ? plan.nextPosition : 1);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const selected = programs.find((program) => program.id === programId);
+
+  const pick = (program: RoutineProgram) => {
+    setProgramId(program.id);
+    // Keep the client's position when re-picking the program they already follow.
+    setNextPosition(program.id === plan?.programId && plan.nextPosition <= program.items.length ? plan.nextPosition : 1);
+    setError(null);
+  };
+
+  const save = async () => {
+    if (!selected) {
+      setError('Elige un programa');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave({ programId: selected.id, nextPosition: Math.min(nextPosition, selected.items.length) || 1 });
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudo asignar el programa'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <p className="eyebrow mb-2 mt-5 text-xs text-text-muted">Programa</p>
+      {isLoading && <p className="text-sm text-text-secondary">Cargando programas...</p>}
+      {!isLoading && programs.length === 0 && (
+        <p className="rounded-xl border border-dashed border-white/[0.12] px-4 py-4 text-center text-sm text-text-secondary">No hay programas activos. Créalos en Rutinas → Programas o usa una serie personalizada.</p>
+      )}
+      <div role="radiogroup" aria-label="Programas" className="space-y-2">
+        {programs.map((program) => {
+          const checked = program.id === programId;
+          return (
+            <button
+              key={program.id}
+              type="button"
+              role="radio"
+              aria-checked={checked}
+              aria-label={program.name}
+              onClick={() => pick(program)}
+              className={`block w-full rounded-xl border px-3 py-2.5 text-left transition-colors duration-150 focus-ring ${
+                checked ? 'border-primary bg-primary/[0.08]' : 'border-white/[0.08] bg-background/60 hover:border-primary/40'
+              }`}
+            >
+              <span className="block truncate font-semibold text-text-primary">{program.name}</span>
+              <span className="mt-0.5 block truncate text-xs text-text-muted">
+                {sortedProgramItems(program).map((item) => `${planLetter(item.position)} ${item.template.name}`).join(' · ')}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {selected && selected.items.length > 1 && (
+        <>
+          <p className="eyebrow mb-2 mt-5 text-xs text-text-muted">Empieza por</p>
+          <RoutineSequenceChips
+            items={sortedProgramItems(selected)}
+            nextPosition={nextPosition}
+            onSelect={setNextPosition}
+            label="Siguiente rutina del programa"
+          />
+        </>
+      )}
+
+      <FormError error={error} />
+      <DialogFooter onClose={onClose} onSave={() => void save()} saving={saving} label="Seguir programa" />
+    </>
+  );
+}
+
+function CustomPlanForm({ plan, onClose, onSave }: PlanFormProps) {
   const { data: routines = [], isLoading } = useRoutines();
   const [name, setName] = useState(plan?.name ?? DEFAULT_PLAN_NAME);
   const [selected, setSelected] = useState<RoutineTemplate[]>(() => plan?.items.map((item) => item.template) ?? []);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const move = (index: number, offset: -1 | 1) => {
-    setSelected((current) => {
-      const target = index + offset;
-      if (target < 0 || target >= current.length) return current;
-      const next = [...current];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-  };
 
   const save = async () => {
     if (selected.length === 0) {
@@ -208,65 +330,17 @@ export function PlanEditorDialog({ plan, onClose, onSave }: {
     }
   };
 
-  const full = selected.length >= MAX_PLAN_ROUTINES;
-
   return (
-    <Dialog label={plan ? 'Editar serie de rutinas' : 'Asignar serie de rutinas'} onClose={onClose} className="max-w-lg">
-      <h2 className="pr-10 text-xl font-bold text-text-primary">{plan ? 'Editar serie' : 'Asignar serie'}</h2>
+    <>
       <label className="mt-4 block">
         <span className="mb-1.5 block text-sm font-semibold text-text-primary">Nombre</span>
         <TextInput value={name} onChange={(event) => setName(event.target.value)} maxLength={191} className="w-full" />
       </label>
-
-      <p className="eyebrow mb-2 mt-5 text-xs text-text-muted">Orden</p>
-      {selected.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-white/[0.12] px-4 py-4 text-center text-sm text-text-secondary">Añade rutinas en el orden en que se alternarán.</p>
-      ) : (
-        <ol className="space-y-2" aria-label="Rutinas de la serie">
-          {selected.map((routine, index) => (
-            <li key={`${routine.id}-${index}`} className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-background/60 py-1.5 pl-2 pr-1">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary-soft">{planLetter(index + 1)}</span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-text-primary">{routine.name}</span>
-                {routine.status === 'INACTIVE' && <span className="text-xs text-warning">Archivada</span>}
-              </span>
-              <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label={`Subir ${planLetter(index + 1)}`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-text-secondary hover:bg-white/[0.05] disabled:opacity-30 focus-ring"><ArrowUp size={16} /></button>
-              <button type="button" onClick={() => move(index, 1)} disabled={index === selected.length - 1} aria-label={`Bajar ${planLetter(index + 1)}`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-text-secondary hover:bg-white/[0.05] disabled:opacity-30 focus-ring"><ArrowDown size={16} /></button>
-              <button type="button" onClick={() => setSelected((current) => current.filter((_, position) => position !== index))} aria-label={`Quitar ${planLetter(index + 1)}`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-text-secondary hover:bg-danger/10 hover:text-red-200 focus-ring"><Trash2 size={16} /></button>
-            </li>
-          ))}
-        </ol>
-      )}
-
-      <p className="eyebrow mb-1 mt-5 text-xs text-text-muted">Añadir rutina</p>
-      {isLoading && <p className="text-sm text-text-secondary">Cargando rutinas...</p>}
-      {!isLoading && routines.length === 0 && <p className="text-sm text-text-secondary">No hay rutinas activas. Crea una en Rutinas.</p>}
-      <div className="divide-y divide-white/[0.06]">
-        {routines.map((routine) => (
-          <button
-            key={routine.id}
-            type="button"
-            disabled={full}
-            onClick={() => setSelected((current) => [...current, routine])}
-            aria-label={`Añadir ${routine.name}`}
-            className="group flex min-h-14 w-full items-center justify-between gap-3 py-2.5 text-left disabled:opacity-40 focus-ring"
-          >
-            <span className="min-w-0">
-              <span className="block truncate font-semibold text-text-primary">{routine.name}</span>
-              <span className="tabular text-xs text-text-muted">{exerciseCountLabel(routine.exercises.length)}</span>
-            </span>
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary-soft transition-colors duration-150 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-contrast"><Plus size={17} /></span>
-          </button>
-        ))}
+      <div className="mt-5">
+        <RoutineSequenceEditor value={selected} onChange={setSelected} catalog={routines} catalogLoading={isLoading} />
       </div>
-      {full && <p className="mt-2 text-xs text-text-muted">Máximo {MAX_PLAN_ROUTINES} rutinas por serie.</p>}
-
-      {error && <p role="alert" className="mt-4 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-red-200">{error}</p>}
-
-      <div className="mt-6 grid grid-cols-2 gap-2">
-        <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-        <Button type="button" variant="primary" onClick={() => void save()} disabled={saving}>{saving ? 'Guardando...' : 'Guardar serie'}</Button>
-      </div>
-    </Dialog>
+      <FormError error={error} />
+      <DialogFooter onClose={onClose} onSave={() => void save()} saving={saving} label="Guardar serie" />
+    </>
   );
 }

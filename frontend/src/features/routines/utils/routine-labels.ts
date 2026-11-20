@@ -1,4 +1,4 @@
-import type { RoutineTemplate, RoutineTemplateExercise } from '@shared/types/api';
+import type { RoutineProgram, RoutineProgramItem, RoutineTemplate, RoutineTemplateExercise } from '@shared/types/api';
 
 /** Letter for a 1-based plan position: 1 → A, 2 → B, ... */
 export function planLetter(position: number): string {
@@ -15,6 +15,19 @@ export function formatTarget(item: Pick<RoutineTemplateExercise, 'targetSets' | 
 
 export function exerciseCountLabel(count: number): string {
   return count === 1 ? '1 ejercicio' : `${count} ejercicios`;
+}
+
+export function clientCountLabel(count: number): string {
+  return count === 1 ? '1 cliente' : `${count} clientes`;
+}
+
+export function routineCountLabel(count: number): string {
+  return count === 1 ? '1 rutina' : `${count} rutinas`;
+}
+
+/** Program items in sequence order (A, B, C...). */
+export function sortedProgramItems(program: Pick<RoutineProgram, 'items'>): RoutineProgramItem[] {
+  return [...program.items].sort((a, b) => a.position - b.position);
 }
 
 export function routinePreview(routine: RoutineTemplate, limit = 3): string {
