@@ -61,6 +61,7 @@ export const openApiDocument: OpenApiDocument = {
     { name: 'Trainers', description: 'Trainer management' },
     { name: 'Dashboard', description: 'Center activity overview for administrators' },
     { name: 'Routines', description: 'Routine templates and client routine plans (A→B→C)' },
+    { name: 'Routine Programs', description: 'Reusable sequences of routine templates that many clients can follow live' },
   ],
   components: {
     securitySchemes: {
@@ -648,14 +649,22 @@ export const openApiDocument: OpenApiDocument = {
       },
       ClientRoutinePlan: {
         type: 'object',
-        required: ['id', 'tenantId', 'clientId', 'name', 'active', 'nextPosition', 'createdById', 'createdAt', 'updatedAt', 'items'],
+        description: 'Either a custom plan with its own items, or a plan following a program live (programId set): then items are the program current items and change when the program is edited.',
+        required: ['id', 'tenantId', 'clientId', 'name', 'active', 'nextPosition', 'programId', 'createdById', 'createdAt', 'updatedAt', 'items'],
         properties: {
           id: { type: 'string' },
           tenantId: { type: 'string' },
           clientId: { type: 'string' },
-          name: { type: 'string', example: 'Serie de rutinas' },
+          name: { type: 'string', example: 'Serie de rutinas', description: 'For program plans, the program name when it was assigned.' },
           active: { type: 'boolean' },
           nextPosition: { type: 'integer', minimum: 1, description: '1-based position of the routine suggested for the next session.' },
+          programId: { type: 'string', nullable: true, description: 'Program the plan follows live. Null for custom plans.' },
+          program: {
+            type: 'object',
+            nullable: true,
+            required: ['id', 'name', 'status'],
+            properties: { id: { type: 'string' }, name: { type: 'string' }, status: { $ref: '#/components/schemas/Status' } },
+          },
           createdById: { type: 'string' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
@@ -663,6 +672,21 @@ export const openApiDocument: OpenApiDocument = {
         },
       },
       ClientRoutinePlanInput: {
+        description: 'Follow a program (programId) or define a custom sequence (templateIds). Sending both is rejected with 400.',
+        oneOf: [
+          { $ref: '#/components/schemas/ClientRoutinePlanProgramInput' },
+          { $ref: '#/components/schemas/ClientRoutinePlanCustomInput' },
+        ],
+      },
+      ClientRoutinePlanProgramInput: {
+        type: 'object',
+        required: ['programId'],
+        properties: {
+          programId: { type: 'string', description: 'Active program of the center. The plan takes its name and follows its items live.' },
+          nextPosition: { type: 'integer', minimum: 1, default: 1, description: 'Must be within 1..program items length.' },
+        },
+      },
+      ClientRoutinePlanCustomInput: {
         type: 'object',
         required: ['templateIds'],
         properties: {
@@ -675,6 +699,58 @@ export const openApiDocument: OpenApiDocument = {
             items: { type: 'string' },
           },
           nextPosition: { type: 'integer', minimum: 1, default: 1, description: 'Must be within 1..templateIds.length.' },
+        },
+      },
+      RoutineProgramItem: {
+        type: 'object',
+        required: ['id', 'programId', 'templateId', 'position', 'template'],
+        properties: {
+          id: { type: 'string' },
+          programId: { type: 'string' },
+          templateId: { type: 'string' },
+          position: { type: 'integer', minimum: 1, description: '1-based order inside the program (A=1, B=2, ...).' },
+          template: { $ref: '#/components/schemas/RoutineTemplate' },
+        },
+      },
+      RoutineProgram: {
+        type: 'object',
+        required: ['id', 'tenantId', 'name', 'notes', 'status', 'createdById', 'createdAt', 'updatedAt', 'items', 'activeClientCount'],
+        properties: {
+          id: { type: 'string' },
+          tenantId: { type: 'string' },
+          name: { type: 'string', example: 'Fuerza 3 días' },
+          notes: { type: 'string', nullable: true },
+          status: { $ref: '#/components/schemas/Status' },
+          createdById: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+          items: { type: 'array', items: { $ref: '#/components/schemas/RoutineProgramItem' } },
+          activeClientCount: { type: 'integer', minimum: 0, description: 'Active client plans following the program.' },
+        },
+      },
+      RoutineProgramInput: {
+        type: 'object',
+        required: ['name', 'templateIds'],
+        properties: {
+          name: { type: 'string', maxLength: 191, example: 'Fuerza 3 días' },
+          notes: { type: 'string', maxLength: 2000, nullable: true },
+          templateIds: {
+            type: 'array',
+            minItems: 1,
+            maxItems: 10,
+            description: 'Ordered active templates of the center. The same template may repeat. Replaces the whole list on update; followers whose next routine falls beyond the new length restart at 1.',
+            items: { type: 'string' },
+          },
+        },
+      },
+      RoutineProgramClient: {
+        type: 'object',
+        required: ['clientId', 'firstName', 'lastName', 'nextPosition'],
+        properties: {
+          clientId: { type: 'string' },
+          firstName: { type: 'string' },
+          lastName: { type: 'string' },
+          nextPosition: { type: 'integer', minimum: 1 },
         },
       },
       ClientRoutinePlanNextInput: {
@@ -1229,6 +1305,46 @@ Object.assign(openApiDocument.paths, {
       responses: { 200: { description: 'Routine plan updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/ClientRoutinePlan' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...adminResponses },
     },
   },
+  '/routine-programs': {
+    get: {
+      tags: ['Routine Programs'], security: [{ bearerAuth: [] }], summary: 'List routine programs with their ordered templates',
+      parameters: [{ name: 'includeInactive', in: 'query', description: 'Include archived programs', schema: { type: 'boolean', default: false } }],
+      responses: { 200: { description: 'Routine programs', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/RoutineProgram' } } } } }, ...authResponses },
+    },
+    post: {
+      tags: ['Routine Programs'], security: [{ bearerAuth: [] }], summary: 'Create a routine program (routine managers)',
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineProgramInput' } } } },
+      responses: { 201: { description: 'Routine program created', content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineProgram' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...adminResponses },
+    },
+  },
+  '/routine-programs/{id}': {
+    get: {
+      tags: ['Routine Programs'], security: [{ bearerAuth: [] }], summary: 'Get a routine program',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Routine program', content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineProgram' } } } }, 404: { $ref: '#/components/responses/NotFound' }, ...authResponses },
+    },
+    put: {
+      tags: ['Routine Programs'], security: [{ bearerAuth: [] }], summary: 'Replace name, notes and ordered templates of a routine program (routine managers)',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineProgramInput' } } } },
+      responses: { 200: { description: 'Routine program updated; clients following it see the change live', content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineProgram' } } } }, 400: { $ref: '#/components/responses/BadRequest' }, ...adminResponses },
+    },
+  },
+  '/routine-programs/{id}/status': {
+    patch: {
+      tags: ['Routine Programs'], security: [{ bearerAuth: [] }], summary: 'Archive or restore a routine program (routine managers). Archived programs cannot be newly assigned; clients already following keep working.',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/StatusInput' } } } },
+      responses: { 200: { description: 'Routine program updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/RoutineProgram' } } } }, ...adminResponses },
+    },
+  },
+  '/routine-programs/{id}/clients': {
+    get: {
+      tags: ['Routine Programs'], security: [{ bearerAuth: [] }], summary: 'List clients whose active plan follows the program',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Clients following the program, sorted by name', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/RoutineProgramClient' } } } } }, 404: { $ref: '#/components/responses/NotFound' }, ...authResponses },
+    },
+  },
 });
 
 type OperationMetadata = {
@@ -1291,6 +1407,12 @@ const operationMetadata: Record<string, OperationMetadata> = {
   'PUT /clients/{id}/routine-plan': { operationId: 'assignClientRoutinePlan', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
   'DELETE /clients/{id}/routine-plan': { operationId: 'removeClientRoutinePlan', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
   'PATCH /clients/{id}/routine-plan/next': { operationId: 'setClientRoutinePlanNext', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'GET /routine-programs': { operationId: 'listRoutinePrograms', roles: ['ADMIN', 'TRAINER'] },
+  'POST /routine-programs': { operationId: 'createRoutineProgram', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'GET /routine-programs/{id}': { operationId: 'getRoutineProgram', roles: ['ADMIN', 'TRAINER'] },
+  'PUT /routine-programs/{id}': { operationId: 'updateRoutineProgram', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'PATCH /routine-programs/{id}/status': { operationId: 'updateRoutineProgramStatus', roles: ['ADMIN', 'TRAINER'], permission: 'canManageRoutines' },
+  'GET /routine-programs/{id}/clients': { operationId: 'listRoutineProgramClients', roles: ['ADMIN', 'TRAINER'] },
   'GET /dashboard/overview': { operationId: 'getDashboardOverview', roles: ['ADMIN'] },
   'GET /trainers': { operationId: 'listTrainers', roles: ['ADMIN'] },
   'POST /trainers': { operationId: 'createTrainer', roles: ['ADMIN'] },
