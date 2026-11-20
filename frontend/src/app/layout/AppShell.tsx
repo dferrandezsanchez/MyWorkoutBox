@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Search,
   Settings,
+  SlidersHorizontal,
   User,
   Users,
 } from 'lucide-react';
@@ -117,7 +118,7 @@ export function AppShell({
     .map((tourId) => navItems.find((item) => item.tourId === tourId))
     .filter((item): item is (typeof navItems)[number] => Boolean(item));
   const mobileMenuLinks = isAdminMode
-    ? [{ label: 'Ajustes del centro', path: '/admin/settings', icon: Settings }]
+    ? [{ label: 'Ajustes del centro', path: '/admin/settings', icon: SlidersHorizontal }]
     : [{ label: 'Rutinas', path: '/routines', icon: ClipboardList }];
 
   const initials = (displayUser?.name || displayUser?.email || 'U').slice(0, 2).toUpperCase();

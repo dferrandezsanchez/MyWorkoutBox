@@ -118,9 +118,9 @@ function PlanSummary({ plan, canManage, pending, onSetNext, onEdit, onRemove }: 
     <Panel className="p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-display text-base font-bold text-text-primary">{plan.name}</p>
+          {plan.name !== DEFAULT_PLAN_NAME && <p className="mb-0.5 truncate font-display text-base font-bold text-text-primary">{plan.name}</p>}
           {next && (
-            <p className="mt-0.5 truncate text-sm text-text-secondary">
+            <p className="truncate text-sm text-text-secondary">
               Siguiente: <span className="font-semibold text-primary-soft">{planLetter(next.position)} · {next.template.name}</span>
             </p>
           )}

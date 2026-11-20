@@ -63,7 +63,7 @@ export default function RoutinesPage() {
           title="Rutinas"
           description="Rutinas preparadas con sus ejercicios en orden, listas para asignar a cada cliente."
           actions={canManage ? (
-            <Button variant="primary" onClick={() => navigate(`/routines/new${modeQuery}`)} className="inline-flex items-center gap-2">
+            <Button variant="primary" onClick={() => navigate(`/routines/new${modeQuery}`)} className="inline-flex items-center gap-2 whitespace-nowrap">
               <Plus size={17} />
               Nueva rutina
             </Button>
