@@ -133,5 +133,13 @@ export function createClientsRouter(container: AppContainer): Router {
     }
   });
 
+  router.get('/:id/session-options', auth, async (req, res, next): Promise<void> => {
+    try {
+      res.status(200).json(await container.trainingSessions.options.execute(req.user!.tenantId, req.params.id));
+    } catch (err) {
+      next(err);
+    }
+  });
+
   return router;
 }

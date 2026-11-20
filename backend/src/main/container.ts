@@ -55,6 +55,7 @@ import {
   DeleteSessionSeriesUseCase,
   DiscardTrainingSessionUseCase,
   GetActiveTrainingSessionUseCase,
+  GetSessionOptionsUseCase,
   GetTrainingSessionUseCase,
   ListClientTrainingSessionsUseCase,
   ListTrainerTrainingSessionsUseCase,
@@ -155,7 +156,8 @@ export function createContainer() {
       overview: new GetDashboardOverviewUseCase(dashboard, clock),
     },
     trainingSessions: {
-      start: new StartTrainingSessionUseCase(trainingSessions, clients, auditLogs, clock),
+      start: new StartTrainingSessionUseCase(trainingSessions, clients, auditLogs, clock, routineTemplates, routinePlans),
+      options: new GetSessionOptionsUseCase(clients, routineTemplates, routinePlans),
       getActive: new GetActiveTrainingSessionUseCase(trainingSessions),
       get: new GetTrainingSessionUseCase(trainingSessions),
       listByClient: new ListClientTrainingSessionsUseCase(trainingSessions, clients),
@@ -165,7 +167,7 @@ export function createContainer() {
       createSeries: new CreateSessionSeriesUseCase(trainingSessions, performances, auditLogs, clock),
       updateSeries: new UpdateSessionSeriesUseCase(trainingSessions, performances, auditLogs, clock),
       deleteSeries: new DeleteSessionSeriesUseCase(trainingSessions, performances, auditLogs),
-      complete: new CompleteTrainingSessionUseCase(trainingSessions, auditLogs, clock),
+      complete: new CompleteTrainingSessionUseCase(trainingSessions, auditLogs, clock, routinePlans),
       discard: new DiscardTrainingSessionUseCase(trainingSessions, auditLogs),
     },
   };

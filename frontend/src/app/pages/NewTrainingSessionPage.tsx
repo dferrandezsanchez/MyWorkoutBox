@@ -5,7 +5,10 @@ import AppShell from '@app/layout/AppShell';
 import Avatar from '@shared/components/Avatar';
 import { Button, Dialog, EmptyState, Panel, TextInput } from '@shared/components/ui';
 import { useClients } from '@features/clients/hooks/useClients';
-import { useActiveSession, useStartSession, useTrainerSessions } from '@features/training-sessions/hooks/useTrainingSessions';
+import { useActiveSession, useSessionOptions, useStartSession, useTrainerSessions } from '@features/training-sessions/hooks/useTrainingSessions';
+import SessionStartChoice from '@features/training-sessions/components/SessionStartChoice';
+import { defaultSelection, hasRoutineChoices } from '@features/training-sessions/utils/routines';
+import type { SessionStartSelection } from '@features/training-sessions/utils/routines';
 import type { Client } from '@shared/types/api';
 
 function age(birthDate: string): number {
@@ -20,6 +23,12 @@ export default function NewTrainingSessionPage() {
   const startSession = useStartSession();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Client | null>(null);
+  const [choice, setChoice] = useState<SessionStartSelection | null>(null);
+  const sessionOptions = useSessionOptions(selected?.id);
+  const options = sessionOptions.data;
+  const showChoices = hasRoutineChoices(options);
+  const selection = showChoices ? choice ?? defaultSelection(options) : { mode: 'free' as const };
+  const missingTemplate = selection.mode === 'template' && !selection.templateId;
 
   const activeClients = clients.filter((client) => client.status === 'ACTIVE');
   const recentClients = useMemo(() => {
@@ -33,9 +42,18 @@ export default function NewTrainingSessionPage() {
   const normalized = query.trim().toLowerCase();
   const visibleClients = activeClients.filter((client) => `${client.firstName} ${client.lastName}`.toLowerCase().includes(normalized));
 
+  const selectClient = (client: Client | null) => {
+    setSelected(client);
+    setChoice(null);
+  };
+
   const confirmStart = async () => {
-    if (!selected) return;
-    const session = await startSession.mutateAsync(selected.id);
+    if (!selected || missingTemplate) return;
+    const session = await startSession.mutateAsync({
+      clientId: selected.id,
+      mode: selection.mode,
+      ...(selection.mode === 'template' ? { templateId: selection.templateId } : {}),
+    });
     void navigate(`/trainer/sessions/${session.id}`);
   };
 
@@ -77,7 +95,7 @@ export default function NewTrainingSessionPage() {
           <TextInput type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar cliente" className="h-12 w-full rounded-full bg-surface pl-12 text-base" autoFocus />
         </label>
 
-        {!query && recentClients.length > 0 && <ClientSection title="Clientes recientes" clients={recentClients} onSelect={setSelected} />}
+        {!query && recentClients.length > 0 && <ClientSection title="Clientes recientes" clients={recentClients} onSelect={selectClient} />}
 
         <section>
           <div className="mb-3 flex items-end justify-between gap-3 px-1">
@@ -86,12 +104,12 @@ export default function NewTrainingSessionPage() {
           </div>
           {isLoading && <Panel className="p-10 text-center text-text-secondary">Cargando clientes...</Panel>}
           {isError && <Panel className="p-10 text-center text-danger">No se pudieron cargar los clientes</Panel>}
-          {!isLoading && !isError && visibleClients.length === 0 ? <EmptyState title="No se encontraron clientes" /> : <ClientList clients={visibleClients} onSelect={setSelected} />}
+          {!isLoading && !isError && visibleClients.length === 0 ? <EmptyState title="No se encontraron clientes" /> : <ClientList clients={visibleClients} onSelect={selectClient} />}
         </section>
       </div>
 
       {selected && (
-        <Dialog label="Confirmar cliente" onClose={() => setSelected(null)} className="max-w-md">
+        <Dialog label="Confirmar cliente" onClose={() => selectClient(null)} className="max-w-md">
           <div className="pr-10">
             <p className="eyebrow">Confirmar entrenamiento</p>
             <div className="mt-4 flex items-center gap-3">
@@ -103,11 +121,19 @@ export default function NewTrainingSessionPage() {
             </div>
           </div>
           {selected.notes && <p className="mt-5 rounded-xl border border-white/[0.08] bg-background/60 p-3 text-sm leading-6 text-text-secondary">{selected.notes}</p>}
-          <p className="mt-4 text-sm text-text-muted">Se iniciará una nueva sesión activa para este cliente.</p>
+          {sessionOptions.isLoading && <p className="mt-4 text-sm text-text-muted" role="status">Cargando rutinas...</p>}
+          {sessionOptions.isError && <p className="mt-4 text-sm text-text-muted">No se pudieron cargar las rutinas. Puedes empezar un entreno libre.</p>}
+          {showChoices && options ? (
+            <div className="mt-5">
+              <SessionStartChoice options={options} value={selection} onChange={setChoice} />
+            </div>
+          ) : (
+            !sessionOptions.isLoading && <p className="mt-4 text-sm text-text-muted">Se iniciará una nueva sesión activa para este cliente.</p>
+          )}
           {startSession.isError && <p role="alert" className="mt-4 text-sm text-danger">No se pudo iniciar la sesión. Comprueba que no exista otra activa.</p>}
           <div className="mt-6 grid grid-cols-2 gap-2">
-            <Button variant="ghost" onClick={() => setSelected(null)}>Cancelar</Button>
-            <Button variant="primary" disabled={startSession.isPending} onClick={() => void confirmStart()} className="inline-flex items-center justify-center gap-2">
+            <Button variant="ghost" onClick={() => selectClient(null)}>Cancelar</Button>
+            <Button variant="primary" disabled={startSession.isPending || sessionOptions.isLoading || missingTemplate} onClick={() => void confirmStart()} className="inline-flex items-center justify-center gap-2">
               <CirclePlay size={17} />
               {startSession.isPending ? 'Iniciando...' : 'Iniciar sesión'}
             </Button>

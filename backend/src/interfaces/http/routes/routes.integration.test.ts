@@ -64,6 +64,7 @@ function createFakeContainer(): AppContainer {
     },
     trainingSessions: {
       start: useCase({ id: 'session-1' }),
+      options: useCase({ plan: null, nextRoutine: null, templates: [] }),
       getActive: useCase(null),
       get: useCase({ id: 'session-1' }),
       listByClient: useCase([]),
@@ -173,6 +174,8 @@ describe('HTTP routes', () => {
     await request(app).get('/training-sessions/active').set(auth).expect(200);
     await request(app).get('/training-sessions?limit=4').set(auth).expect(200);
     await request(app).post('/training-sessions').set(auth).send({ clientId: 'client-1' }).expect(201);
+    await request(app).post('/training-sessions').set(auth).send({ clientId: 'client-1', mode: 'template', templateId: 'tpl-1' }).expect(201);
+    await request(app).get('/clients/client-1/session-options').set(auth).expect(200, { plan: null, nextRoutine: null, templates: [] });
     await request(app).get('/training-sessions/session-1').set(auth).expect(200);
     await request(app).post('/training-sessions/session-1/exercises').set(auth).send({ exerciseId: 'exercise-1' }).expect(201);
     await request(app).post('/training-sessions/session-1/exercises/item-1/series').set(auth).send({ value: 100, unit: 'kg' }).expect(201);

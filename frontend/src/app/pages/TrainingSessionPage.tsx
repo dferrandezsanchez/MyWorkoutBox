@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, CheckCircle2, ChevronLeft, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import { Check, CheckCircle2, ChevronLeft, History, ListOrdered, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import AppShell from '@app/layout/AppShell';
 import PerformanceForm from '@features/performances/components/PerformanceForm';
 import { extractVariant } from '@features/performances/utils/exerciseTemplates';
@@ -8,6 +8,7 @@ import { useExercises } from '@features/exercises/hooks/useExercises';
 import { NO_GROUP, groupByMuscle } from '@features/exercises/utils/muscle-groups';
 import { CATEGORY_LABELS, UNIT_LABELS } from '@features/exercises/utils/labels';
 import { useSessionActions, useTrainerSessions, useTrainingSession } from '@features/training-sessions/hooks/useTrainingSessions';
+import { formatPreviousSeries, lastTimeLabel, newSeriesPrefill, routineLetter } from '@features/training-sessions/utils/routines';
 import { Button, ConfirmDialog, Dialog, EmptyState, Panel, TextInput } from '@shared/components/ui';
 import type { CreatePerformanceData, PerformanceRecord, TrainingSessionExercise } from '@shared/types/api';
 
@@ -86,7 +87,7 @@ export default function TrainingSessionPage() {
   const [showPicker, setShowPicker] = useState(false);
   const [query, setQuery] = useState('');
   const [pickerGroup, setPickerGroup] = useState('all');
-  const [editor, setEditor] = useState<{ item: TrainingSessionExercise; record?: PerformanceRecord; copyFrom?: PerformanceRecord } | null>(null);
+  const [editor, setEditor] = useState<{ item: TrainingSessionExercise; record?: PerformanceRecord; copyFrom?: PerformanceRecord; reference?: PerformanceRecord } | null>(null);
   const [showComplete, setShowComplete] = useState(false);
   const [showDiscard, setShowDiscard] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<PerformanceRecord | null>(null);
@@ -132,7 +133,7 @@ export default function TrainingSessionPage() {
     const item = updated.exercises.find((entry) => entry.exerciseId === exerciseId);
     setShowPicker(false);
     setQuery('');
-    if (item) setEditor({ item });
+    if (item) setEditor({ item, ...newSeriesPrefill(item) });
   };
 
   const saveSeries = async (data: CreatePerformanceData) => {
@@ -180,6 +181,12 @@ export default function TrainingSessionPage() {
           <div className="mt-5 flex flex-wrap gap-2">
             <span className="tabular rounded-full border border-white/[0.08] bg-background/60 px-3 py-1.5 font-display text-sm font-semibold text-text-primary">{session.exercises.length} ejercicios</span>
             <span className="tabular rounded-full border border-white/[0.08] bg-background/60 px-3 py-1.5 font-display text-sm font-semibold text-text-primary">{seriesTotal} series</span>
+            {(session.routinePlanPosition || session.routineTemplateId) && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 font-display text-sm font-semibold text-primary-soft">
+                <ListOrdered size={14} aria-hidden="true" />
+                {session.routinePlanPosition ? `Rutina ${routineLetter(session.routinePlanPosition)}` : 'Desde rutina'}
+              </span>
+            )}
           </div>
           {session.client.notes && <p className="mt-4 rounded-xl border border-white/[0.08] bg-background/60 p-3 text-sm leading-6 text-text-secondary">{session.client.notes}</p>}
         </Panel>
@@ -197,7 +204,7 @@ export default function TrainingSessionPage() {
                 onRemove={() => actions.removeExercise.mutate(item.id)}
                 onEdit={(record) => setEditor({ item, record })}
                 onDelete={setRecordToDelete}
-                onAdd={() => setEditor({ item, copyFrom: item.series.at(-1) })}
+                onAdd={() => setEditor({ item, ...newSeriesPrefill(item) })}
               />
             ))}
           </div>
@@ -287,7 +294,7 @@ export default function TrainingSessionPage() {
         </div>
       )}
 
-      {editor && <PerformanceForm key={`${editor.item.id}-${editor.record?.id ?? 'new'}-${editor.item.series.length}`} context="session" exerciseName={editor.item.exercise.name} defaultUnit={editor.item.exercise.defaultUnit} exercise={editor.item.exercise} initialRecord={editor.record ?? editor.copyFrom} copyMode={Boolean(editor.copyFrom)} onSave={saveSeries} onClose={() => setEditor(null)} />}
+      {editor && <PerformanceForm key={`${editor.item.id}-${editor.record?.id ?? 'new'}-${editor.item.series.length}`} context="session" exerciseName={editor.item.exercise.name} defaultUnit={editor.item.exercise.defaultUnit} exercise={editor.item.exercise} initialRecord={editor.record ?? editor.copyFrom} copyMode={Boolean(editor.copyFrom)} referenceLabel={!editor.record && editor.reference ? lastTimeLabel(editor.reference) : undefined} onSave={saveSeries} onClose={() => setEditor(null)} />}
 
       {showComplete && (
         <Dialog label="Finalizar sesión" onClose={() => setShowComplete(false)} className="max-w-md">
@@ -327,6 +334,7 @@ function ExerciseCard({
   onAdd: () => void;
 }) {
   const columns = getSeriesColumns(item);
+  const previousSummary = formatPreviousSeries(item.previousSeries ?? []);
 
   return (
     <Panel className="overflow-hidden">
@@ -338,6 +346,12 @@ function ExerciseCard({
           </p>
           <h2 className="mt-1.5 truncate text-xl font-bold text-text-primary">{item.exercise.name}</h2>
           <p className="tabular mt-0.5 text-xs text-text-muted">{item.series.length} series</p>
+          {active && previousSummary && (
+            <p className="tabular mt-1 flex items-center gap-1.5 text-xs text-text-secondary">
+              <History size={13} className="shrink-0 text-primary-soft" aria-hidden="true" />
+              <span className="truncate">Última vez · {previousSummary}</span>
+            </p>
+          )}
         </div>
         {active && item.series.length === 0 && (
           <button type="button" aria-label="Quitar ejercicio" onClick={onRemove} className="-mr-1 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-danger/10 hover:text-danger focus-ring"><X size={18} /></button>

@@ -20,6 +20,17 @@ export function useClientSessions(clientId: string) {
   return useQuery({ queryKey: ['training-sessions', 'client', clientId], queryFn: () => api.listClientSessions(clientId), enabled: !!clientId });
 }
 
+export const sessionOptionsKey = (clientId: string) => ['training-session', 'options', clientId];
+
+/** Routines a session can start from (next of the plan + active templates). Only runs with a client selected. */
+export function useSessionOptions(clientId?: string | null) {
+  return useQuery({
+    queryKey: sessionOptionsKey(clientId ?? ''),
+    queryFn: () => api.getSessionOptions(clientId!),
+    enabled: !!clientId,
+  });
+}
+
 export function useStartSession() {
   const client = useQueryClient();
   return useMutation({
@@ -44,6 +55,7 @@ export function useSessionActions(id: string) {
         client.invalidateQueries({ queryKey: ['currentPerformances', session.clientId] }),
         client.invalidateQueries({ queryKey: ['performanceHistory', session.clientId] }),
         client.invalidateQueries({ queryKey: ['training-sessions', 'trainer'] }),
+        client.invalidateQueries({ queryKey: sessionOptionsKey(session.clientId) }),
       ]);
     }
   };
