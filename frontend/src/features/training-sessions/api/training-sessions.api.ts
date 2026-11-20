@@ -1,5 +1,5 @@
 import apiClient from '@shared/api/http-client';
-import type { CreatePerformanceData, PerformanceRecord, TrainingSession } from '@shared/types/api';
+import type { CreatePerformanceData, PerformanceRecord, SessionStartOptions, StartSessionData, TrainingSession } from '@shared/types/api';
 
 export async function getActiveSession(): Promise<TrainingSession | null> {
   return (await apiClient.get<TrainingSession | null>('/training-sessions/active')).data;
@@ -9,8 +9,14 @@ export async function listTrainerSessions(limit = 10): Promise<TrainingSession[]
   return (await apiClient.get<TrainingSession[]>('/training-sessions', { params: { limit } })).data;
 }
 
-export async function startSession(clientId: string): Promise<TrainingSession> {
-  return (await apiClient.post<TrainingSession>('/training-sessions', { clientId })).data;
+/** Accepts a bare client id (free session) or the full start payload. */
+export async function startSession(input: string | StartSessionData): Promise<TrainingSession> {
+  const payload: StartSessionData = typeof input === 'string' ? { clientId: input } : input;
+  return (await apiClient.post<TrainingSession>('/training-sessions', payload)).data;
+}
+
+export async function getSessionOptions(clientId: string): Promise<SessionStartOptions> {
+  return (await apiClient.get<SessionStartOptions>(`/clients/${clientId}/session-options`)).data;
 }
 
 export async function getSession(id: string): Promise<TrainingSession> {
