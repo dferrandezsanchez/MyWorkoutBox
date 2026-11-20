@@ -8,6 +8,7 @@ import type {
 import type { ClientRoutinePlan, RoutineProgram, RoutineTemplate } from '../../domain/shared/entities';
 import type { Status } from '../../domain/shared/enums';
 import prisma from '../prisma/prisma-client';
+import { runTransaction } from '../prisma/transaction';
 import { toExercise } from './prisma-repositories';
 
 const templateInclude = {
@@ -86,7 +87,7 @@ export class PrismaRoutineTemplateRepository implements RoutineTemplateRepositor
     status?: Status;
     exercises?: RoutineTemplateExerciseInput[];
   }): Promise<RoutineTemplate> {
-    const template = await prisma.$transaction(async (tx) => {
+    const template = await runTransaction(async (tx) => {
       await tx.routineTemplate.updateMany({
         where: { tenantId, id },
         data: { name: data.name, notes: data.notes, status: data.status },
@@ -136,11 +137,16 @@ export class PrismaClientRoutinePlanRepository implements ClientRoutinePlanRepos
     programId?: string;
     nextPosition?: number;
   }): Promise<ClientRoutinePlan> {
-    const plan = await prisma.$transaction(async (tx) => {
-      await tx.clientRoutinePlan.updateMany({
+    const plan = await runTransaction(async (tx) => {
+      // Deactivate by primary key: a range update on the (tenantId, clientId, active) index takes
+      // gap locks that deadlock with concurrent plan inserts for other clients.
+      const current = await tx.clientRoutinePlan.findMany({
         where: { tenantId: data.tenantId, clientId: data.clientId, active: true },
-        data: { active: false },
+        select: { id: true },
       });
+      for (const { id } of current) {
+        await tx.clientRoutinePlan.update({ where: { id }, data: { active: false } });
+      }
       return tx.clientRoutinePlan.create({
         data: {
           tenantId: data.tenantId,
@@ -198,7 +204,7 @@ export class PrismaRoutineProgramRepository implements RoutineProgramRepository 
   }
 
   async update(tenantId: string, id: string, data: { name?: string; notes?: string | null; status?: Status; templateIds?: string[] }): Promise<RoutineProgram> {
-    const program = await prisma.$transaction(async (tx) => {
+    const program = await runTransaction(async (tx) => {
       await tx.routineProgram.updateMany({
         where: { tenantId, id },
         data: { name: data.name, notes: data.notes, status: data.status },

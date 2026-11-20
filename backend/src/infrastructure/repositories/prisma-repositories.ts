@@ -28,6 +28,7 @@ import { Role, Status } from '../../domain/shared/enums';
 import { lastAdminConflict } from '../../domain/shared/errors';
 import type { Prisma } from '@prisma/client';
 import prisma from '../prisma/prisma-client';
+import { runTransaction } from '../prisma/transaction';
 
 export class PrismaUserRepository implements UserRepository {
   async findById(id: string): Promise<User | null> {
@@ -173,7 +174,7 @@ async function updateMembershipKeepingAnAdmin(
   tenantId: string,
   data: { role?: Role; canManageRoutines?: boolean; active?: boolean },
 ) {
-  return prisma.$transaction(async (tx) => {
+  return runTransaction(async (tx) => {
     const countActiveAdmins = async () => {
       const rows = await tx.$queryRaw<Array<{ total: bigint | number }>>`
         SELECT COUNT(*) AS total
