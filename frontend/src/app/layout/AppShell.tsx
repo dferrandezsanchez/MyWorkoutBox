@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from 'react';
 import {
   Building2,
+  ClipboardList,
   Dumbbell,
   LayoutDashboard,
   Search,
   Settings,
+  SlidersHorizontal,
   User,
   Users,
 } from 'lucide-react';
@@ -66,6 +68,7 @@ export function AppShell({
         { label: 'Clientes', tourId: 'admin-clients', path: '/admin/clients', icon: Users, active: location.pathname.startsWith('/admin/clients') },
         { label: 'Entrenadores', mobileLabel: 'Equipo', tourId: 'admin-trainers', path: '/admin/trainers', icon: User, active: location.pathname.startsWith('/admin/trainers') },
         { label: 'Ejercicios', tourId: 'admin-exercises', path: '/admin/exercises', icon: Dumbbell, active: location.pathname.startsWith('/admin/exercises') },
+        { label: 'Rutinas', tourId: 'admin-routines', path: '/routines?mode=admin', icon: ClipboardList, active: location.pathname.startsWith('/routines') },
         { label: 'Ajustes', tourId: 'admin-settings', path: '/admin/settings', icon: Settings, active: location.pathname.startsWith('/admin/settings') },
       ]
     : [
@@ -84,6 +87,13 @@ export function AppShell({
           active: location.pathname === '/trainer/clients' || location.pathname.startsWith('/clients/'),
         },
         {
+          label: 'Rutinas',
+          tourId: 'trainer-routines',
+          path: '/routines',
+          icon: ClipboardList,
+          active: location.pathname.startsWith('/routines'),
+        },
+        {
           label: activeSession ? 'Sesión activa' : 'Nueva sesión',
           mobileLabel: activeSession ? 'En curso' : 'Entrenar',
           primary: true,
@@ -100,6 +110,16 @@ export function AppShell({
           active: location.pathname === '/account',
         },
       ];
+
+  const mobileNavTourIds = isAdminMode
+    ? ['admin-home', 'admin-clients', 'admin-trainers', 'admin-exercises', 'admin-routines']
+    : ['trainer-home', 'trainer-train', 'trainer-clients'];
+  const mobileNavItems = mobileNavTourIds
+    .map((tourId) => navItems.find((item) => item.tourId === tourId))
+    .filter((item): item is (typeof navItems)[number] => Boolean(item));
+  const mobileMenuLinks = isAdminMode
+    ? [{ label: 'Ajustes del centro', path: '/admin/settings', icon: SlidersHorizontal }]
+    : [{ label: 'Rutinas', path: '/routines', icon: ClipboardList }];
 
   const initials = (displayUser?.name || displayUser?.email || 'U').slice(0, 2).toUpperCase();
   const tenantName = tenant?.name ?? '';
@@ -241,8 +261,9 @@ export function AppShell({
           isAdminMode ? 'grid-cols-5' : 'grid-cols-3'
         }`}
       >
-        {/* Trainer: Inicio · Entrenar · Clientes, with the training action centred in the thumb zone. Account lives in the header avatar. */}
-        {(isAdminMode ? navItems : [navItems[0], navItems[2], navItems[1]]).map((item) => {
+        {/* Trainer: Inicio · Entrenar · Clientes, with the training action centred in the thumb zone. Account lives in the header avatar.
+            Admin: five slots; Ajustes and the trainer's Rutinas move to the user menu on mobile (see mobileLinks). */}
+        {mobileNavItems.map((item) => {
           const Icon = item.icon;
           const label = item.mobileLabel ?? item.label;
 
@@ -296,6 +317,7 @@ export function AppShell({
           onNavigate={navigate}
           onLogout={requestLogout}
           onOpenGuide={tour.start}
+          mobileLinks={mobileMenuLinks}
         />
       )}
 

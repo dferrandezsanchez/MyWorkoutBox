@@ -62,6 +62,17 @@ function createFakeContainer(): AppContainer {
       resetPassword: useCase(undefined),
       updateAccess: useCase({ id: 'trainer-1', role: Role.ADMIN, canManageRoutines: true }),
     },
+    routines: {
+      list: useCase([]),
+      get: useCase({ id: 'routine-1' }),
+      create: useCase({ id: 'routine-1' }),
+      update: useCase({ id: 'routine-1', name: 'Updated' }),
+      setStatus: useCase({ id: 'routine-1', status: Status.INACTIVE }),
+      getClientPlan: useCase(null),
+      assignClientPlan: useCase({ id: 'plan-1' }),
+      removeClientPlan: useCase(undefined),
+      setClientPlanNext: useCase({ id: 'plan-1', nextPosition: 2 }),
+    },
     trainingSessions: {
       start: useCase({ id: 'session-1' }),
       options: useCase({ plan: null, nextRoutine: null, templates: [] }),
@@ -184,5 +195,26 @@ describe('HTTP routes', () => {
     await request(app).delete('/training-sessions/session-1/exercises/item-1').set(auth).expect(200);
     await request(app).post('/training-sessions/session-1/complete').set(auth).send({}).expect(200);
     await request(app).delete('/training-sessions/session-1').set(auth).expect(204);
+  });
+
+  it('adapts routine and client routine plan routes to use cases', async () => {
+    const container = createFakeContainer();
+    const app = createHttpApp(container);
+
+    await request(app).get('/routines?includeInactive=true').set(auth).expect(200);
+    await request(app).post('/routines').set(auth).send({ name: 'A', exercises: [] }).expect(201);
+    await request(app).get('/routines/routine-1').set(auth).expect(200);
+    await request(app).put('/routines/routine-1').set(auth).send({ name: 'Updated', exercises: [] }).expect(200);
+    await request(app).patch('/routines/routine-1/status').set(auth).send({ status: Status.INACTIVE }).expect(200);
+    await request(app).get('/clients/client-1/routine-plan').set(auth).expect(200);
+    await request(app).put('/clients/client-1/routine-plan').set(auth).send({ templateIds: ['routine-1'] }).expect(200);
+    await request(app).patch('/clients/client-1/routine-plan/next').set(auth).send({ nextPosition: 2 }).expect(200);
+    await request(app).delete('/clients/client-1/routine-plan').set(auth).expect(204);
+
+    expect(container.routines.list.execute).toHaveBeenCalledWith('tenant-1', true);
+    expect(container.routines.update.execute).toHaveBeenCalledWith('tenant-1', 'user-1', 'routine-1', { name: 'Updated', exercises: [] });
+    expect(container.routines.setStatus.execute).toHaveBeenCalledWith('tenant-1', 'user-1', 'routine-1', Status.INACTIVE);
+    expect(container.routines.setClientPlanNext.execute).toHaveBeenCalledWith('tenant-1', 'user-1', 'client-1', 2);
+    expect(container.routines.removeClientPlan.execute).toHaveBeenCalledWith('tenant-1', 'user-1', 'client-1');
   });
 });

@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ClipboardList } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
 import type { AuthUser } from '@shared/types/auth';
 import { UserMenu } from './UserMenu';
@@ -32,6 +33,15 @@ describe('UserMenu', () => {
     expect(navigate).toHaveBeenCalledWith('/account?mode=trainer');
     await user.click(screen.getByRole('button', { name: /Cerrar sesión/ }));
     expect(logout).toHaveBeenCalled();
+  });
+
+  it('offers mobile shortcuts for sections outside the bottom navigation', async () => {
+    const user = userEvent.setup();
+    const navigate = vi.fn();
+    render(<UserMenu open user={{ ...admin, role: 'TRAINER' }} tenantName="Demo" mode="trainer" onClose={vi.fn()} onNavigate={navigate} onLogout={vi.fn()} onOpenGuide={vi.fn()} mobileLinks={[{ label: 'Rutinas', path: '/routines', icon: ClipboardList }]} />);
+
+    await user.click(screen.getByRole('button', { name: 'Rutinas' }));
+    expect(navigate).toHaveBeenCalledWith('/routines');
   });
 
   it('closes with Escape and renders nothing while closed', async () => {
