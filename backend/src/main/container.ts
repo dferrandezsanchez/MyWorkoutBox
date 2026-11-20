@@ -1,5 +1,6 @@
 import {
   ChangePasswordUseCase,
+  GetActiveRoleUseCase,
   GetCurrentTenantUseCase,
   GetMeUseCase,
   LoginUseCase,
@@ -44,6 +45,7 @@ import {
   ListTrainersUseCase,
   ResetTrainerPasswordUseCase,
   SetTrainerActiveUseCase,
+  UpdateStaffAccessUseCase,
   UpdateTrainerUseCase,
 } from '../application/trainers';
 import {
@@ -108,6 +110,7 @@ export function createContainer() {
       changePassword: new ChangePasswordUseCase(users, passwordHasher),
       getCurrentTenant: new GetCurrentTenantUseCase(tenants),
       updateCurrentTenant: new UpdateCurrentTenantUseCase(tenants),
+      getActiveRole: new GetActiveRoleUseCase(memberships),
     },
     clients: {
       list: new ListClientsUseCase(clients),
@@ -140,6 +143,7 @@ export function createContainer() {
       update: new UpdateTrainerUseCase(users, memberships),
       setActive: new SetTrainerActiveUseCase(memberships),
       resetPassword: new ResetTrainerPasswordUseCase(users, memberships, passwordHasher),
+      updateAccess: new UpdateStaffAccessUseCase(memberships, auditLogs),
     },
     measurements: {
       list: new ListClientMeasurementsUseCase(measurements, clients, tenants),

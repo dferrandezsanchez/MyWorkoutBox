@@ -1,5 +1,5 @@
-import type { Tenant } from '../../domain/shared/entities';
-import type { Role } from '../../domain/shared/enums';
+import type { Membership, Tenant } from '../../domain/shared/entities';
+import { Role } from '../../domain/shared/enums';
 import { internal } from '../../domain/shared/errors';
 
 export interface LoginResponse {
@@ -13,8 +13,14 @@ export interface PublicUser {
   name: string;
   email: string;
   role: Role;
+  /** Effective routine permission in the current tenant (always true for ADMIN). */
+  canManageRoutines: boolean;
   tenantId: string;
   organizationId: string;
+}
+
+export function canManageRoutines(membership: Pick<Membership, 'role' | 'canManageRoutines'>): boolean {
+  return membership.role === Role.ADMIN || Boolean(membership.canManageRoutines);
 }
 
 export interface PublicTenant {

@@ -22,7 +22,7 @@ const user: User = {
 
 function membership(overrides: Partial<Membership> = {}): Membership {
   return {
-    id: 'membership-1', userId: user.id, tenantId: 'tenant-1', role: Role.TRAINER,
+    id: 'membership-1', userId: user.id, tenantId: 'tenant-1', role: Role.TRAINER, canManageRoutines: false,
     active: true, createdAt: now, updatedAt: now, user, ...overrides,
   };
 }
@@ -53,6 +53,9 @@ function repositories(initialMembership = membership()) {
       currentMembership = { ...currentMembership, active };
     }),
     findTrainers: vi.fn(async () => [currentMembership]),
+    findStaff: vi.fn(async () => [currentMembership]),
+    updateAccess: vi.fn(),
+    countActiveAdmins: vi.fn(),
   };
   return { users, memberships };
 }

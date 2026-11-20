@@ -92,12 +92,13 @@ export const openApiDocument: OpenApiDocument = {
       },
       User: {
         type: 'object',
-        required: ['id', 'name', 'email', 'role', 'tenantId', 'organizationId'],
+        required: ['id', 'name', 'email', 'role', 'canManageRoutines', 'tenantId', 'organizationId'],
         properties: {
           id: { type: 'string' },
           name: { type: 'string' },
           email: { type: 'string', format: 'email' },
           role: { $ref: '#/components/schemas/Role' },
+          canManageRoutines: { type: 'boolean', description: 'Effective routine permission in the current tenant. Always true for ADMIN.' },
           tenantId: { type: 'string' },
           organizationId: { type: 'string' },
         },
@@ -495,12 +496,14 @@ export const openApiDocument: OpenApiDocument = {
       },
       Trainer: {
         type: 'object',
-        required: ['id', 'name', 'email', 'role', 'active'],
+        description: 'Staff member of the center (ADMIN or TRAINER membership).',
+        required: ['id', 'name', 'email', 'role', 'canManageRoutines', 'active'],
         properties: {
           id: { type: 'string' },
           name: { type: 'string' },
           email: { type: 'string', format: 'email' },
           role: { $ref: '#/components/schemas/Role' },
+          canManageRoutines: { type: 'boolean', description: 'Effective routine permission. Always true for ADMIN.' },
           active: { type: 'boolean' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' },
@@ -512,6 +515,14 @@ export const openApiDocument: OpenApiDocument = {
           name: { type: 'string', example: 'Trainer Demo' },
           email: { type: 'string', format: 'email', example: 'trainer@example.com' },
           active: { type: 'boolean' },
+        },
+      },
+      StaffAccessInput: {
+        type: 'object',
+        minProperties: 1,
+        properties: {
+          role: { $ref: '#/components/schemas/Role' },
+          canManageRoutines: { type: 'boolean' },
         },
       },
       TrainerCreateInput: {
@@ -978,6 +989,20 @@ Object.assign(openApiDocument.paths, {
       responses: { 200: { description: 'Trainer updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Trainer' } } } }, ...adminResponses },
     },
   },
+  '/trainers/{id}/access': {
+    patch: {
+      tags: ['Trainers'],
+      security: [{ bearerAuth: [] }],
+      summary: 'Change a staff member role or routine permission',
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/StaffAccessInput' } } } },
+      responses: {
+        200: { description: 'Staff access updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Trainer' } } } },
+        409: { $ref: '#/components/responses/Conflict' },
+        ...adminResponses,
+      },
+    },
+  },
   '/trainers/{id}/password': {
     put: {
       tags: ['Trainers'],
@@ -1044,6 +1069,7 @@ const operationMetadata: Record<string, OperationMetadata> = {
   'GET /trainers/{id}': { operationId: 'getTrainer', roles: ['ADMIN'] },
   'PUT /trainers/{id}': { operationId: 'updateTrainer', roles: ['ADMIN'] },
   'PATCH /trainers/{id}/status': { operationId: 'updateTrainerStatus', roles: ['ADMIN'] },
+  'PATCH /trainers/{id}/access': { operationId: 'updateStaffAccess', roles: ['ADMIN'] },
   'PUT /trainers/{id}/password': { operationId: 'resetTrainerPassword', roles: ['ADMIN'] },
 };
 

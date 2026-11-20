@@ -2,11 +2,12 @@ import { Router } from 'express';
 import type { AppContainer } from '../../../main/container';
 import { Role, Status } from '../../../domain/shared/enums';
 import { authenticate } from '../middleware/authenticate';
-import { authorize } from '../middleware/authorize';
+import { authorizeAdmin } from '../middleware/authorize';
 
 export function createExercisesRouter(container: AppContainer): Router {
   const router = Router();
   const auth = authenticate(container.tokenService);
+  const adminOnly = authorizeAdmin(container);
 
   router.get('/', auth, async (req, res, next): Promise<void> => {
     try {
@@ -17,7 +18,7 @@ export function createExercisesRouter(container: AppContainer): Router {
     }
   });
 
-  router.post('/', auth, authorize(Role.ADMIN), async (req, res, next): Promise<void> => {
+  router.post('/', auth, adminOnly, async (req, res, next): Promise<void> => {
     try {
       res.status(201).json(await container.exercises.create.execute(req.user!.tenantId, req.body));
     } catch (err) {
@@ -26,7 +27,7 @@ export function createExercisesRouter(container: AppContainer): Router {
   });
 
   // Declared before '/:id' so "library" is not read as an exercise id.
-  router.get('/library', auth, authorize(Role.ADMIN), async (req, res, next): Promise<void> => {
+  router.get('/library', auth, adminOnly, async (req, res, next): Promise<void> => {
     try {
       res.status(200).json(await container.exercises.listLibrary.execute(req.user!.tenantId));
     } catch (err) {
@@ -34,7 +35,7 @@ export function createExercisesRouter(container: AppContainer): Router {
     }
   });
 
-  router.post('/library/import', auth, authorize(Role.ADMIN), async (req, res, next): Promise<void> => {
+  router.post('/library/import', auth, adminOnly, async (req, res, next): Promise<void> => {
     try {
       res.status(200).json(await container.exercises.importLibrary.execute(req.user!.tenantId, req.body ?? {}));
     } catch (err) {
@@ -50,7 +51,7 @@ export function createExercisesRouter(container: AppContainer): Router {
     }
   });
 
-  router.put('/:id', auth, authorize(Role.ADMIN), async (req, res, next): Promise<void> => {
+  router.put('/:id', auth, adminOnly, async (req, res, next): Promise<void> => {
     try {
       res.status(200).json(await container.exercises.update.execute(req.user!.tenantId, req.params.id, req.body));
     } catch (err) {
@@ -58,7 +59,7 @@ export function createExercisesRouter(container: AppContainer): Router {
     }
   });
 
-  router.patch('/:id/status', auth, authorize(Role.ADMIN), async (req, res, next): Promise<void> => {
+  router.patch('/:id/status', auth, adminOnly, async (req, res, next): Promise<void> => {
     try {
       const { status } = req.body as { status: Status };
       res.status(200).json(await container.exercises.setStatus.execute(req.user!.tenantId, req.params.id, status));

@@ -121,6 +121,19 @@ describe('OpenAPI documentation', () => {
     expect(body.components.schemas.TrainerInput.properties).not.toHaveProperty('password');
   });
 
+  it('documents staff access management and the effective routine permission', async () => {
+    const { body } = await request(app).get('/openapi.json').expect(200);
+    const operation = body.paths['/trainers/{id}/access'].patch;
+
+    expect(operation.operationId).toBe('updateStaffAccess');
+    expect(operation['x-required-roles']).toEqual(['ADMIN']);
+    expect(operation.responses).toHaveProperty('409');
+    expect(body.components.schemas.StaffAccessInput.properties).toHaveProperty('role');
+    expect(body.components.schemas.StaffAccessInput.properties).toHaveProperty('canManageRoutines');
+    expect(body.components.schemas.Trainer.required).toContain('canManageRoutines');
+    expect(body.components.schemas.User.required).toContain('canManageRoutines');
+  });
+
   it('matches every Express API route and method', async () => {
     const { body } = await request(app).get('/openapi.json').expect(200);
     expect(documentedOperations(body.paths).sort((left, right) => left.localeCompare(right))).toEqual(expressOperations());

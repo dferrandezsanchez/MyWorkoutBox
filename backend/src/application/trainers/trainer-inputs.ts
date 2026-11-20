@@ -7,6 +7,8 @@ export interface TrainerUser {
   name: string;
   email: string;
   role: Role;
+  /** Effective routine permission: always true for ADMIN, membership flag for TRAINER. */
+  canManageRoutines: boolean;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -29,12 +31,23 @@ export interface ResetTrainerPasswordInput {
   password?: string;
 }
 
+export interface UpdateStaffAccessInput {
+  role?: Role;
+  canManageRoutines?: boolean;
+}
+
+export function isStaffRole(role: unknown): role is Role {
+  return role === Role.ADMIN || role === Role.TRAINER;
+}
+
 export function toTrainerUser(user: User, membership?: Membership): TrainerUser {
+  const role = (membership?.role ?? user.role) as Role;
   return {
     id: user.id,
     name: user.name,
     email: user.email,
-    role: (membership?.role ?? user.role) as Role,
+    role,
+    canManageRoutines: role === Role.ADMIN || Boolean(membership?.canManageRoutines),
     active: Boolean(user.active && (membership?.active ?? true)),
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,

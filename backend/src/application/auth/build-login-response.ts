@@ -3,7 +3,7 @@ import { forbidden } from '../../domain/shared/errors';
 import type { MembershipRepository } from '../../domain/repositories';
 import type { TokenService } from '../ports';
 import type { LoginResponse } from './auth-dtos';
-import { toPublicTenant } from './auth-dtos';
+import { canManageRoutines, toPublicTenant } from './auth-dtos';
 
 export async function buildLoginResponse(
   user: User,
@@ -31,6 +31,7 @@ export async function buildLoginResponse(
       name: user.name,
       email: user.email,
       role,
+      canManageRoutines: canManageRoutines(membership),
       tenantId: tenant.id,
       organizationId: tenant.organizationId,
     },

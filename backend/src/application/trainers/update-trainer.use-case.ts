@@ -2,7 +2,7 @@ import { conflict } from '../../domain/shared/errors';
 import type { MembershipRepository, UserRepository } from '../../domain/repositories';
 import type { TrainerUser, UpdateTrainerInput } from './trainer-inputs';
 import { normalizeEmail, normalizeName } from './trainer-inputs';
-import { GetTrainerUseCase } from './get-trainer.use-case';
+import { assertNotSelfDeactivation, GetTrainerUseCase } from './get-trainer.use-case';
 
 export class UpdateTrainerUseCase {
   private readonly getTrainer: GetTrainerUseCase;
@@ -14,7 +14,8 @@ export class UpdateTrainerUseCase {
     this.getTrainer = new GetTrainerUseCase(memberships);
   }
 
-  async execute(tenantId: string, id: string, data: UpdateTrainerInput): Promise<TrainerUser> {
+  async execute(tenantId: string, id: string, data: UpdateTrainerInput, actorUserId?: string): Promise<TrainerUser> {
+    if (data.active !== undefined) assertNotSelfDeactivation(actorUserId, id, Boolean(data.active));
     await this.getTrainer.execute(tenantId, id);
     const updateData: { name?: string; email?: string; active?: boolean } = {};
 

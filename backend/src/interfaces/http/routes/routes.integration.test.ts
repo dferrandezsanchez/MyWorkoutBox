@@ -30,6 +30,7 @@ function createFakeContainer(): AppContainer {
       changePassword: useCase(undefined),
       getCurrentTenant: useCase({ id: 'tenant-1' }),
       updateCurrentTenant: useCase({ id: 'tenant-1', name: 'Updated' }),
+      getActiveRole: useCase(Role.ADMIN),
     },
     clients: {
       list: useCase([]),
@@ -59,6 +60,7 @@ function createFakeContainer(): AppContainer {
       update: useCase({ id: 'trainer-1', name: 'Updated' }),
       setActive: useCase({ id: 'trainer-1', active: false }),
       resetPassword: useCase(undefined),
+      updateAccess: useCase({ id: 'trainer-1', role: Role.ADMIN, canManageRoutines: true }),
     },
     trainingSessions: {
       start: useCase({ id: 'session-1' }),
@@ -80,6 +82,38 @@ function createFakeContainer(): AppContainer {
 const auth = { Authorization: 'Bearer valid-token' };
 
 describe('HTTP routes', () => {
+  it('passes the actor to staff access and status changes', async () => {
+    const container = createFakeContainer();
+    const app = createHttpApp(container);
+
+    await request(app).patch('/trainers/trainer-2/access').set(auth).send({ canManageRoutines: true }).expect(200);
+    await request(app).patch('/trainers/trainer-2/status').set(auth).send({ active: false }).expect(200);
+    await request(app).put('/trainers/trainer-2').set(auth).send({ name: 'Renamed' }).expect(200);
+
+    expect(container.trainers.updateAccess.execute).toHaveBeenCalledWith('tenant-1', 'user-1', 'trainer-2', { canManageRoutines: true });
+    expect(container.trainers.setActive.execute).toHaveBeenCalledWith('tenant-1', 'trainer-2', false, 'user-1');
+    expect(container.trainers.update.execute).toHaveBeenCalledWith('tenant-1', 'trainer-2', { name: 'Renamed' }, 'user-1');
+  });
+
+  it('checks the current membership role instead of the JWT role on admin routes', async () => {
+    const container = createFakeContainer();
+    vi.mocked(container.auth.getActiveRole.execute).mockResolvedValue(Role.TRAINER);
+    const app = createHttpApp(container);
+
+    await request(app).get('/trainers').set(auth).expect(403, { error: 'Permisos insuficientes' });
+    await request(app).get('/dashboard/overview').set(auth).expect(403);
+    await request(app).put('/auth/tenant').set(auth).send({ name: 'x' }).expect(403);
+    expect(container.trainers.list.execute).not.toHaveBeenCalled();
+    expect(container.auth.getActiveRole.execute).toHaveBeenCalledWith('user-1', 'tenant-1');
+  });
+
+  it('forwards membership lookup failures to the error handler', async () => {
+    const container = createFakeContainer();
+    vi.mocked(container.auth.getActiveRole.execute).mockRejectedValue(new Error('db down'));
+
+    await request(createHttpApp(container)).get('/trainers').set(auth).expect(500);
+  });
+
   it('adapts auth routes to use cases', async () => {
     const app = createHttpApp(createFakeContainer());
 
@@ -130,6 +164,7 @@ describe('HTTP routes', () => {
     await request(app).put('/trainers/trainer-1/password').set(auth).send({ password: 'Trainer1234!' }).expect(200, {
       message: 'Contraseña actualizada correctamente',
     });
+    await request(app).patch('/trainers/trainer-1/access').set(auth).send({ role: Role.ADMIN }).expect(200);
 
     await request(app).get('/clients/client-1/current-performances').set(auth).expect(200);
     await request(app).get('/clients/client-1/exercises/exercise-1/performances').set(auth).expect(200);

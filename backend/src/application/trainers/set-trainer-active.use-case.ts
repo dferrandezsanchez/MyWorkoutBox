@@ -1,6 +1,6 @@
 import type { MembershipRepository } from '../../domain/repositories';
 import type { TrainerUser } from './trainer-inputs';
-import { GetTrainerUseCase } from './get-trainer.use-case';
+import { assertNotSelfDeactivation, GetTrainerUseCase } from './get-trainer.use-case';
 
 export class SetTrainerActiveUseCase {
   private readonly getTrainer: GetTrainerUseCase;
@@ -9,7 +9,8 @@ export class SetTrainerActiveUseCase {
     this.getTrainer = new GetTrainerUseCase(memberships);
   }
 
-  async execute(tenantId: string, id: string, active: boolean): Promise<TrainerUser> {
+  async execute(tenantId: string, id: string, active: boolean, actorUserId?: string): Promise<TrainerUser> {
+    assertNotSelfDeactivation(actorUserId, id, active);
     await this.getTrainer.execute(tenantId, id);
     await this.memberships.updateActive(id, tenantId, active);
     return this.getTrainer.execute(tenantId, id);

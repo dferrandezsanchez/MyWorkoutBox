@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import prisma from '../../infrastructure/prisma/prisma-client';
 import { Role } from '../../types/domain';
 import { createContainer } from '../../main/container';
-import { ensureTestTenant, TEST_TENANT_ID } from '../../test/tenant';
+import { ensureTenantMembership, ensureTestTenant, TEST_TENANT_ID } from '../../test/tenant';
 
 function uniqueEmail(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}@gym.com`;
@@ -68,18 +68,30 @@ describe('trainers service', () => {
     ).rejects.toMatchObject({ code: 'CONFLICT' });
   });
 
-  it('does not expose admin users through trainer lookups', async () => {
-    const admin = await prisma.user.create({
+  it('exposes tenant admins as staff but not users without a membership in the tenant', async () => {
+    const createAdmin = async (prefix: string) => prisma.user.create({
       data: {
         name: 'Trainer Module Admin',
-        email: uniqueEmail('trainer-module-admin'),
+        email: uniqueEmail(prefix),
         passwordHash: await bcrypt.hash('Admin1234!', 10),
         role: Role.ADMIN,
         active: true,
       },
     });
+    const outsider = await createAdmin('trainer-module-admin');
+    const tenantAdmin = await createAdmin('trainer-module-tenant-admin');
+    await ensureTenantMembership(tenantAdmin.id, Role.ADMIN);
+    const trainersUseCases = createContainer().trainers;
 
-    await expect(createContainer().trainers.get.execute(TEST_TENANT_ID, admin.id)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(trainersUseCases.get.execute(TEST_TENANT_ID, outsider.id)).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(trainersUseCases.get.execute(TEST_TENANT_ID, tenantAdmin.id)).resolves.toMatchObject({
+      id: tenantAdmin.id,
+      role: Role.ADMIN,
+      canManageRoutines: true,
+    });
+    const staff = await trainersUseCases.list.execute(TEST_TENANT_ID);
+    expect(staff.find((item) => item.id === tenantAdmin.id)).toMatchObject({ role: Role.ADMIN });
+    expect(staff.some((item) => item.id === outsider.id)).toBe(false);
   });
 
   it('resets trainer password', async () => {
