@@ -102,7 +102,8 @@ Las siguientes capturas muestran el estado actual de la aplicación en su versi�
 - **Biblioteca de ejercicios:** 66 ejercicios organizados por grupo muscular (pecho, espalda, hombros, bíceps, tríceps, piernas, glúteos, core, funcional y cardio). Cada centro nuevo empieza con un pack básico y añade el resto con un clic; también puede crear los suyos.
 - **Mediciones y objetivos:** historial de peso, grasa corporal y masa muscular por cliente con gráfica de evolución, objetivo con fecha marcada en la gráfica y primera medición opcional en el alta. Se activa o desactiva por centro desde Ajustes.
 - **Rendimiento:** plantillas de medición, marcas actuales, mejores registros e histórico de progreso.
-- **Sesiones:** selección de cliente, sesión activa única por entrenador, ejercicios dinámicos y múltiples series editables.
+- **Sesiones:** selección de cliente, sesión activa única por entrenador, ejercicios dinámicos y múltiples series editables. Al iniciar se elige entre entreno libre, la rutina que le toca al cliente en su serie u otra rutina del centro, y cada ejercicio muestra y precarga lo que hizo la última vez.
+- **Rutinas:** plantillas de rutina del centro (ejercicios ordenados con series/repeticiones objetivo) y series de rutinas por cliente (A → B → C) que avanzan solas al completar cada sesión.
 - **Auditoría:** registro básico de acciones relevantes.
 - **API:** contrato OpenAPI y Swagger UI para frontend web y futuros clientes móviles.
 - **Producción:** MariaDB, Docker Compose, Nginx y despliegue automatizado con GitHub Actions.
@@ -116,8 +117,10 @@ Cada membresía tiene un único rol dentro de su tenant:
 
 | Rol | Permisos y modos disponibles |
 |---|---|
-| `ADMIN` | Gestión del centro y acceso a los modos administración y entrenador. |
+| `ADMIN` | Gestión del centro y acceso a los modos administración y entrenador. Puede hacer administradores a otros miembros del equipo (el centro siempre conserva al menos un administrador activo). |
 | `TRAINER` | Acceso exclusivo al modo entrenador para registrar sesiones y consultar rendimiento. |
+
+Además del rol, el administrador puede dar a entrenadores concretos el permiso **Gestiona rutinas** para crear y editar plantillas y series de rutinas. Los administradores lo tienen siempre; el resto del equipo puede usarlas. Los cambios de rol se aplican en el servidor de inmediato; la interfaz se actualiza en el siguiente inicio de sesión.
 
 El modo activo determina la interfaz mostrada, pero no modifica el rol ni los permisos del usuario. Un administrador puede cambiar al modo entrenador sin cerrar sesión.
 
@@ -502,7 +505,7 @@ Algunas líneas futuras son:
 
 - desarrollo de aplicaciones móviles nativas para Android e iOS consumiendo la API existente;
 - analítica avanzada de rendimiento por cliente, ejercicio y centro;
-- planificación de rutinas y sesiones;
+- calendario y planificación de sesiones;
 - modo offline para entrenadores durante sesiones;
 - notificaciones y recordatorios;
 - integración con otros sistemas o dispositivos;

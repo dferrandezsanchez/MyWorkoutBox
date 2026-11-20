@@ -237,6 +237,10 @@ docker compose --env-file <DOCKER_ENV_FILE> exec -T database \
   < scripts/sql/backfill-client-measurements.sql
 ```
 
+## 📋 Rutinas y permisos del equipo
+
+La migración `20261120090000_add_routines_and_permissions` crea las plantillas de rutina, las series de rutinas por cliente, el origen de cada sesión y el permiso `canManageRoutines` por miembro (desactivado por defecto). Es aditiva, se aplica sola en el despliegue y no requiere scripts manuales ni variables nuevas.
+
 ## 🔀 Migración desde la instalación MyWorkoutBox
 
 El producto pasó a llamarse STELIOS y cambiaron los nombres internos por defecto: proyecto Compose `stelios`, imágenes `stelios-backend`/`stelios-frontend`, base de datos y usuario `stelios`. Una instalación existente con `COMPOSE_PROJECT_NAME=myworkoutbox` sigue funcionando con su `.env.docker`, pero para adoptar los nombres nuevos (y un dominio nuevo) se monta un stack paralelo y se migran los datos:
