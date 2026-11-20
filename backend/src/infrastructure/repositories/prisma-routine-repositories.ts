@@ -1,10 +1,11 @@
 import type { Prisma } from '@prisma/client';
 import type {
   ClientRoutinePlanRepository,
+  RoutineProgramRepository,
   RoutineTemplateExerciseInput,
   RoutineTemplateRepository,
 } from '../../domain/repositories';
-import type { ClientRoutinePlan, RoutineTemplate } from '../../domain/shared/entities';
+import type { ClientRoutinePlan, RoutineProgram, RoutineTemplate } from '../../domain/shared/entities';
 import type { Status } from '../../domain/shared/enums';
 import prisma from '../prisma/prisma-client';
 import { toExercise } from './prisma-repositories';
@@ -15,8 +16,21 @@ const templateInclude = {
 
 type TemplateRecord = Prisma.RoutineTemplateGetPayload<{ include: typeof templateInclude }>;
 
+const programItemsInclude = {
+  orderBy: { position: 'asc' as const },
+  include: { template: { include: templateInclude } },
+};
+
+const programInclude = {
+  items: programItemsInclude,
+  _count: { select: { plans: { where: { active: true } } } },
+} satisfies Prisma.RoutineProgramInclude;
+
+type ProgramRecord = Prisma.RoutineProgramGetPayload<{ include: typeof programInclude }>;
+
 const planInclude = {
   items: { orderBy: { position: 'asc' as const }, include: { template: { include: templateInclude } } },
+  program: { include: { items: programItemsInclude } },
 } satisfies Prisma.ClientRoutinePlanInclude;
 
 type PlanRecord = Prisma.ClientRoutinePlanGetPayload<{ include: typeof planInclude }>;
@@ -104,12 +118,22 @@ export class PrismaClientRoutinePlanRepository implements ClientRoutinePlanRepos
     return plan ? toClientRoutinePlan(plan) : null;
   }
 
+  async listActiveByProgram(tenantId: string, programId: string): Promise<ClientRoutinePlan[]> {
+    const plans = await prisma.clientRoutinePlan.findMany({
+      where: { tenantId, programId, active: true },
+      orderBy: { createdAt: 'asc' },
+      include: planInclude,
+    });
+    return plans.map(toClientRoutinePlan);
+  }
+
   async replaceActive(data: {
     tenantId: string;
     clientId: string;
     name: string;
     createdById: string;
-    templateIds: string[];
+    templateIds?: string[];
+    programId?: string;
     nextPosition?: number;
   }): Promise<ClientRoutinePlan> {
     const plan = await prisma.$transaction(async (tx) => {
@@ -124,7 +148,10 @@ export class PrismaClientRoutinePlanRepository implements ClientRoutinePlanRepos
           name: data.name,
           createdById: data.createdById,
           nextPosition: data.nextPosition ?? 1,
-          items: { create: data.templateIds.map((templateId, index) => ({ templateId, position: index + 1 })) },
+          programId: data.programId ?? null,
+          items: data.programId
+            ? undefined
+            : { create: (data.templateIds ?? []).map((templateId, index) => ({ templateId, position: index + 1 })) },
         },
         include: planInclude,
       });
@@ -139,6 +166,74 @@ export class PrismaClientRoutinePlanRepository implements ClientRoutinePlanRepos
   async setNextPosition(tenantId: string, id: string, nextPosition: number): Promise<void> {
     await prisma.clientRoutinePlan.updateMany({ where: { tenantId, id }, data: { nextPosition } });
   }
+}
+
+export class PrismaRoutineProgramRepository implements RoutineProgramRepository {
+  async list(tenantId: string, includeInactive: boolean): Promise<RoutineProgram[]> {
+    const programs = await prisma.routineProgram.findMany({
+      where: { tenantId, ...(includeInactive ? {} : { status: 'ACTIVE' }) },
+      orderBy: { name: 'asc' },
+      include: programInclude,
+    });
+    return programs.map(toRoutineProgram);
+  }
+
+  async findById(tenantId: string, id: string): Promise<RoutineProgram | null> {
+    const program = await prisma.routineProgram.findFirst({ where: { tenantId, id }, include: programInclude });
+    return program ? toRoutineProgram(program) : null;
+  }
+
+  async create(data: { tenantId: string; name: string; notes?: string | null; createdById: string; templateIds: string[] }): Promise<RoutineProgram> {
+    const program = await prisma.routineProgram.create({
+      data: {
+        tenantId: data.tenantId,
+        name: data.name,
+        notes: data.notes ?? null,
+        createdById: data.createdById,
+        items: { create: data.templateIds.map((templateId, index) => ({ templateId, position: index + 1 })) },
+      },
+      include: programInclude,
+    });
+    return toRoutineProgram(program);
+  }
+
+  async update(tenantId: string, id: string, data: { name?: string; notes?: string | null; status?: Status; templateIds?: string[] }): Promise<RoutineProgram> {
+    const program = await prisma.$transaction(async (tx) => {
+      await tx.routineProgram.updateMany({
+        where: { tenantId, id },
+        data: { name: data.name, notes: data.notes, status: data.status },
+      });
+      if (data.templateIds) {
+        await tx.routineProgramItem.deleteMany({ where: { programId: id } });
+        await tx.routineProgramItem.createMany({
+          data: data.templateIds.map((templateId, index) => ({ programId: id, templateId, position: index + 1 })),
+        });
+      }
+      return tx.routineProgram.findFirstOrThrow({ where: { tenantId, id }, include: programInclude });
+    });
+    return toRoutineProgram(program);
+  }
+}
+
+function toRoutineProgram(program: ProgramRecord): RoutineProgram {
+  return {
+    id: program.id,
+    tenantId: program.tenantId,
+    name: program.name,
+    notes: program.notes,
+    status: program.status as Status,
+    createdById: program.createdById,
+    createdAt: program.createdAt,
+    updatedAt: program.updatedAt,
+    items: program.items.map((item) => ({
+      id: item.id,
+      programId: item.programId,
+      templateId: item.templateId,
+      position: item.position,
+      template: toRoutineTemplate(item.template),
+    })),
+    activeClientCount: program._count.plans,
+  };
 }
 
 function toRoutineTemplate(template: TemplateRecord): RoutineTemplate {
@@ -173,12 +268,15 @@ function toClientRoutinePlan(plan: PlanRecord): ClientRoutinePlan {
     name: plan.name,
     active: plan.active,
     nextPosition: plan.nextPosition,
+    programId: plan.programId,
+    program: plan.program ? { id: plan.program.id, name: plan.program.name, status: plan.program.status as Status } : null,
     createdById: plan.createdById,
     createdAt: plan.createdAt,
     updatedAt: plan.updatedAt,
-    items: plan.items.map((item) => ({
+    // A plan that follows a program exposes the program's current items as its own.
+    items: (plan.program ? plan.program.items : plan.items).map((item) => ({
       id: item.id,
-      planId: item.planId,
+      planId: plan.id,
       templateId: item.templateId,
       position: item.position,
       template: toRoutineTemplate(item.template),

@@ -8,6 +8,7 @@ import type {
   Membership,
   PerformanceRecord,
   PerformanceRecordWithTrainerName,
+  RoutineProgram,
   RoutineTemplate,
   Tenant,
   TrainingSession,
@@ -215,19 +216,33 @@ export interface RoutineTemplateRepository {
   }): Promise<RoutineTemplate>;
 }
 
+export interface RoutineProgramRepository {
+  list(tenantId: string, includeInactive: boolean): Promise<RoutineProgram[]>;
+  findById(tenantId: string, id: string): Promise<RoutineProgram | null>;
+  create(data: { tenantId: string; name: string; notes?: string | null; createdById: string; templateIds: string[] }): Promise<RoutineProgram>;
+  /** Updates fields; when `templateIds` is given, replaces the whole ordered list (positions 1..n). */
+  update(tenantId: string, id: string, data: { name?: string; notes?: string | null; status?: Status; templateIds?: string[] }): Promise<RoutineProgram>;
+}
+
 export interface ClientRoutinePlanRepository {
   /** The client's active plan with items (ordered) and their templates + exercises. */
   findActiveByClient(tenantId: string, clientId: string): Promise<ClientRoutinePlan | null>;
   findById(tenantId: string, id: string): Promise<ClientRoutinePlan | null>;
-  /** Deactivates any existing active plan of the client and creates a new one (positions 1..n). */
+  /**
+   * Deactivates any existing active plan of the client and creates a new one: either a custom plan
+   * with its own `templateIds` (positions 1..n), or one following `programId` live (no own items).
+   */
   replaceActive(data: {
     tenantId: string;
     clientId: string;
     name: string;
     createdById: string;
-    templateIds: string[];
+    templateIds?: string[];
+    programId?: string;
     nextPosition?: number;
   }): Promise<ClientRoutinePlan>;
+  /** Active plans following a program (with client ids), e.g. to show who uses it. */
+  listActiveByProgram(tenantId: string, programId: string): Promise<ClientRoutinePlan[]>;
   deactivate(tenantId: string, id: string): Promise<void>;
   setNextPosition(tenantId: string, id: string, nextPosition: number): Promise<void>;
 }

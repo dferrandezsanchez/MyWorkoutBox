@@ -86,6 +86,7 @@ import {
 } from '../infrastructure/repositories/prisma-repositories';
 import {
   PrismaClientRoutinePlanRepository,
+  PrismaRoutineProgramRepository,
   PrismaRoutineTemplateRepository,
 } from '../infrastructure/repositories/prisma-routine-repositories';
 import { PrismaDashboardRepository } from '../infrastructure/repositories/prisma-dashboard-repository';
@@ -106,6 +107,7 @@ export function createContainer() {
   const dashboard = new PrismaDashboardRepository();
   const routineTemplates = new PrismaRoutineTemplateRepository();
   const routinePlans = new PrismaClientRoutinePlanRepository();
+  const routinePrograms = new PrismaRoutineProgramRepository();
   const measurements = new PrismaMeasurementRepository();
 
   const passwordHasher = new BcryptPasswordHasher();

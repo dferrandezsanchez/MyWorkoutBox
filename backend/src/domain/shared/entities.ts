@@ -222,8 +222,35 @@ export interface ClientRoutinePlan {
   active: boolean;
   /** 1-based position of the routine suggested for the next session. */
   nextPosition: number;
+  /** Program the plan follows live; its items then come from the program. Null for custom plans. */
+  programId: string | null;
+  program?: { id: string; name: string; status: Status } | null;
   createdById: string;
   createdAt: Date;
   updatedAt: Date;
   items: ClientRoutinePlanItem[];
+}
+
+export interface RoutineProgramItem {
+  id: string;
+  programId: string;
+  templateId: string;
+  /** 1-based order (A=1, B=2, ...). */
+  position: number;
+  template?: RoutineTemplate;
+}
+
+/** Reusable sequence of routine templates that many clients can follow. */
+export interface RoutineProgram {
+  id: string;
+  tenantId: string;
+  name: string;
+  notes: string | null;
+  status: Status;
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  items: RoutineProgramItem[];
+  /** Active client plans following this program. */
+  activeClientCount: number;
 }

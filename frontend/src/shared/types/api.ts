@@ -235,15 +235,46 @@ export interface ClientRoutinePlan {
   active: boolean;
   /** 1-based position suggested for the next session. */
   nextPosition: number;
+  /** Program the plan follows live (items then mirror the program). Null for custom plans. */
+  programId?: string | null;
+  program?: { id: string; name: string; status: 'ACTIVE' | 'INACTIVE' } | null;
   createdAt: string;
   updatedAt: string;
   items: ClientRoutinePlanItem[];
 }
 
-export interface ClientRoutinePlanInput {
+/** PUT /clients/:id/routine-plan: either follow a program, or a custom sequence of templates. */
+export type ClientRoutinePlanInput =
+  | { programId: string; nextPosition?: number }
+  | { name: string; templateIds: string[]; nextPosition?: number };
+
+// Routine programs (GET/POST /routine-programs, GET/PUT /routine-programs/:id, PATCH /routine-programs/:id/status)
+export interface RoutineProgramItem {
+  id: string;
+  programId: string;
+  templateId: string;
+  position: number;
+  template: RoutineTemplate;
+}
+
+export interface RoutineProgram {
+  id: string;
+  tenantId: string;
   name: string;
+  notes: string | null;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+  items: RoutineProgramItem[];
+  /** Active clients following this program. */
+  activeClientCount: number;
+}
+
+export interface RoutineProgramInput {
+  name: string;
+  notes?: string | null;
   templateIds: string[];
-  nextPosition?: number;
 }
 
 // GET /clients/:id/session-options

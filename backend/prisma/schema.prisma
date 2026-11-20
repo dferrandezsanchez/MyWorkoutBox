@@ -68,6 +68,7 @@ model Tenant {
   clientMeasurements ClientMeasurement[]
   routineTemplates RoutineTemplate[]
   clientRoutinePlans ClientRoutinePlan[]
+  routinePrograms RoutineProgram[]
 
   @@index([organizationId])
   @@map("tenants")
@@ -273,6 +274,7 @@ model RoutineTemplate {
   tenant    Tenant                    @relation(fields: [tenantId], references: [id])
   exercises RoutineTemplateExercise[]
   planItems ClientRoutinePlanItem[]
+  programItems RoutineProgramItem[]
   trainingSessions TrainingSession[]
 
   @@index([tenantId, status])
@@ -304,16 +306,20 @@ model ClientRoutinePlan {
   name         String   @db.VarChar(191)
   active       Boolean  @default(true)
   nextPosition Int      @default(1)
+  /// When set, the plan follows this program live and has no items of its own.
+  programId    String?  @db.VarChar(36)
   createdById  String   @db.VarChar(36)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  tenant Tenant                  @relation(fields: [tenantId], references: [id])
-  client Client                  @relation(fields: [clientId], references: [id])
-  items  ClientRoutinePlanItem[]
+  tenant  Tenant                  @relation(fields: [tenantId], references: [id])
+  client  Client                  @relation(fields: [clientId], references: [id])
+  program RoutineProgram?         @relation(fields: [programId], references: [id])
+  items   ClientRoutinePlanItem[]
   trainingSessions TrainingSession[]
 
   @@index([tenantId, clientId, active])
+  @@index([programId, active])
   @@map("client_routine_plans")
 }
 
@@ -329,4 +335,37 @@ model ClientRoutinePlanItem {
   @@unique([planId, position])
   @@index([templateId])
   @@map("client_routine_plan_items")
+}
+
+/// Reusable sequence of routine templates (A -> B -> C) that many clients can follow.
+model RoutineProgram {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  tenantId    String   @db.VarChar(36)
+  name        String   @db.VarChar(191)
+  notes       String?  @db.Text
+  status      String   @default("ACTIVE") @db.VarChar(32)
+  createdById String   @db.VarChar(36)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant               @relation(fields: [tenantId], references: [id])
+  items  RoutineProgramItem[]
+  plans  ClientRoutinePlan[]
+
+  @@index([tenantId, status])
+  @@map("routine_programs")
+}
+
+model RoutineProgramItem {
+  id         String @id @default(uuid()) @db.VarChar(36)
+  programId  String @db.VarChar(36)
+  templateId String @db.VarChar(36)
+  position   Int
+
+  program  RoutineProgram  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  template RoutineTemplate @relation(fields: [templateId], references: [id])
+
+  @@unique([programId, position])
+  @@index([templateId])
+  @@map("routine_program_items")
 }
