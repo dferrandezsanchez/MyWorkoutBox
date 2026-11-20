@@ -26,8 +26,9 @@ export class UpdateTrainerUseCase {
     }
     if (data.active !== undefined) updateData.active = Boolean(data.active);
 
-    await this.users.update(id, updateData);
+    // Membership first: it enforces the last-admin rule and aborts before touching the user.
     if (data.active !== undefined) await this.memberships.updateActive(id, tenantId, Boolean(data.active));
+    await this.users.update(id, updateData);
     return this.getTrainer.execute(tenantId, id);
   }
 

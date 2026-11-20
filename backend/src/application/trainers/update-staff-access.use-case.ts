@@ -1,10 +1,10 @@
 import type { AuditLogRepository, MembershipRepository } from '../../domain/repositories';
 import { Role } from '../../domain/shared/enums';
-import { badRequest, conflict, forbidden, notFound } from '../../domain/shared/errors';
+import { badRequest, forbidden, lastAdminConflict, notFound } from '../../domain/shared/errors';
 import type { TrainerUser, UpdateStaffAccessInput } from './trainer-inputs';
 import { isStaffRole, toTrainerUser } from './trainer-inputs';
 
-export const LAST_ADMIN_MESSAGE = 'El centro necesita al menos un administrador activo';
+export { LAST_ADMIN_MESSAGE } from '../../domain/shared/errors';
 
 export class UpdateStaffAccessUseCase {
   constructor(
@@ -27,9 +27,10 @@ export class UpdateStaffAccessUseCase {
     const permissionChanges = canManageRoutines !== undefined && canManageRoutines !== membership.canManageRoutines;
 
     // The last-admin invariant is checked first so a sole admin gets the more specific answer.
+    // This is a fast path; the repository re-checks it atomically under a row lock.
     if (roleChanges && membership.role === Role.ADMIN && membership.active && membership.user.active) {
       const activeAdmins = await this.memberships.countActiveAdmins(tenantId);
-      if (activeAdmins <= 1) throw conflict(LAST_ADMIN_MESSAGE);
+      if (activeAdmins <= 1) throw lastAdminConflict();
     }
 
     if (roleChanges && targetUserId === actorUserId) {

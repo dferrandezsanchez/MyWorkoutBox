@@ -25,6 +25,7 @@ import type {
   User,
 } from '../../domain/shared/entities';
 import { Role, Status } from '../../domain/shared/enums';
+import { lastAdminConflict } from '../../domain/shared/errors';
 import type { Prisma } from '@prisma/client';
 import prisma from '../prisma/prisma-client';
 
@@ -119,10 +120,7 @@ export class PrismaMembershipRepository implements MembershipRepository {
   }
 
   async updateActive(userId: string, tenantId: string, active: boolean): Promise<void> {
-    await prisma.userTenantMembership.update({
-      where: { userId_tenantId: { userId, tenantId } },
-      data: { active },
-    });
+    await updateMembershipKeepingAnAdmin(userId, tenantId, { active });
   }
 
   async findTrainers(tenantId: string, includeInactive: boolean): Promise<Membership[]> {
@@ -154,12 +152,7 @@ export class PrismaMembershipRepository implements MembershipRepository {
   }
 
   async updateAccess(userId: string, tenantId: string, data: { role?: Role; canManageRoutines?: boolean }): Promise<Membership> {
-    const membership = await prisma.userTenantMembership.update({
-      where: { userId_tenantId: { userId, tenantId } },
-      data,
-      include: { user: true },
-    });
-    return toMembership(membership);
+    return toMembership(await updateMembershipKeepingAnAdmin(userId, tenantId, data));
   }
 
   countActiveAdmins(tenantId: string): Promise<number> {
@@ -167,6 +160,43 @@ export class PrismaMembershipRepository implements MembershipRepository {
       where: { tenantId, role: Role.ADMIN, active: true, user: { active: true } },
     });
   }
+}
+
+/**
+ * Updates a membership inside a transaction that locks the tenant's ADMIN memberships, so two
+ * concurrent demotions/deactivations cannot both pass. Counts use locking reads, which always see
+ * the latest committed rows. Rolls back with `lastAdminConflict()` when the tenant had active
+ * admins before the change and would have none after it.
+ */
+async function updateMembershipKeepingAnAdmin(
+  userId: string,
+  tenantId: string,
+  data: { role?: Role; canManageRoutines?: boolean; active?: boolean },
+) {
+  return prisma.$transaction(async (tx) => {
+    const countActiveAdmins = async () => {
+      const rows = await tx.$queryRaw<Array<{ total: bigint | number }>>`
+        SELECT COUNT(*) AS total
+        FROM user_tenant_memberships m
+        JOIN users u ON u.id = m.userId
+        WHERE m.tenantId = ${tenantId} AND m.role = ${Role.ADMIN} AND m.active = true AND u.active = true
+        FOR UPDATE`;
+      return Number(rows[0]?.total ?? 0);
+    };
+
+    await tx.$queryRaw`
+      SELECT id FROM user_tenant_memberships
+      WHERE tenantId = ${tenantId} AND (role = ${Role.ADMIN} OR userId = ${userId})
+      FOR UPDATE`;
+    const before = await countActiveAdmins();
+    const membership = await tx.userTenantMembership.update({
+      where: { userId_tenantId: { userId, tenantId } },
+      data,
+      include: { user: true },
+    });
+    if (before > 0 && (await countActiveAdmins()) === 0) throw lastAdminConflict();
+    return membership;
+  });
 }
 
 export class PrismaTenantRepository implements TenantRepository {

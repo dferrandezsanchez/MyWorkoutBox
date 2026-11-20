@@ -41,10 +41,15 @@ export interface MembershipRepository {
   findActiveByUserAndTenant(userId: string, tenantId: string): Promise<Membership | null>;
   findByUserAndTenant(userId: string, tenantId: string): Promise<Membership | null>;
   upsert(input: { userId: string; tenantId: string; role: Role; active: boolean }): Promise<Membership>;
+  /**
+   * Activates/deactivates a membership. Rejects with `lastAdminConflict()` (and changes nothing)
+   * when it would leave a tenant that had active admins with none, atomically.
+   */
   updateActive(userId: string, tenantId: string, active: boolean): Promise<void>;
   findTrainers(tenantId: string, includeInactive: boolean): Promise<Membership[]>;
   /** All staff of a tenant (ADMIN and TRAINER memberships) with their user. */
   findStaff(tenantId: string, includeInactive: boolean): Promise<Membership[]>;
+  /** Same last-admin guarantee as `updateActive`, applied to role changes. */
   updateAccess(userId: string, tenantId: string, data: { role?: Role; canManageRoutines?: boolean }): Promise<Membership>;
   /** Active ADMIN memberships whose user is also active. */
   countActiveAdmins(tenantId: string): Promise<number>;
