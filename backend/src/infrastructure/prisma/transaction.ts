@@ -21,7 +21,7 @@ export async function runTransaction<T>(fn: (tx: Prisma.TransactionClient) => Pr
       return await prisma.$transaction(fn);
     } catch (error) {
       if (attempt >= MAX_ATTEMPTS || !isRetryable(error)) throw error;
-      await new Promise((resolve) => setTimeout(resolve, BASE_DELAY_MS * attempt + Math.random() * BASE_DELAY_MS));
+      await new Promise((resolve) => setTimeout(resolve, BASE_DELAY_MS * attempt));
     }
   }
 }
