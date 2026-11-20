@@ -103,7 +103,7 @@ Las siguientes capturas muestran el estado actual de la aplicación en su versi�
 - **Mediciones y objetivos:** historial de peso, grasa corporal y masa muscular por cliente con gráfica de evolución, objetivo con fecha marcada en la gráfica y primera medición opcional en el alta. Se activa o desactiva por centro desde Ajustes.
 - **Rendimiento:** plantillas de medición, marcas actuales, mejores registros e histórico de progreso.
 - **Sesiones:** selección de cliente, sesión activa única por entrenador, ejercicios dinámicos y múltiples series editables. Al iniciar se elige entre entreno libre, la rutina que le toca al cliente en su serie u otra rutina del centro, y cada ejercicio muestra y precarga lo que hizo la última vez.
-- **Rutinas:** plantillas de rutina del centro (ejercicios ordenados con series/repeticiones objetivo) programas reutilizables (p. ej. «Fuerza 3 días») que varios clientes siguen en vivo, y series de rutinas por cliente (A → B → C, de un programa o propias) que avanzan solas al completar cada sesión.
+- **Rutinas:** plantillas de rutina del centro (ejercicios ordenados con series/repeticiones objetivo), programas reutilizables (p. ej. «Fuerza 3 días») que varios clientes siguen en vivo, y series de rutinas por cliente (A → B → C, de un programa o propias) que avanzan solas al completar cada sesión.
 - **Auditoría:** registro básico de acciones relevantes.
 - **API:** contrato OpenAPI y Swagger UI para frontend web y futuros clientes móviles.
 - **Producción:** MariaDB, Docker Compose, Nginx y despliegue automatizado con GitHub Actions.
