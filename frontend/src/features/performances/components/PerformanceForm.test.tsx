@@ -186,4 +186,12 @@ describe('PerformanceForm', () => {
     await user.click(screen.getByRole('button', { name: 'Guardar serie' }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ value: 8, repetitions: 8, notes: undefined }));
   });
+
+  it('shows an optional last time reference', () => {
+    const { rerender } = render(<PerformanceForm context="session" referenceLabel="Última vez, serie 1 · 60 kg × 10" onSave={onSave} onClose={vi.fn()} />);
+    expect(screen.getByText('Última vez, serie 1 · 60 kg × 10')).toBeInTheDocument();
+
+    rerender(<PerformanceForm context="session" onSave={onSave} onClose={vi.fn()} />);
+    expect(screen.queryByText(/Última vez/)).not.toBeInTheDocument();
+  });
 });

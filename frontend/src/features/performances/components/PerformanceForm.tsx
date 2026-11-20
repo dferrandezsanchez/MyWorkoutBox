@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { CreatePerformanceData, Exercise, MeasurementField, PerformanceRecord, PerformanceUnit, VariantGroup } from '@shared/types/api';
-import { Minus, Plus } from 'lucide-react';
+import { History, Minus, Plus } from 'lucide-react';
 import { Button } from '@shared/components/ui';
 import { getExerciseTemplate } from '@features/performances/utils/exerciseTemplates';
 
@@ -11,6 +11,8 @@ interface PerformanceFormProps {
   exercise?: Exercise;
   initialRecord?: PerformanceRecord;
   copyMode?: boolean;
+  /** Optional reference shown under the title, e.g. what the client did last time. */
+  referenceLabel?: string;
   onSave: (data: CreatePerformanceData) => Promise<unknown>;
   onClose: () => void;
 }
@@ -109,6 +111,7 @@ export default function PerformanceForm({
   exercise,
   initialRecord,
   copyMode = false,
+  referenceLabel,
   onSave,
   onClose,
 }: PerformanceFormProps) {
@@ -251,6 +254,12 @@ export default function PerformanceForm({
               ? `${exerciseName}: registra los datos de esta serie.`
               : 'Registra el valor actual sin modificar el histórico anterior.'}
           </p>
+          {referenceLabel && (
+            <p className="tabular mt-2 inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-background/60 px-3 py-1 text-xs font-semibold text-text-secondary">
+              <History size={13} className="text-primary-soft" aria-hidden="true" />
+              {referenceLabel}
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
