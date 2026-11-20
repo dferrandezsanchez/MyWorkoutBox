@@ -146,8 +146,8 @@ export class PrismaTenantRepository implements TenantRepository {
     return tenant ? toTenant(tenant) : null;
   }
 
-  async updateName(tenantId: string, name: string): Promise<void> {
-    await prisma.tenant.update({ where: { id: tenantId }, data: { name } });
+  async updateSettings(tenantId: string, data: { name?: string; measurementsEnabled?: boolean }): Promise<void> {
+    await prisma.tenant.update({ where: { id: tenantId }, data });
   }
 }
 
@@ -209,6 +209,12 @@ export class PrismaExerciseRepository implements ExerciseRepository {
   async create(tenantId: string, data: CreateExerciseData): Promise<Exercise> {
     const exercise = await prisma.exercise.create({ data: { ...data, tenantId } });
     return toExercise(exercise);
+  }
+
+  async createMany(tenantId: string, data: CreateExerciseData[]): Promise<number> {
+    if (data.length === 0) return 0;
+    const result = await prisma.exercise.createMany({ data: data.map((exercise) => ({ ...exercise, tenantId })) });
+    return result.count;
   }
 
   async update(_tenantId: string, id: string, data: UpdateExerciseData): Promise<Exercise> {
@@ -438,6 +444,7 @@ function toTenant(tenant: {
   primary: string;
   primaryHover: string;
   primarySoft: string;
+  measurementsEnabled: boolean;
   active: boolean;
 }): Tenant {
   return tenant;
@@ -486,6 +493,8 @@ function toClient(client: {
   weight: number | null;
   bodyFatPercentage: number | null;
   notes: string | null;
+  goal: string | null;
+  goalDate: Date | null;
   status: string;
   anonymizedAt: Date | null;
   createdAt: Date;
@@ -506,6 +515,8 @@ function toExercise(exercise: {
   measurementFields: string;
   variantGroups: string;
   description: string | null;
+  muscleGroup: string | null;
+  libraryKey: string | null;
   status: string;
   createdAt: Date;
   updatedAt: Date;

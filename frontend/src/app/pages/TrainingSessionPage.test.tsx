@@ -113,6 +113,31 @@ describe('TrainingSessionPage', () => {
     await user.click(screen.getByRole('button', { name: 'Cerrar serie simulada' }));
   });
 
+  it('groups the picker by muscle and filters by group when the catalog has groups', async () => {
+    // Dominadas and Peso muerto are recent, so they appear under "Recientes"; the others fill their groups.
+    const grouped: Exercise[] = [
+      { ...exercises[0], muscleGroup: 'back' },
+      { ...exercises[1], muscleGroup: 'legs' },
+      { ...exercises[1], id: 'exercise-7', name: 'Prensa de piernas', muscleGroup: 'legs' },
+      { ...exercises[1], id: 'exercise-8', name: 'Remo con barra', muscleGroup: 'back' },
+      { ...exercises[1], id: 'exercise-9', name: 'Press banca', muscleGroup: 'chest' },
+    ];
+    mocks.useExercises.mockReturnValue({ data: grouped });
+    const user = userEvent.setup();
+    render(<TrainingSessionPage />);
+
+    await user.click(screen.getByRole('button', { name: /Ejercicio/ }));
+    const picker = within(screen.getByRole('dialog', { name: 'Añadir ejercicio' }));
+    expect(picker.getByRole('tablist', { name: 'Grupo muscular' })).toBeInTheDocument();
+    for (const label of ['Pecho', 'Espalda', 'Piernas']) expect(picker.getByRole('heading', { name: label })).toBeInTheDocument();
+
+    await user.click(picker.getByRole('tab', { name: 'Pecho' }));
+    expect(picker.getByRole('button', { name: /Press banca/ })).toBeInTheDocument();
+    expect(picker.queryByRole('heading', { name: 'Piernas' })).not.toBeInTheDocument();
+    await user.click(picker.getByRole('tab', { name: 'Todos' }));
+    expect(picker.getByRole('heading', { name: 'Piernas' })).toBeInTheDocument();
+  });
+
   it('edits and copies existing series', async () => {
     const user = userEvent.setup();
     render(<TrainingSessionPage />);

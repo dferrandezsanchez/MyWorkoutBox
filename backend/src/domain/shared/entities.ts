@@ -40,6 +40,7 @@ export interface Tenant {
   primary: string;
   primaryHover: string;
   primarySoft: string;
+  measurementsEnabled: boolean;
   active: boolean;
 }
 
@@ -65,6 +66,8 @@ export interface Client {
   weight: number | null;
   bodyFatPercentage: number | null;
   notes: string | null;
+  goal: string | null;
+  goalDate: Date | null;
   status: Status;
   anonymizedAt: Date | null;
   createdAt: Date;
@@ -83,6 +86,9 @@ export interface Exercise {
   measurementFields: string;
   variantGroups: string;
   description: string | null;
+  muscleGroup: string | null;
+  /** Slug of the library exercise this one was created from, if any. */
+  libraryKey: string | null;
   status: Status;
   createdAt: Date;
   updatedAt: Date;
@@ -150,4 +156,18 @@ export interface AuditLog {
   entityType: string;
   entityId: string;
   metadata?: string;
+}
+
+export interface ClientMeasurement {
+  id: string;
+  tenantId: string;
+  clientId: string;
+  measuredAt: Date;
+  weight: number | null;
+  bodyFatPercentage: number | null;
+  muscleMass: number | null;
+  notes: string | null;
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

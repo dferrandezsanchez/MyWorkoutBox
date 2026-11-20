@@ -16,7 +16,9 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "test:coverage": "vitest --run --coverage --coverage.thresholds.functions 95",
     "lint": "eslint .",
-    "quality": "npm run lint && npm run test:coverage && npm run build && npm audit --omit=dev --audit-level=moderate"
+    "quality": "npm run lint && npm run test:coverage && npm run build && npm audit --omit=dev --audit-level=moderate",
+    "center:create": "node dist/main/create-center.js",
+    "center:create:dev": "ts-node --files src/main/create-center.ts"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",

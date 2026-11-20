@@ -25,6 +25,23 @@ export function createExercisesRouter(container: AppContainer): Router {
     }
   });
 
+  // Declared before '/:id' so "library" is not read as an exercise id.
+  router.get('/library', auth, authorize(Role.ADMIN), async (req, res, next): Promise<void> => {
+    try {
+      res.status(200).json(await container.exercises.listLibrary.execute(req.user!.tenantId));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post('/library/import', auth, authorize(Role.ADMIN), async (req, res, next): Promise<void> => {
+    try {
+      res.status(200).json(await container.exercises.importLibrary.execute(req.user!.tenantId, req.body ?? {}));
+    } catch (err) {
+      next(err);
+    }
+  });
+
   router.get('/:id', auth, async (req, res, next): Promise<void> => {
     try {
       res.status(200).json(await container.exercises.get.execute(req.user!.tenantId, req.params.id));

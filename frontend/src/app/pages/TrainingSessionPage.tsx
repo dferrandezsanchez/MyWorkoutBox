@@ -5,6 +5,7 @@ import AppShell from '@app/layout/AppShell';
 import PerformanceForm from '@features/performances/components/PerformanceForm';
 import { extractVariant } from '@features/performances/utils/exerciseTemplates';
 import { useExercises } from '@features/exercises/hooks/useExercises';
+import { NO_GROUP, groupByMuscle } from '@features/exercises/utils/muscle-groups';
 import { CATEGORY_LABELS, UNIT_LABELS } from '@features/exercises/utils/labels';
 import { useSessionActions, useTrainerSessions, useTrainingSession } from '@features/training-sessions/hooks/useTrainingSessions';
 import { Button, ConfirmDialog, Dialog, EmptyState, Panel, TextInput } from '@shared/components/ui';
@@ -84,6 +85,7 @@ export default function TrainingSessionPage() {
   const actions = useSessionActions(id);
   const [showPicker, setShowPicker] = useState(false);
   const [query, setQuery] = useState('');
+  const [pickerGroup, setPickerGroup] = useState('all');
   const [editor, setEditor] = useState<{ item: TrainingSessionExercise; record?: PerformanceRecord; copyFrom?: PerformanceRecord } | null>(null);
   const [showComplete, setShowComplete] = useState(false);
   const [showDiscard, setShowDiscard] = useState(false);
@@ -91,11 +93,17 @@ export default function TrainingSessionPage() {
   const [sessionNotes, setSessionNotes] = useState('');
   const elapsed = useElapsedTime(session?.startedAt, session?.completedAt, session?.status === 'ACTIVE');
 
-  const availableExercises = useMemo(() => {
+  const searchableExercises = useMemo(() => {
     const selected = new Set(session?.exercises.map((item) => item.exerciseId));
     const normalized = query.trim().toLowerCase();
     return exercises.filter((exercise) => !selected.has(exercise.id) && (!normalized || exercise.name.toLowerCase().includes(normalized)));
   }, [exercises, query, session?.exercises]);
+  const pickerGroups = useMemo(() => groupByMuscle(searchableExercises), [searchableExercises]);
+  const hasGroups = pickerGroups.some((section) => section.key !== NO_GROUP.key);
+  const availableExercises = useMemo(
+    () => (pickerGroup === 'all' ? searchableExercises : searchableExercises.filter((exercise) => groupByMuscle([exercise])[0]?.key === pickerGroup)),
+    [searchableExercises, pickerGroup],
+  );
   const recentExerciseIds = useMemo(() => {
     const availableIds = new Set(availableExercises.map((exercise) => exercise.id));
     const ids: string[] = [];
@@ -110,6 +118,7 @@ export default function TrainingSessionPage() {
     .map((exerciseId) => availableExercises.find((exercise) => exercise.id === exerciseId))
     .filter((exercise): exercise is NonNullable<typeof exercise> => Boolean(exercise));
   const otherExercises = availableExercises.filter((exercise) => !recentExerciseIds.includes(exercise.id));
+  const otherSections = groupByMuscle(otherExercises);
 
   if (isLoading) return <AppShell title="Sesión"><p className="text-text-secondary">Cargando sesión...</p></AppShell>;
   if (isError || !session) return <AppShell title="Sesión"><p className="text-danger">No se pudo cargar la sesión</p></AppShell>;
@@ -247,8 +256,32 @@ export default function TrainingSessionPage() {
               <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
               <TextInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar ejercicio" className="w-full rounded-full pl-11" autoFocus />
             </label>
+            {hasGroups && pickerGroups.length > 1 && (
+              <div role="tablist" aria-label="Grupo muscular" className="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 pb-1 sm:-mx-6 sm:px-6">
+                {[{ key: 'all', label: 'Todos' }, ...pickerGroups].map((group) => (
+                  <button
+                    key={group.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={pickerGroup === group.key}
+                    onClick={() => setPickerGroup(group.key)}
+                    className={`min-h-[40px] shrink-0 rounded-full border px-4 text-sm font-semibold transition-colors duration-150 focus-ring ${
+                      pickerGroup === group.key ? 'border-primary bg-primary text-primary-contrast' : 'border-white/[0.11] text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    {group.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {recentExercises.length > 0 && <ExercisePickerSection title="Recientes" exercises={recentExercises} onSelect={addExercise} />}
-            <ExercisePickerSection title={recentExercises.length > 0 ? 'Todos los ejercicios' : undefined} exercises={otherExercises} onSelect={addExercise} />
+            {hasGroups ? (
+              otherSections.map((section) => (
+                <ExercisePickerSection key={section.key} title={section.label} exercises={section.items} onSelect={addExercise} />
+              ))
+            ) : (
+              <ExercisePickerSection title={recentExercises.length > 0 ? 'Todos los ejercicios' : undefined} exercises={otherExercises} onSelect={addExercise} />
+            )}
             {availableExercises.length === 0 && <div className="mt-4"><EmptyState title="No encontramos ejercicios con ese nombre" /></div>}
           </div>
         </div>

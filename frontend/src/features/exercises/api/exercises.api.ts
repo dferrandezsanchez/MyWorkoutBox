@@ -1,5 +1,11 @@
 import apiClient from '@shared/api/http-client';
-import type { Exercise, CreateExerciseData, UpdateExerciseData } from '@shared/types/api';
+import type {
+  CreateExerciseData,
+  Exercise,
+  ExerciseLibrary,
+  ExerciseLibraryImportResult,
+  UpdateExerciseData,
+} from '@shared/types/api';
 
 export async function listExercises(includeInactive?: boolean): Promise<Exercise[]> {
   const params = includeInactive ? { includeInactive: 'true' } : undefined;
@@ -27,5 +33,15 @@ export async function setExerciseStatus(
   status: 'ACTIVE' | 'INACTIVE'
 ): Promise<Exercise> {
   const response = await apiClient.patch<Exercise>(`/exercises/${id}/status`, { status });
+  return response.data;
+}
+
+export async function getExerciseLibrary(): Promise<ExerciseLibrary> {
+  const response = await apiClient.get<ExerciseLibrary>('/exercises/library');
+  return response.data;
+}
+
+export async function importExerciseLibrary(slugs: string[]): Promise<ExerciseLibraryImportResult> {
+  const response = await apiClient.post<ExerciseLibraryImportResult>('/exercises/library/import', { slugs });
   return response.data;
 }

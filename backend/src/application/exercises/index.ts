@@ -4,3 +4,6 @@ export * from './get-exercise.use-case';
 export * from './list-exercises.use-case';
 export * from './set-exercise-status.use-case';
 export * from './update-exercise.use-case';
+export * from './exercise-library-data';
+export * from './import-exercise-library.use-case';
+export * from './list-exercise-library.use-case';

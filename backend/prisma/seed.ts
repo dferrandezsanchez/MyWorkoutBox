@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { PerformanceUnit, Role, Status } from '../src/types/domain';
+import { BASE_EXERCISES } from '../src/domain/exercise-library';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -9,127 +10,7 @@ const PLATFORM_PRIMARY = '#14B8A6';
 const PLATFORM_PRIMARY_HOVER = '#2DD4BF';
 const PLATFORM_PRIMARY_SOFT = '#5EEAD4';
 
-const BASE_EXERCISES = [
-  {
-    slug: 'dominadas',
-    name: 'Dominadas',
-    category: 'strength',
-    movementPattern: 'pull',
-    evaluationType: 'repetitions',
-    improvementDirection: 'higher',
-    defaultUnit: PerformanceUnit.repetitions,
-    description: 'Dominadas estrictas con registro de agarre, asistencia y lastre.',
-    measurementFields: [
-      { key: 'value', label: 'Repeticiones', unit: PerformanceUnit.repetitions, required: true, primary: true },
-      { key: 'weight', label: 'Peso adicional', unit: PerformanceUnit.kg, required: false },
-    ],
-    variantGroups: [
-      { key: 'agarre', label: 'Agarre', options: ['Prono', 'Supino', 'Neutro'], required: false },
-      { key: 'asistencia', label: 'Asistencia', options: ['Libre', 'Banda', 'Máquina'], required: false },
-    ],
-  },
-  {
-    slug: 'peso_muerto',
-    name: 'Peso muerto',
-    category: 'strength',
-    movementPattern: 'hinge',
-    evaluationType: 'weight_reps',
-    improvementDirection: 'higher',
-    defaultUnit: PerformanceUnit.kg,
-    description: 'Peso muerto con variante y repeticiones.',
-    measurementFields: [
-      { key: 'value', label: 'Peso', unit: PerformanceUnit.kg, required: true, primary: true },
-      { key: 'repetitions', label: 'Repeticiones', unit: PerformanceUnit.repetitions, required: true },
-    ],
-    variantGroups: [
-      { key: 'variante', label: 'Variante', options: ['Convencional', 'Sumo', 'Rumano'], required: false },
-    ],
-  },
-  {
-    slug: 'sentadilla',
-    name: 'Sentadilla',
-    category: 'strength',
-    movementPattern: 'squat',
-    evaluationType: 'weight_reps',
-    improvementDirection: 'higher',
-    defaultUnit: PerformanceUnit.kg,
-    description: 'Sentadilla con variante y repeticiones.',
-    measurementFields: [
-      { key: 'value', label: 'Peso', unit: PerformanceUnit.kg, required: true, primary: true },
-      { key: 'repetitions', label: 'Repeticiones', unit: PerformanceUnit.repetitions, required: true },
-    ],
-    variantGroups: [
-      { key: 'variante', label: 'Variante', options: ['Trasera', 'Frontal', 'Goblet'], required: false },
-    ],
-  },
-  {
-    slug: 'zancadas',
-    name: 'Zancadas',
-    category: 'functional',
-    movementPattern: 'lunge',
-    evaluationType: 'weight_reps',
-    improvementDirection: 'higher',
-    defaultUnit: PerformanceUnit.kg,
-    description: 'Zancadas con peso y repeticiones por pierna.',
-    measurementFields: [
-      { key: 'value', label: 'Peso', unit: PerformanceUnit.kg, required: true, primary: true },
-      { key: 'repetitions', label: 'Reps por pierna', unit: PerformanceUnit.repetitions, required: true },
-    ],
-    variantGroups: [
-      { key: 'variante', label: 'Variante', options: ['Caminando', 'Atrás', 'Búlgara'], required: false },
-    ],
-  },
-  {
-    slug: 'plancha_frontal',
-    name: 'Plancha frontal',
-    category: 'core',
-    movementPattern: 'core',
-    evaluationType: 'max_time',
-    improvementDirection: 'higher',
-    defaultUnit: PerformanceUnit.seconds,
-    description: 'Tiempo máximo con técnica estable.',
-    measurementFields: [
-      { key: 'value', label: 'Tiempo', unit: PerformanceUnit.seconds, required: true, primary: true },
-    ],
-    variantGroups: [
-      { key: 'variante', label: 'Variante', options: ['Frontal', 'Lateral izquierda', 'Lateral derecha'], required: false },
-    ],
-  },
-  {
-    slug: 'burpees',
-    name: 'Burpees',
-    category: 'functional',
-    movementPattern: 'conditioning',
-    evaluationType: 'repetitions',
-    improvementDirection: 'higher',
-    defaultUnit: PerformanceUnit.repetitions,
-    description: 'Repeticiones completadas con estándar definido por el centro.',
-    measurementFields: [
-      { key: 'value', label: 'Repeticiones', unit: PerformanceUnit.repetitions, required: true, primary: true },
-      { key: 'duration', label: 'Tiempo límite', unit: PerformanceUnit.minutes, required: false },
-    ],
-    variantGroups: [
-      { key: 'variante', label: 'Variante', options: ['Estándar', 'Over bar', 'Box-facing'], required: false },
-    ],
-  },
-  {
-    slug: 'carrera',
-    name: 'Carrera',
-    category: 'endurance',
-    movementPattern: 'locomotion',
-    evaluationType: 'time_to_complete',
-    improvementDirection: 'lower',
-    defaultUnit: PerformanceUnit.seconds,
-    description: 'Tiempo para completar una distancia definida.',
-    measurementFields: [
-      { key: 'value', label: 'Tiempo', unit: PerformanceUnit.seconds, required: true, primary: true },
-      { key: 'distance', label: 'Distancia', unit: PerformanceUnit.meters, required: true },
-    ],
-    variantGroups: [
-      { key: 'distancia_objetivo', label: 'Distancia objetivo', options: ['400 m', '1 km', '5 km'], required: false },
-    ],
-  },
-] as const;
+
 
 async function seedBaseExercises(tenantId: string, idPrefix: string) {
   for (const exercise of BASE_EXERCISES) {
@@ -146,6 +27,8 @@ async function seedBaseExercises(tenantId: string, idPrefix: string) {
         measurementFields: JSON.stringify(exercise.measurementFields),
         variantGroups: JSON.stringify(exercise.variantGroups),
         description: exercise.description,
+        muscleGroup: exercise.muscleGroup,
+        libraryKey: exercise.slug,
         status: Status.ACTIVE,
       },
       create: {
@@ -160,6 +43,8 @@ async function seedBaseExercises(tenantId: string, idPrefix: string) {
         measurementFields: JSON.stringify(exercise.measurementFields),
         variantGroups: JSON.stringify(exercise.variantGroups),
         description: exercise.description,
+        muscleGroup: exercise.muscleGroup,
+        libraryKey: exercise.slug,
         status: Status.ACTIVE,
       },
     });
@@ -377,6 +262,9 @@ async function seedDemoTenant() {
   }
   console.log(`✓ Demo clients ready: ${clients.length}`);
 
+  const measurementCount = await seedMeasurementsAndGoals(tenant.id, clients, admin.id);
+  console.log(`✓ Demo measurements ready: ${measurementCount}`);
+
   const records = [
     ['demo_perf_alex_dominadas_1', 'demo_client_alex', 'demo_ex_dominadas', '5', PerformanceUnit.repetitions, '2026-04-10T10:00:00.000Z', null, 5, null, null, 'Agarre prono'],
     ['demo_perf_alex_dominadas_2', 'demo_client_alex', 'demo_ex_dominadas', '7', PerformanceUnit.repetitions, '2026-05-08T10:00:00.000Z', null, 7, null, null, 'Agarre supino'],
@@ -479,6 +367,59 @@ function seriesValues(slug: (typeof SESSION_EXERCISE_SLUGS)[number], sessionInde
     default:
       return { value: '10', unit: PerformanceUnit.repetitions, repetitions: 10 };
   }
+}
+
+const MEASUREMENTS_PER_CLIENT = 6;
+const MEASUREMENT_EVERY_DAYS = 14;
+const DEMO_GOALS: Array<{ goal: string; monthsAhead: number | null }> = [
+  { goal: 'Preparar la media maratón de Valencia', monthsAhead: 4 },
+  { goal: 'Boda: llegar a 75 kg con más masa muscular', monthsAhead: 7 },
+  { goal: 'Volver a correr sin molestias de rodilla', monthsAhead: null },
+];
+
+/** Biweekly measurements trending in the right direction, plus goals for the first clients. Dates are relative to the run day. */
+async function seedMeasurementsAndGoals(
+  tenantId: string,
+  clients: Array<{ id: string; weight: number | null; bodyFatPercentage: number | null }>,
+  createdById: string,
+): Promise<number> {
+  const today = new Date();
+  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 12);
+  let count = 0;
+
+  for (const [clientIndex, client] of clients.entries()) {
+    const goal = DEMO_GOALS[clientIndex];
+    const goalDate = goal?.monthsAhead ? new Date(todayUtc) : null;
+    goalDate?.setUTCMonth(goalDate.getUTCMonth() + (goal?.monthsAhead ?? 0));
+    await prisma.client.update({
+      where: { id: client.id },
+      data: { goal: goal?.goal ?? null, goalDate },
+    });
+
+    const baseWeight = client.weight ?? 75;
+    const baseFat = client.bodyFatPercentage ?? 20;
+    const baseMuscle = Math.round(baseWeight * 0.42 * 10) / 10;
+
+    for (let index = 0; index < MEASUREMENTS_PER_CLIENT; index += 1) {
+      const stepsAgo = MEASUREMENTS_PER_CLIENT - 1 - index;
+      const measuredAt = new Date(todayUtc - (stepsAgo * MEASUREMENT_EVERY_DAYS + 2 + (clientIndex % 4)) * DAY_MS);
+      const id = `demo_measurement_${clientIndex}_${index}`;
+      const values = {
+        tenantId,
+        clientId: client.id,
+        measuredAt,
+        weight: Math.round((baseWeight + stepsAgo * 0.45) * 10) / 10,
+        bodyFatPercentage: Math.round((baseFat + stepsAgo * 0.35) * 10) / 10,
+        muscleMass: Math.round((baseMuscle - stepsAgo * 0.15) * 10) / 10,
+        notes: null,
+        createdById,
+      };
+      await prisma.clientMeasurement.upsert({ where: { id }, update: values, create: { id, ...values } });
+      count += 1;
+    }
+  }
+
+  return count;
 }
 
 async function seedTrainingSessions(tenantId: string, trainerId: string, clientIds: string[]): Promise<number> {

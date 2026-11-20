@@ -1,3 +1,5 @@
+import { MUSCLE_GROUP_KEYS, isMuscleGroup } from '../../domain/exercise-library';
+import { badRequest } from '../../domain/shared/errors';
 import {
   EvaluationType,
   ExerciseCategory,
@@ -32,6 +34,8 @@ export interface CreateExerciseInput {
   measurementFields?: MeasurementField[];
   variantGroups?: VariantGroup[];
   description?: string;
+  /** One of the library muscle groups, or null for "no group". */
+  muscleGroup?: string | null;
   status?: Status;
 }
 
@@ -45,7 +49,18 @@ export interface UpdateExerciseInput {
   measurementFields?: MeasurementField[];
   variantGroups?: VariantGroup[];
   description?: string;
+  muscleGroup?: string | null;
   status?: Status;
+}
+
+/** Empty means "no group". Anything else must be a known group so the catalog stays groupable. */
+function parseMuscleGroup(value: string | null | undefined): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  if (!isMuscleGroup(value)) {
+    throw badRequest(`El grupo muscular no es válido. Opciones: ${MUSCLE_GROUP_KEYS.join(', ')}`, ['muscleGroup']);
+  }
+  return value;
 }
 
 const DEFAULT_MEASUREMENT_FIELDS: MeasurementField[] = [
@@ -63,14 +78,16 @@ export function normalizeCreateExerciseData(data: CreateExerciseInput) {
     measurementFields: serializeJson(data.measurementFields ?? DEFAULT_MEASUREMENT_FIELDS),
     variantGroups: serializeJson(data.variantGroups ?? []),
     description: data.description,
+    muscleGroup: parseMuscleGroup(data.muscleGroup),
     status: data.status,
   };
 }
 
 export function normalizeUpdateExerciseData(data: UpdateExerciseInput) {
-  const { measurementFields, variantGroups, ...rest } = data;
+  const { measurementFields, variantGroups, muscleGroup, ...rest } = data;
   return {
     ...rest,
+    ...(muscleGroup !== undefined ? { muscleGroup: parseMuscleGroup(muscleGroup) } : {}),
     ...(measurementFields !== undefined ? { measurementFields: serializeJson(measurementFields) } : {}),
     ...(variantGroups !== undefined ? { variantGroups: serializeJson(variantGroups) } : {}),
   };

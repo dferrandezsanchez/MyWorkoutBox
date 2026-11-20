@@ -1,5 +1,6 @@
 import type { Role, Status } from './shared/enums';
 import type {
+  ClientMeasurement,
   AuditLog,
   Client,
   Exercise,
@@ -44,7 +45,7 @@ export interface MembershipRepository {
 
 export interface TenantRepository {
   findActiveById(id: string): Promise<Tenant | null>;
-  updateName(tenantId: string, name: string): Promise<void>;
+  updateSettings(tenantId: string, data: { name?: string; measurementsEnabled?: boolean }): Promise<void>;
 }
 
 export interface ClientRepository {
@@ -62,6 +63,8 @@ export type CreateClientData = {
   weight?: number;
   bodyFatPercentage?: number;
   notes?: string;
+  goal?: string | null;
+  goalDate?: Date | null;
   status?: Status;
 };
 
@@ -74,6 +77,8 @@ export interface ExerciseRepository {
   list(tenantId: string, includeInactive: boolean): Promise<Exercise[]>;
   findById(tenantId: string, id: string): Promise<Exercise | null>;
   create(tenantId: string, data: CreateExerciseData): Promise<Exercise>;
+  /** Creates several exercises at once and returns how many were created. */
+  createMany(tenantId: string, data: CreateExerciseData[]): Promise<number>;
   update(tenantId: string, id: string, data: UpdateExerciseData): Promise<Exercise>;
 }
 
@@ -87,6 +92,8 @@ export type CreateExerciseData = {
   measurementFields: string;
   variantGroups: string;
   description?: string;
+  muscleGroup?: string | null;
+  libraryKey?: string | null;
   status?: Status;
 };
 
@@ -181,4 +188,52 @@ export interface DashboardRepository {
   listSessionsSince(tenantId: string, since: Date): Promise<DashboardSessionRow[]>;
   /** Active clients with the start date of their latest training session. */
   listActiveClientsWithLastSession(tenantId: string): Promise<DashboardClientRow[]>;
+}
+
+export interface ProvisionCenterUser {
+  name: string;
+  email: string;
+  passwordHash: string;
+}
+
+export interface ProvisionCenterData {
+  organization: { name: string; slug: string };
+  tenant: { name: string; slug: string };
+  admin: ProvisionCenterUser;
+  trainers: ProvisionCenterUser[];
+  exercises: CreateExerciseData[];
+}
+
+export interface ProvisionedCenter {
+  organizationId: string;
+  tenantId: string;
+  adminUserId: string;
+  /** False when the email already belonged to a user: they keep their password and gain access to the new center. */
+  adminCreated: boolean;
+  /** One entry per requested trainer, in the same order. `created` is false for emails that already had an account. */
+  trainers: Array<{ email: string; created: boolean }>;
+  exercisesCreated: number;
+}
+
+export interface CenterRepository {
+  findOrganizationBySlug(slug: string): Promise<{ id: string; tenantId: string | null } | null>;
+  /** Creates the organization, center, admin access and starter exercises atomically. */
+  provision(data: ProvisionCenterData): Promise<ProvisionedCenter>;
+}
+
+export type MeasurementValues = {
+  measuredAt: Date;
+  weight: number | null;
+  bodyFatPercentage: number | null;
+  muscleMass: number | null;
+  notes: string | null;
+};
+
+export interface MeasurementRepository {
+  listByClient(tenantId: string, clientId: string): Promise<ClientMeasurement[]>;
+  findById(tenantId: string, id: string): Promise<ClientMeasurement | null>;
+  create(data: MeasurementValues & { tenantId: string; clientId: string; createdById: string }): Promise<ClientMeasurement>;
+  update(id: string, data: MeasurementValues): Promise<ClientMeasurement>;
+  delete(id: string): Promise<void>;
+  deleteByClient(tenantId: string, clientId: string): Promise<void>;
 }

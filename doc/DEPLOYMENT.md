@@ -166,6 +166,77 @@ docker compose --env-file /var/www/stelios/.env.docker up -d --wait database
 
 No elimines la base anterior hasta conservar varios backups verificados de la nueva instalación.
 
+## 📚 Biblioteca de ejercicios
+
+El catálogo de cada centro se organiza por grupo muscular. La migración `20261118090000_add_exercise_library_fields` añade el grupo y la clave de biblioteca a los ejercicios y se aplica sola en el despliegue, sin tocar datos.
+
+- **Centros nuevos** (comando de alta de centro): empiezan con un pack inicial de 15 ejercicios.
+- **Cualquier centro** puede añadir el resto de la biblioteca (66 ejercicios) desde *Ejercicios → Añadir desde la biblioteca*. Es idempotente: no duplica lo que ya tiene y reactiva lo que hubiera desactivado.
+- **Centros que ya existían** conservan su catálogo tal cual. Sus ejercicios antiguos aparecen en «Sin grupo» hasta que se les asigne uno al editarlos.
+
+Para que los siete ejercicios base que ya existían en producción (Dominadas, Peso muerto, Sentadilla, Zancadas, Plancha frontal, Burpees y Carrera) reciban su grupo y se reconozcan como parte de la biblioteca, ejecuta una vez el script manual. Es idempotente, solo toca ejercicios sin clave de biblioteca y se ajusta por nombre:
+
+```bash
+cd /var/www/vhosts/steliosapp.com/stelios/repo
+docker compose --env-file ../.env.docker exec -T database \
+  sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' \
+  < scripts/sql/backfill-exercise-library.sql
+```
+
+La lista de ejercicios está en `backend/src/domain/exercise-library.ts`. Añadir, quitar o renombrar uno es editar ese fichero; el `slug` es el identificador estable y no debe cambiar una vez publicado.
+
+## 🏢 Alta de un centro nuevo
+
+Un centro nuevo (su organización, su administrador, sus entrenadores y un catálogo inicial de ejercicios) se crea con un comando que se ejecuta en el servidor. Usa la imagen que ya está desplegada, así que **solo funciona después de desplegar una release que lo incluya**.
+
+Entra como el usuario de despliegue, desde la carpeta del repositorio:
+
+```bash
+cd /var/www/vhosts/steliosapp.com/stelios/repo
+```
+
+1. **Simulación.** Valida los datos y muestra qué se crearía, sin escribir nada:
+
+   ```bash
+   docker compose --env-file ../.env.docker run --rm migrate node dist/main/create-center.js \
+     --name "Nombre del centro" --admin-name "Nombre Apellido" --admin-email correo@ejemplo.com \
+     --trainer "Nombre Apellido <entrenador@ejemplo.com>" \
+     --dry-run
+   ```
+
+2. **Alta real.** El mismo comando sin `--dry-run`:
+
+   ```bash
+   docker compose --env-file ../.env.docker run --rm migrate node dist/main/create-center.js \
+     --name "Nombre del centro" --admin-name "Nombre Apellido" --admin-email correo@ejemplo.com \
+     --trainer "Nombre Apellido <entrenador@ejemplo.com>"
+   ```
+
+   `--trainer` es opcional y se puede repetir, una vez por entrenador. Cada persona recibe su propia contraseña segura, que se **muestra una sola vez** en la terminal: no se guarda en claro en ningún sitio. Entrégasela por un canal privado; cada uno puede cambiarla desde «Cuenta».
+
+Comportamiento a tener en cuenta:
+
+- **Es seguro repetirlo.** Si ya existe un centro con ese identificador no cambia nada, ni la contraseña ni los ejercicios. El identificador sale del nombre (por ejemplo `one-life-one-body`); usa `--slug` si necesitas otro.
+- **Es atómico.** Si algo falla no queda un centro a medias.
+- **No toca otros centros.** Los datos del nuevo centro están aislados de los demás.
+- **Si un email ya tenía cuenta**, conserva su contraseña y gana acceso al centro nuevo; al entrar podrá elegir entre sus centros. Si la cuenta está desactivada, el comando se detiene sin crear nada. Un mismo email no puede repetirse entre administrador y entrenadores.
+- `--no-starter-exercises` crea el centro con el catálogo vacío.
+- **No uses el `seed` en producción para esto.** Además de datos de demostración, restablece las contraseñas de los usuarios de ejemplo.
+
+Después, el administrador del centro puede dar de alta a más entrenadores, y crear sus clientes y sus propios ejercicios, desde la aplicación.
+
+## 📏 Mediciones de clientes (desde v1.1.0)
+
+La migración `20261117120000_add_client_measurements` crea el historial de mediciones, el objetivo del cliente y el ajuste por centro (activado por defecto). Se aplica sola en el despliegue y no toca datos existentes.
+
+Para que el peso y el % de grasa que ya estaban guardados en la ficha de cada cliente aparezcan como su primera medición, ejecuta una vez el script manual (es idempotente):
+
+```bash
+docker compose --env-file <DOCKER_ENV_FILE> exec -T database \
+  sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' \
+  < scripts/sql/backfill-client-measurements.sql
+```
+
 ## 🔀 Migración desde la instalación MyWorkoutBox
 
 El producto pasó a llamarse STELIOS y cambiaron los nombres internos por defecto: proyecto Compose `stelios`, imágenes `stelios-backend`/`stelios-frontend`, base de datos y usuario `stelios`. Una instalación existente con `COMPOSE_PROJECT_NAME=myworkoutbox` sigue funcionando con su `.env.docker`, pero para adoptar los nombres nuevos (y un dominio nuevo) se monta un stack paralelo y se migran los datos:

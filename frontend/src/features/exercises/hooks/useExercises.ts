@@ -5,6 +5,8 @@ import {
   createExercise,
   updateExercise,
   setExerciseStatus,
+  getExerciseLibrary,
+  importExerciseLibrary,
 } from '@features/exercises/api/exercises.api';
 import type { CreateExerciseData, UpdateExerciseData } from '@shared/types/api';
 
@@ -53,6 +55,26 @@ export function useSetExerciseStatus() {
     onSuccess: (_result, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['exercises'] });
       void queryClient.invalidateQueries({ queryKey: ['exercise', variables.id] });
+    },
+  });
+}
+
+export function useExerciseLibrary(enabled = true) {
+  return useQuery({
+    queryKey: ['exerciseLibrary'],
+    queryFn: getExerciseLibrary,
+    enabled,
+    staleTime: 0,
+  });
+}
+
+export function useImportExerciseLibrary() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (slugs: string[]) => importExerciseLibrary(slugs),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      void queryClient.invalidateQueries({ queryKey: ['exerciseLibrary'] });
     },
   });
 }

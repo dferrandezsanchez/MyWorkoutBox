@@ -1,5 +1,5 @@
 import apiClient from '@shared/api/http-client';
-import type { Client, ClientExport, CreateClientData, UpdateClientData } from '@shared/types/api';
+import type { Client, ClientExport, ClientGoalInput, CreateClientData, UpdateClientData } from '@shared/types/api';
 
 export async function listClients(q?: string, includeInactive?: boolean): Promise<Client[]> {
   const params = {
@@ -22,6 +22,11 @@ export async function createClient(data: CreateClientData): Promise<Client> {
 
 export async function updateClient(id: string, data: UpdateClientData): Promise<Client> {
   const response = await apiClient.put<Client>(`/clients/${id}`, data);
+  return response.data;
+}
+
+export async function updateClientGoal(id: string, data: ClientGoalInput): Promise<Client> {
+  const response = await apiClient.patch<Client>(`/clients/${id}/goal`, data);
   return response.data;
 }
 

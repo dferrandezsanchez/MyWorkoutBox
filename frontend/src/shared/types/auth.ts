@@ -15,6 +15,8 @@ export interface ActiveTenant {
   organizationId: string;
   name: string;
   slug: string;
+  /** The center tracks client measurements (weight, body fat, muscle mass) and goals. */
+  measurementsEnabled: boolean;
 }
 
 export interface TenantOption {
