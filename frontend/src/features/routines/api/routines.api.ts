@@ -2,6 +2,8 @@ import apiClient from '@shared/api/http-client';
 import type {
   ClientRoutinePlan,
   ClientRoutinePlanInput,
+  RoutineProgram,
+  RoutineProgramInput,
   RoutineTemplate,
   RoutineTemplateInput,
 } from '@shared/types/api';
@@ -49,4 +51,43 @@ export async function setClientRoutinePlanNext(clientId: string, nextPosition: n
 
 export async function removeClientRoutinePlan(clientId: string): Promise<void> {
   await apiClient.delete(`/clients/${clientId}/routine-plan`);
+}
+
+/** Client following a program (GET /routine-programs/:id/clients). */
+export interface RoutineProgramClient {
+  clientId: string;
+  firstName: string;
+  lastName: string;
+  nextPosition: number;
+}
+
+export async function listRoutinePrograms(includeInactive = false): Promise<RoutineProgram[]> {
+  const params = includeInactive ? { includeInactive: 'true' } : undefined;
+  const response = await apiClient.get<RoutineProgram[]>('/routine-programs', { params });
+  return response.data;
+}
+
+export async function getRoutineProgram(id: string): Promise<RoutineProgram> {
+  const response = await apiClient.get<RoutineProgram>(`/routine-programs/${id}`);
+  return response.data;
+}
+
+export async function createRoutineProgram(data: RoutineProgramInput): Promise<RoutineProgram> {
+  const response = await apiClient.post<RoutineProgram>('/routine-programs', data);
+  return response.data;
+}
+
+export async function updateRoutineProgram(id: string, data: RoutineProgramInput): Promise<RoutineProgram> {
+  const response = await apiClient.put<RoutineProgram>(`/routine-programs/${id}`, data);
+  return response.data;
+}
+
+export async function setRoutineProgramStatus(id: string, status: 'ACTIVE' | 'INACTIVE'): Promise<RoutineProgram> {
+  const response = await apiClient.patch<RoutineProgram>(`/routine-programs/${id}/status`, { status });
+  return response.data;
+}
+
+export async function listRoutineProgramClients(id: string): Promise<RoutineProgramClient[]> {
+  const response = await apiClient.get<RoutineProgramClient[]>(`/routine-programs/${id}/clients`);
+  return response.data;
 }
