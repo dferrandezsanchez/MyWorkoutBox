@@ -2,9 +2,10 @@ import type {
   ClientRepository,
   ClientRoutinePlanRepository,
   ExerciseRepository,
+  RoutineProgramRepository,
   RoutineTemplateRepository,
 } from '../../domain/repositories';
-import type { Client, ClientRoutinePlan, RoutineTemplate } from '../../domain/shared/entities';
+import type { Client, ClientRoutinePlan, RoutineProgram, RoutineTemplate } from '../../domain/shared/entities';
 import { Status } from '../../domain/shared/enums';
 import { badRequest, notFound } from '../../domain/shared/errors';
 import type { NormalizedRoutineTemplateInput } from './routine-dtos';
@@ -12,6 +13,17 @@ import type { NormalizedRoutineTemplateInput } from './routine-dtos';
 export const ROUTINE_NOT_FOUND_MESSAGE = 'Rutina no encontrada';
 export const CLIENT_NOT_FOUND_MESSAGE = 'Cliente no encontrado';
 export const PLAN_NOT_FOUND_MESSAGE = 'El cliente no tiene una serie de rutinas activa';
+export const PROGRAM_NOT_FOUND_MESSAGE = 'Programa no encontrado';
+
+export async function findProgramOrThrow(
+  programs: RoutineProgramRepository,
+  tenantId: string,
+  id: string,
+): Promise<RoutineProgram> {
+  const program = await programs.findById(tenantId, id);
+  if (!program) throw notFound(PROGRAM_NOT_FOUND_MESSAGE);
+  return program;
+}
 
 export async function findTemplateOrThrow(
   templates: RoutineTemplateRepository,

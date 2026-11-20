@@ -23,12 +23,42 @@ export interface RoutineTemplateInputDto {
   exercises?: unknown;
 }
 
-/** Body of PUT /clients/:id/routine-plan. */
+/**
+ * Body of PUT /clients/:id/routine-plan: either follow a program (`programId`) or
+ * a custom sequence (`name` + `templateIds`). Never both.
+ */
 export interface ClientRoutinePlanInputDto {
+  programId?: unknown;
   name?: unknown;
   templateIds?: unknown;
   nextPosition?: unknown;
 }
+
+/** Body of POST /routine-programs and PUT /routine-programs/:id (full replace). */
+export interface RoutineProgramInputDto {
+  name?: unknown;
+  notes?: unknown;
+  templateIds?: unknown;
+}
+
+export interface NormalizedRoutineProgramInput {
+  name: string;
+  notes: string | null;
+  templateIds: string[];
+}
+
+/** Client following a program, as listed in GET /routine-programs/:id/clients. */
+export interface RoutineProgramClientDto {
+  clientId: string;
+  firstName: string;
+  lastName: string;
+  nextPosition: number;
+}
+
+/** Parsed PUT /clients/:id/routine-plan body. Program positions are validated once the program is loaded. */
+export type ClientRoutinePlanAssignment =
+  | { kind: 'program'; programId: string; nextPosition: unknown }
+  | ({ kind: 'custom' } & NormalizedClientRoutinePlanInput);
 
 export interface NormalizedRoutineTemplateInput {
   name: string;
@@ -113,6 +143,47 @@ export function parseNextPosition(value: unknown, length: number): number {
   return position;
 }
 
+/** Ordered template ids (1..PLAN_MAX_TEMPLATES, repeats allowed) of a plan ("serie") or program ("programa"). */
+function parseTemplateIds(value: unknown, owner: 'serie' | 'programa'): string[] {
+  const article = owner === 'serie' ? 'la' : 'el';
+  const indefinite = owner === 'serie' ? 'Una' : 'Un';
+  if (!Array.isArray(value) || value.length === 0) {
+    throw badRequest(`Elige al menos una rutina para ${article} ${owner}`, ['templateIds']);
+  }
+  if (value.length > PLAN_MAX_TEMPLATES) {
+    throw badRequest(`${indefinite} ${owner} admite como máximo ${PLAN_MAX_TEMPLATES} rutinas`, ['templateIds']);
+  }
+  return (value as unknown[]).map((id, index) => {
+    if (typeof id !== 'string' || !id.trim()) throw badRequest('La rutina no es válida', [`templateIds[${index}]`]);
+    return id.trim();
+  });
+}
+
+export function normalizeRoutineProgramInput(input: RoutineProgramInputDto | null | undefined): NormalizedRoutineProgramInput {
+  const data = input ?? {};
+  const name = typeof data.name === 'string' ? data.name.trim() : '';
+  if (!name) throw badRequest('El nombre del programa es obligatorio', ['name']);
+  if (name.length > ROUTINE_NAME_MAX_LENGTH) {
+    throw badRequest(`El nombre no puede superar ${ROUTINE_NAME_MAX_LENGTH} caracteres`, ['name']);
+  }
+  const notes = optionalText(data.notes, 'notes', ROUTINE_NOTES_MAX_LENGTH, 'Las notas');
+  return { name, notes, templateIds: parseTemplateIds(data.templateIds, 'programa') };
+}
+
+/** Decides whether the client follows a program or gets a custom sequence; both at once is rejected. */
+export function parseClientRoutinePlanAssignment(input: ClientRoutinePlanInputDto | null | undefined): ClientRoutinePlanAssignment {
+  const data = input ?? {};
+  if (data.programId === undefined || data.programId === null) {
+    return { kind: 'custom', ...normalizeClientRoutinePlanInput(data) };
+  }
+  if (data.templateIds !== undefined && data.templateIds !== null) {
+    throw badRequest('Elige un programa o una serie propia, no ambos', ['programId', 'templateIds']);
+  }
+  const programId = typeof data.programId === 'string' ? data.programId.trim() : '';
+  if (!programId) throw badRequest('El programa no es válido', ['programId']);
+  return { kind: 'program', programId, nextPosition: data.nextPosition ?? 1 };
+}
+
 export function normalizeClientRoutinePlanInput(
   input: ClientRoutinePlanInputDto | null | undefined,
 ): NormalizedClientRoutinePlanInput {
@@ -122,17 +193,7 @@ export function normalizeClientRoutinePlanInput(
     throw badRequest(`El nombre no puede superar ${ROUTINE_NAME_MAX_LENGTH} caracteres`, ['name']);
   }
 
-  if (!Array.isArray(data.templateIds) || data.templateIds.length === 0) {
-    throw badRequest('Elige al menos una rutina para la serie', ['templateIds']);
-  }
-  if (data.templateIds.length > PLAN_MAX_TEMPLATES) {
-    throw badRequest(`Una serie admite como máximo ${PLAN_MAX_TEMPLATES} rutinas`, ['templateIds']);
-  }
-  const templateIds = (data.templateIds as unknown[]).map((id, index) => {
-    if (typeof id !== 'string' || !id.trim()) throw badRequest('La rutina no es válida', [`templateIds[${index}]`]);
-    return id.trim();
-  });
-
+  const templateIds = parseTemplateIds(data.templateIds, 'serie');
   const nextPosition = parseNextPosition(data.nextPosition ?? 1, templateIds.length);
   return { name, templateIds, nextPosition };
 }

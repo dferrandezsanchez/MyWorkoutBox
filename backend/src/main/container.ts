@@ -41,13 +41,19 @@ import {
 } from '../application/performances';
 import {
   AssignClientRoutinePlanUseCase,
+  CreateRoutineProgramUseCase,
   CreateRoutineTemplateUseCase,
   GetClientRoutinePlanUseCase,
+  GetRoutineProgramUseCase,
   GetRoutineTemplateUseCase,
+  ListRoutineProgramClientsUseCase,
+  ListRoutineProgramsUseCase,
   ListRoutineTemplatesUseCase,
   RemoveClientRoutinePlanUseCase,
   SetClientRoutinePlanNextUseCase,
+  SetRoutineProgramStatusUseCase,
   SetRoutineTemplateStatusUseCase,
+  UpdateRoutineProgramUseCase,
   UpdateRoutineTemplateUseCase,
 } from '../application/routines';
 import {
@@ -172,9 +178,17 @@ export function createContainer() {
       update: new UpdateRoutineTemplateUseCase(routineTemplates, exercises, memberships, auditLogs),
       setStatus: new SetRoutineTemplateStatusUseCase(routineTemplates, memberships, auditLogs),
       getClientPlan: new GetClientRoutinePlanUseCase(routinePlans, clients),
-      assignClientPlan: new AssignClientRoutinePlanUseCase(routinePlans, routineTemplates, clients, memberships, auditLogs),
+      assignClientPlan: new AssignClientRoutinePlanUseCase(routinePlans, routineTemplates, clients, memberships, auditLogs, routinePrograms),
       removeClientPlan: new RemoveClientRoutinePlanUseCase(routinePlans, clients, memberships, auditLogs),
       setClientPlanNext: new SetClientRoutinePlanNextUseCase(routinePlans, clients, memberships, auditLogs),
+    },
+    routinePrograms: {
+      list: new ListRoutineProgramsUseCase(routinePrograms),
+      get: new GetRoutineProgramUseCase(routinePrograms),
+      create: new CreateRoutineProgramUseCase(routinePrograms, routineTemplates, memberships, auditLogs),
+      update: new UpdateRoutineProgramUseCase(routinePrograms, routineTemplates, routinePlans, memberships, auditLogs),
+      setStatus: new SetRoutineProgramStatusUseCase(routinePrograms, memberships, auditLogs),
+      listClients: new ListRoutineProgramClientsUseCase(routinePrograms, routinePlans, clients),
     },
     dashboard: {
       overview: new GetDashboardOverviewUseCase(dashboard, clock),

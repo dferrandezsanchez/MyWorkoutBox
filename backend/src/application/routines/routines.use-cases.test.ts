@@ -5,6 +5,7 @@ import type {
   ClientRoutinePlanRepository,
   ExerciseRepository,
   MembershipRepository,
+  RoutineProgramRepository,
   RoutineTemplateRepository,
 } from '../../domain/repositories';
 import type { Client, ClientRoutinePlan, Exercise, Membership, RoutineTemplate } from '../../domain/shared/entities';
@@ -61,6 +62,7 @@ function plan(overrides: Partial<ClientRoutinePlan> = {}): ClientRoutinePlan {
     name: DEFAULT_PLAN_NAME,
     active: true,
     nextPosition: 1,
+    programId: null,
     createdById: 'admin-1',
     createdAt: NOW,
     updatedAt: NOW,
@@ -94,12 +96,14 @@ function setup({
     findActiveByClient: vi.fn(async () => activePlan),
     findById: vi.fn(async () => activePlan),
     replaceActive: vi.fn(async (data) => plan({ id: 'plan-new', name: data.name, nextPosition: data.nextPosition ?? 1 })),
+    listActiveByProgram: vi.fn(async () => []),
     deactivate: vi.fn(async () => undefined),
     setNextPosition: vi.fn(async () => undefined),
   };
   const clients = { findById: vi.fn(async (tenantId: string) => (tenantId === TENANT ? client : null)) } as unknown as ClientRepository;
   const auditLogs: AuditLogRepository = { create: vi.fn(async () => undefined) };
-  return { memberships, exercises, templates, plans, clients, auditLogs };
+  const programs = { findById: vi.fn(async () => null) } as unknown as RoutineProgramRepository;
+  return { memberships, exercises, templates, plans, clients, auditLogs, programs };
 }
 
 describe('routine permissions', () => {
@@ -245,7 +249,7 @@ describe('client routine plan use cases', () => {
 
   it('assigns a plan allowing repeated templates and audits it', async () => {
     const deps = setup({ member: membership(Role.TRAINER, true) });
-    const assign = new AssignClientRoutinePlanUseCase(deps.plans, deps.templates, deps.clients, deps.memberships, deps.auditLogs);
+    const assign = new AssignClientRoutinePlanUseCase(deps.plans, deps.templates, deps.clients, deps.memberships, deps.auditLogs, deps.programs);
     await assign.execute(TENANT, 'user-1', 'client-1', { templateIds: ['tpl-a', 'tpl-b', 'tpl-a'], nextPosition: 3 });
     expect(deps.plans.replaceActive).toHaveBeenCalledWith({
       tenantId: TENANT,
@@ -261,19 +265,19 @@ describe('client routine plan use cases', () => {
   it('validates permission, client and templates when assigning', async () => {
     const input = { templateIds: ['tpl-a'] };
     const forbiddenDeps = setup({ member: membership(Role.TRAINER) });
-    await expect(new AssignClientRoutinePlanUseCase(forbiddenDeps.plans, forbiddenDeps.templates, forbiddenDeps.clients, forbiddenDeps.memberships, forbiddenDeps.auditLogs)
+    await expect(new AssignClientRoutinePlanUseCase(forbiddenDeps.plans, forbiddenDeps.templates, forbiddenDeps.clients, forbiddenDeps.memberships, forbiddenDeps.auditLogs, forbiddenDeps.programs)
       .execute(TENANT, 'user-1', 'client-1', input)).rejects.toMatchObject({ code: 'FORBIDDEN' });
 
     const missingClient = setup({ client: null });
-    await expect(new AssignClientRoutinePlanUseCase(missingClient.plans, missingClient.templates, missingClient.clients, missingClient.memberships, missingClient.auditLogs)
+    await expect(new AssignClientRoutinePlanUseCase(missingClient.plans, missingClient.templates, missingClient.clients, missingClient.memberships, missingClient.auditLogs, missingClient.programs)
       .execute(TENANT, 'user-1', 'client-1', input)).rejects.toMatchObject({ code: 'NOT_FOUND' });
 
     const inactiveClient = setup({ client: { ...activeClient, status: Status.INACTIVE } });
-    await expect(new AssignClientRoutinePlanUseCase(inactiveClient.plans, inactiveClient.templates, inactiveClient.clients, inactiveClient.memberships, inactiveClient.auditLogs)
+    await expect(new AssignClientRoutinePlanUseCase(inactiveClient.plans, inactiveClient.templates, inactiveClient.clients, inactiveClient.memberships, inactiveClient.auditLogs, inactiveClient.programs)
       .execute(TENANT, 'user-1', 'client-1', input)).rejects.toThrow('no está activo');
 
     const deps = setup();
-    const assign = new AssignClientRoutinePlanUseCase(deps.plans, deps.templates, deps.clients, deps.memberships, deps.auditLogs);
+    const assign = new AssignClientRoutinePlanUseCase(deps.plans, deps.templates, deps.clients, deps.memberships, deps.auditLogs, deps.programs);
     await expect(assign.execute(TENANT, 'user-1', 'client-1', { templateIds: ['tpl-foreign'] })).rejects.toThrow('no existe en este centro');
     await expect(assign.execute(TENANT, 'user-1', 'client-1', { templateIds: ['tpl-a', 'tpl-old'] })).rejects.toThrow('archivada');
     expect(deps.plans.replaceActive).not.toHaveBeenCalled();
